@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe log --oneline -5)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe remote -v)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe branch -a)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(i['Id'], i['DomainName'], [a['Items'][0] for a in [i['Aliases']] if a['Quantity']>0]\\) for i in d['DistributionList']['Items']]\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(json.loads\\(d['Policy']\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; [print\\(z['Id'], z['Name']\\) for z in json.load\\(sys.stdin\\)['HostedZones']]\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\)['Certificate']; print\\('Domain:', d['DomainName']\\); print\\('SANs:', d.get\\('SubjectAlternativeNames', []\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\)['Distribution']; print\\('ID:', d['Id']\\); print\\('Domain:', d['DomainName']\\); print\\('Status:', d['Status']\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d['ChangeInfo']['Status'], d['ChangeInfo']['Id']\\)\")",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe branch)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe log --oneline -3)",
+      "Skill(fewer-permission-prompts)",
+      "Skill(fewer-permission-prompts:*)",
+      "Bash(xargs ls -t)",
+      "Bash(npm show *)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe status)"
+    ]
+  }
+}
