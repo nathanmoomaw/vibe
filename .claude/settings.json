@@ -17,7 +17,9 @@
       "Skill(fewer-permission-prompts:*)",
       "Bash(xargs ls -t)",
       "Bash(npm show *)",
-      "Bash(git -C /Users/nathanmoomaw/Sites/vibe status)"
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe status)",
+      "Bash(sed -i '' 's/\\\\[\\\\] style like a physical unit/[x] style like a physical unit/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] give it a party\\\\/lo switch/[x] give it a party\\\\/lo switch/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
     ]
   }
 }

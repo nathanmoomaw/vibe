@@ -11,13 +11,18 @@
   -webkit-font-smoothing: antialiased;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 html, body, #root {
   min-height: 100dvh;
 }
 
 body {
-  background: #050505;
+  background: #010206;
   color: #ccc;
+  overflow-x: hidden;
 }
 
 button {

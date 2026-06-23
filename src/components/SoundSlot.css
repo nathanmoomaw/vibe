@@ -1,22 +1,22 @@
 .slot {
-  border: 1px solid #222;
-  border-radius: 12px;
-  padding: 1rem 1.25rem 1.1rem;
-  background: #0a0a0a;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.85rem 1rem 0.85rem;
+  background: rgba(255, 255, 255, 0.025);
+  transition: border-color 0.4s, box-shadow 0.4s, background 0.4s;
   position: relative;
-  overflow: hidden;
 }
 
 .slot--on {
-  border-color: var(--color);
-  box-shadow: 0 0 18px var(--glow), inset 0 0 12px rgba(255 255 255 / 0.03);
-  animation: slot-pulse 3s ease-in-out infinite;
+  border-color: rgba(var(--color-rgb, 200 200 200) / 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 22px var(--glow), inset 0 0 14px rgba(255 255 255 / 0.02);
+  animation: slot-pulse 2.8s ease-in-out infinite;
 }
 
 @keyframes slot-pulse {
-  0%, 100% { box-shadow: 0 0 18px var(--glow), inset 0 0 12px rgba(255 255 255 / 0.03); }
-  50%       { box-shadow: 0 0 32px var(--glow), inset 0 0 20px rgba(255 255 255 / 0.05); }
+  0%, 100% { box-shadow: 0 0 16px var(--glow), inset 0 0 10px rgba(255 255 255 / 0.02); }
+  50%       { box-shadow: 0 0 38px var(--glow), inset 0 0 22px rgba(255 255 255 / 0.04); }
 }
 
 .slot__toggle {
@@ -29,14 +29,14 @@
   cursor: pointer;
   padding: 0;
   color: inherit;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .slot__label {
-  font-size: 0.8rem;
-  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
   text-transform: lowercase;
-  color: #888;
+  color: rgba(255, 255, 255, 0.3);
   transition: color 0.3s;
 }
 
@@ -45,17 +45,17 @@
 }
 
 .slot__dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #333;
+  background: rgba(255, 255, 255, 0.1);
   transition: background 0.3s, box-shadow 0.3s;
   flex-shrink: 0;
 }
 
 .slot__dot--on {
   background: var(--color);
-  box-shadow: 0 0 8px var(--glow);
+  box-shadow: 0 0 10px var(--glow);
 }
 
 .slot__controls {
@@ -67,22 +67,22 @@
 }
 
 .slot__controls--visible {
-  max-height: 80px;
+  max-height: 90px;
   opacity: 1;
-  margin-top: 0.85rem;
+  margin-top: 0.75rem;
 }
 
 .slot__knob-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  gap: 0.2rem;
+  margin-bottom: 0.45rem;
 }
 
 .slot__knob-label {
-  font-size: 0.6rem;
-  letter-spacing: 0.2em;
-  color: #555;
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.2);
   text-transform: uppercase;
 }
 
@@ -91,7 +91,7 @@
   appearance: none;
   width: 100%;
   height: 2px;
-  background: #222;
+  background: rgba(255, 255, 255, 0.08);
   outline: none;
   border-radius: 2px;
   cursor: pointer;
@@ -100,15 +100,15 @@
 .slot__knob::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--color, #555);
-  box-shadow: 0 0 6px var(--glow, transparent);
+  background: var(--color, rgba(255,255,255,0.3));
+  box-shadow: 0 0 8px var(--glow, transparent);
   cursor: pointer;
   transition: transform 0.15s;
 }
 
 .slot__knob::-webkit-slider-thumb:hover {
-  transform: scale(1.3);
+  transform: scale(1.35);
 }

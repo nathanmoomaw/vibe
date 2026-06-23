@@ -1,5 +1,15 @@
 # DEVLOG — vibe
 
+## Jun 23 2026 — Party/Lo modes + physical unit aesthetic
+
+- Background: fullscreen canvas with star field + expanding color ripples from center
+- Ripples: audio-energy-driven rate, color matches active sound channels
+- Unit: frosted glass morphism panel floating over background (backdrop-filter + shadows)
+- Faceplate + screws, body sections, footer strip — hardware device silhouette
+- Party mode: full visual + glowing slots + background animation
+- Lo mode: ASCII-based monospace UI, minimal — [ON/--] toggles + block progress bars
+- ModeSwitch: party · lo toggle in the unit footer
+
 ## Jun 23 2026 — v0 app built
 
 - Audio engine: white/pink/blue noise synthesis (pure Web Audio API buffers)

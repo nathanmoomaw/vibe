@@ -1,0 +1,72 @@
+.lo {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.lo__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lo__head {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: #3a3a3a;
+  margin-bottom: 0.2rem;
+}
+
+.lo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lo-row__toggle {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: #444;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.05em;
+  transition: color 0.15s;
+}
+
+.lo-row__toggle:hover {
+  color: #888;
+}
+
+.lo-row__label {
+  width: 5ch;
+  color: #555;
+  letter-spacing: 0.05em;
+  transition: color 0.2s;
+}
+
+.lo-row__label--on {
+  color: #ccc;
+}
+
+.lo-row__bar {
+  color: #333;
+  letter-spacing: -0.05em;
+  font-size: 0.72rem;
+}
+
+.lo-row__param {
+  color: #444;
+  font-variant-numeric: tabular-nums;
+  min-width: 6ch;
+}
+
+.lo-row__param-unit {
+  font-size: 0.6rem;
+  color: #333;
+  margin-left: 1px;
+}

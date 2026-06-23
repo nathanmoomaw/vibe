@@ -14,3 +14,6 @@
 - [x] Colored noise synthesis: white, pink, blue (with frequency control)
 - [x] Ambient tone synthesis: bell, chime, gong (FM), birds, wind, water, earth
 - [x] Canvas frequency visualizer
+- [x] Physical unit aesthetic: frosted glass floating panel + hardware silhouette
+- [x] Fullscreen color ripples from center (audio-energy-driven)
+- [x] Party/Lo mode switch (party = visual + animated, lo = ASCII monospace)
