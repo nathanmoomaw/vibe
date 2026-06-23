@@ -1,0 +1,21 @@
+.vibe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  gap: 1rem;
+}
+
+.vibe h1 {
+  font-size: 4rem;
+  font-weight: 100;
+  letter-spacing: 0.5em;
+  text-transform: lowercase;
+}
+
+.vibe p {
+  font-size: 0.875rem;
+  opacity: 0.4;
+  letter-spacing: 0.2em;
+}
