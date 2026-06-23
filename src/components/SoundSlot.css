@@ -1,42 +1,45 @@
 .slot {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0.7rem 0.5rem 0.6rem;
+  border: 1px solid rgba(255,255,255,0.05);
   border-radius: 10px;
-  padding: 0.85rem 1rem 0.85rem;
-  background: rgba(255, 255, 255, 0.025);
-  transition: border-color 0.4s, box-shadow 0.4s, background 0.4s;
-  position: relative;
+  background: rgba(255,255,255,0.018);
+  transition: border-color 0.4s, box-shadow 0.5s, background 0.4s;
 }
 
 .slot--on {
-  border-color: rgba(var(--color-rgb, 200 200 200) / 0.35);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 0 22px var(--glow), inset 0 0 14px rgba(255 255 255 / 0.02);
-  animation: slot-pulse 2.8s ease-in-out infinite;
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.035);
+  box-shadow: 0 0 20px var(--glow), inset 0 0 12px rgba(255,255,255,0.015);
+  animation: slot-pulse 7s ease-in-out infinite;
 }
 
 @keyframes slot-pulse {
-  0%, 100% { box-shadow: 0 0 16px var(--glow), inset 0 0 10px rgba(255 255 255 / 0.02); }
-  50%       { box-shadow: 0 0 38px var(--glow), inset 0 0 22px rgba(255 255 255 / 0.04); }
+  0%, 100% { box-shadow: 0 0 14px var(--glow), inset 0 0 8px rgba(255,255,255,0.01); }
+  50%       { box-shadow: 0 0 32px var(--glow), inset 0 0 18px rgba(255,255,255,0.03); }
 }
 
 .slot__toggle {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.35rem;
   width: 100%;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
   color: inherit;
-  gap: 0.5rem;
 }
 
 .slot__label {
-  font-size: 0.72rem;
-  letter-spacing: 0.15em;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
   text-transform: lowercase;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255,255,255,0.28);
   transition: color 0.3s;
 }
 
@@ -45,70 +48,29 @@
 }
 
 .slot__dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255,255,255,0.08);
   transition: background 0.3s, box-shadow 0.3s;
-  flex-shrink: 0;
 }
 
 .slot__dot--on {
   background: var(--color);
-  box-shadow: 0 0 10px var(--glow);
+  box-shadow: 0 0 8px var(--glow);
 }
 
-.slot__controls {
+/* Knob area — slides in when active */
+.slot__knob-wrap {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
-  transition: max-height 0.35s ease, opacity 0.35s ease, margin-top 0.35s ease;
+  transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease;
   margin-top: 0;
 }
 
-.slot__controls--visible {
-  max-height: 90px;
+.slot__knob-wrap--on {
+  max-height: 80px;
   opacity: 1;
-  margin-top: 0.75rem;
-}
-
-.slot__knob-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin-bottom: 0.45rem;
-}
-
-.slot__knob-label {
-  font-size: 0.55rem;
-  letter-spacing: 0.22em;
-  color: rgba(255, 255, 255, 0.2);
-  text-transform: uppercase;
-}
-
-.slot__knob {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  outline: none;
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.slot__knob::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color, rgba(255,255,255,0.3));
-  box-shadow: 0 0 8px var(--glow, transparent);
-  cursor: pointer;
-  transition: transform 0.15s;
-}
-
-.slot__knob::-webkit-slider-thumb:hover {
-  transform: scale(1.35);
+  margin-top: 0.6rem;
 }

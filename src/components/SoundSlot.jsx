@@ -1,39 +1,25 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
+import { DualKnob } from './DualKnob.jsx'
 import './SoundSlot.css'
 
+function fmtParam(v, label) {
+  if (label === 'freq') return v >= 1000 ? `${(v/1000).toFixed(1)}k` : `${Math.round(v)}`
+  if (label === 'rate') return `${Math.round(v)}s`
+  return `${Math.round(v)}`
+}
+
 export default function SoundSlot({
-  id,
-  label,
-  color,
-  glow,
-  active,
-  volume,
-  param,
-  paramLabel,
-  paramMin,
-  paramMax,
-  onToggle,
-  onVolume,
-  onParam,
+  id, label, color, glow,
+  active, volume, param, paramLabel, paramMin, paramMax,
+  onToggle, onVolume, onParam,
 }) {
-  const [dragging, setDragging] = useState(false)
-
-  const handleParamChange = useCallback((e) => {
-    onParam?.(parseFloat(e.target.value))
-  }, [onParam])
-
-  const handleVolumeChange = useCallback((e) => {
-    onVolume(parseFloat(e.target.value))
-  }, [onVolume])
-
-  const glowStyle = active
-    ? { '--glow': glow, '--color': color }
-    : { '--glow': 'transparent', '--color': '#444' }
+  const handleVolume = useCallback((v) => onVolume(Math.round(v * 100) / 100), [onVolume])
+  const handleParam  = useCallback((v) => onParam?.(v), [onParam])
 
   return (
     <div
       className={`slot ${active ? 'slot--on' : ''}`}
-      style={glowStyle}
+      style={{ '--glow': glow, '--color': color }}
       data-id={id}
     >
       <button
@@ -46,34 +32,20 @@ export default function SoundSlot({
         <span className={`slot__dot ${active ? 'slot__dot--on' : ''}`} />
       </button>
 
-      <div className={`slot__controls ${active ? 'slot__controls--visible' : ''}`}>
-        <label className="slot__knob-wrap">
-          <span className="slot__knob-label">vol</span>
-          <input
-            type="range"
-            className="slot__knob"
-            min="0"
-            max="1"
-            step="0.01"
-            value={volume}
-            onChange={handleVolumeChange}
-          />
-        </label>
-
-        {onParam && (
-          <label className="slot__knob-wrap">
-            <span className="slot__knob-label">{paramLabel ?? 'freq'}</span>
-            <input
-              type="range"
-              className="slot__knob"
-              min={paramMin ?? 100}
-              max={paramMax ?? 8000}
-              step="1"
-              value={param}
-              onChange={handleParamChange}
-            />
-          </label>
-        )}
+      <div className={`slot__knob-wrap ${active ? 'slot__knob-wrap--on' : ''}`}>
+        <DualKnob
+          mode={onParam ? 'dual' : 'single'}
+          mixValue={volume}
+          paramValue={param ?? 0}
+          onMixChange={handleVolume}
+          onParamChange={handleParam}
+          color={color}
+          size={46}
+          mixLabel={`${Math.round(volume * 100)}%`}
+          paramLabel={param !== undefined ? fmtParam(param, paramLabel) : undefined}
+          minParam={paramMin ?? 0}
+          maxParam={paramMax ?? 1}
+        />
       </div>
     </div>
   )

@@ -19,7 +19,12 @@
       "Bash(npm show *)",
       "Bash(git -C /Users/nathanmoomaw/Sites/vibe status)",
       "Bash(sed -i '' 's/\\\\[\\\\] style like a physical unit/[x] style like a physical unit/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
-      "Bash(sed -i '' 's/\\\\[\\\\] give it a party\\\\/lo switch/[x] give it a party\\\\/lo switch/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
+      "Bash(sed -i '' 's/\\\\[\\\\] give it a party\\\\/lo switch/[x] give it a party\\\\/lo switch/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] the pulsing is too fast/[x] the pulsing is too fast/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t wanna see the fake rivets/[x] i don'\\\\''t wanna see the fake rivets/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] i can'\\\\''t seem to adjust the slider in lo mode/[x] i can'\\\\''t seem to adjust the slider in lo mode/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] in party mode all sliders should be knobs/[x] in party mode all sliders should be knobs/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t see the design referencing the images/[x] i don'\\\\''t see the design referencing the images/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
     ]
   }
 }

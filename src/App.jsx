@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { getAnalyser } from './audio/engine.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume } from './audio/tones.js'
 import Background from './components/Background.jsx'
@@ -35,12 +36,64 @@ export default function App() {
   const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
   const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20 })))
 
-  const allStates = [...Object.values(noise), ...Object.values(tones)]
-  const anyOn = allStates.some(s => s.on)
+  const canvasRef = useRef(null)
+  const rafRef = useRef(null)
+
+  const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeColors = [
     ...NOISE.filter(s => noise[s.id].on).map(s => s.glow),
     ...TONES.filter(s => tones[s.id].on).map(s => s.glow),
   ]
+
+  // Radial spectrum visualizer
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    if (!anyOn) {
+      cancelAnimationFrame(rafRef.current)
+      const ctx = canvas.getContext('2d')
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      return
+    }
+    const analyser = getAnalyser()
+    const data = new Uint8Array(analyser.frequencyBinCount)
+    const ctx = canvas.getContext('2d')
+
+    function draw() {
+      rafRef.current = requestAnimationFrame(draw)
+      analyser.getByteFrequencyData(data)
+      const { width, height } = canvas
+      const cx = width / 2, cy = height / 2
+      ctx.clearRect(0, 0, width, height)
+
+      const bars = 72
+      const step = Math.floor(data.length * 0.5 / bars)
+      const maxR = cx * 0.88
+      const minR = cx * 0.3
+
+      for (let i = 0; i < bars; i++) {
+        const val = data[i * step] / 255
+        const angle = (i / bars) * Math.PI * 2 - Math.PI / 2
+        const r = minR + val * (maxR - minR)
+        const hue = 190 + i * 2
+        ctx.beginPath()
+        ctx.moveTo(cx + Math.cos(angle) * minR, cy + Math.sin(angle) * minR)
+        ctx.lineTo(cx + Math.cos(angle) * r,    cy + Math.sin(angle) * r)
+        ctx.strokeStyle = `hsla(${hue},65%,62%,${0.35 + val * 0.6})`
+        ctx.lineWidth = (Math.PI * 2 * minR / bars) * 0.55
+        ctx.stroke()
+      }
+
+      // Center dot
+      const avg = data.reduce((a, b) => a + b, 0) / data.length / 255
+      ctx.beginPath()
+      ctx.arc(cx, cy, minR * 0.35, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(255,255,255,${0.05 + avg * 0.12})`
+      ctx.fill()
+    }
+    draw()
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [anyOn])
 
   // Noise handlers
   const toggleNoise = useCallback((id) => {
@@ -86,12 +139,22 @@ export default function App() {
 
       <div className={`shell shell--${mode}`}>
         <div className="unit">
-          {/* Faceplate */}
-          <div className="unit__face">
-            <div className="unit__screw unit__screw--tl" />
-            <div className="unit__screw unit__screw--tr" />
-            <h1 className="unit__title">vibe</h1>
-            <p className="unit__sub">frequency field</p>
+
+          {/* Speaker display — circular radial spectrum */}
+          <div className="unit__display-ring">
+            <canvas
+              ref={canvasRef}
+              className="unit__viz"
+              width={200}
+              height={200}
+            />
+            {!anyOn && <div className="unit__display-idle">vibe</div>}
+          </div>
+
+          {/* Faceplate label */}
+          <div className="unit__nameplate">
+            <span className="unit__brand">vibe</span>
+            <span className="unit__model">frequency field</span>
           </div>
 
           {/* Controls */}
@@ -103,8 +166,7 @@ export default function App() {
                   <div className="unit__grid unit__grid--3">
                     {NOISE.map(s => (
                       <SoundSlot
-                        key={s.id}
-                        {...s}
+                        key={s.id} {...s}
                         active={noise[s.id].on}
                         volume={noise[s.id].volume}
                         param={noise[s.id].freq}
@@ -126,8 +188,7 @@ export default function App() {
                   <div className="unit__grid unit__grid--4">
                     {TONES.map(s => (
                       <SoundSlot
-                        key={s.id}
-                        {...s}
+                        key={s.id} {...s}
                         active={tones[s.id].on}
                         volume={tones[s.id].volume}
                         param={s.periodic ? tones[s.id].rate : undefined}
@@ -144,23 +205,20 @@ export default function App() {
               </>
             ) : (
               <LoView
-                NOISE={NOISE}
-                TONES={TONES}
-                noise={noise}
-                tones={tones}
+                NOISE={NOISE} TONES={TONES}
+                noise={noise} tones={tones}
                 onToggleNoise={toggleNoise}
                 onToggleTone={toggleTone}
                 onNoiseVol={setNoiseVol}
                 onToneVol={setToneVol}
+                onNoiseParam={setNoiseFreqCb}
               />
             )}
           </div>
 
-          {/* Bottom strip */}
+          {/* Footer */}
           <div className="unit__foot">
-            <div className="unit__screw unit__screw--bl" />
             <ModeSwitch mode={mode} onChange={setMode} />
-            <div className="unit__screw unit__screw--br" />
           </div>
         </div>
       </div>

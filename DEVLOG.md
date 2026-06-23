@@ -1,5 +1,19 @@
 # DEVLOG — vibe
 
+## Jun 23 2026 — Polish pass: knobs, vintage design, fixes
+
+- Slowed ripple background: interval 1.8–5s, lifetime 9s (was 0.3–1.4s / 4s)
+- Slot pulse animation: 7s cycle (was 2.8s)
+- Removed fake rivets/screws from unit UI
+- Lo mode: added interactive range sliders for vol + freq/rate per active slot
+- Party mode: ported DualKnob from ribbon (outer ring = vol, inner notch = freq/rate)
+- Unit redesign from vintage refs (Marpac Dohm + Heathkit tone gen):
+  - Warm dark walnut gradient body with amber-gold border hint
+  - Circular speaker/meter display inset (layered rings, dark glass)
+  - Radial spectrum visualizer in the circular display
+  - Metal faceplate panel with warm section labels
+  - Nameplate with amber brand treatment
+
 ## Jun 23 2026 — Party/Lo modes + physical unit aesthetic
 
 - Background: fullscreen canvas with star field + expanding color ripples from center

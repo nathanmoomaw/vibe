@@ -83,23 +83,22 @@ export default function Background({ anyOn, activeColors }) {
       }
 
       // Spawn ripples
-      const minInterval = anyOn ? Math.max(300, 1400 - energy * 2000) : 99999
+      const minInterval = anyOn ? Math.max(1800, 5000 - energy * 4000) : 99999
       if (anyOn && activeColors.length && t - lastRipple > minInterval) {
         const color = activeColors[Math.floor(Math.random() * activeColors.length)]
         ripples.push({
           born: t,
           color,
           maxR: Math.hypot(cx, cy) * 1.5,
-          speed: 0.9 + Math.random() * 0.6,
+          speed: 0.5 + Math.random() * 0.35,
         })
         lastRipple = t
       }
 
       // Draw + age ripples
-      const diag = Math.hypot(cx, cy)
       for (let i = ripples.length - 1; i >= 0; i--) {
         const rip = ripples[i]
-        const age = (t - rip.born) / (4000 / rip.speed)
+        const age = (t - rip.born) / (9000 / rip.speed)
         if (age >= 1) { ripples.splice(i, 1); continue }
         const r = age * rip.maxR
         const alpha = (1 - age) * (0.5 + energy * 0.3)
