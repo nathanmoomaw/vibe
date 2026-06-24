@@ -20,6 +20,7 @@ export const DualKnob = memo(function DualKnob({
   outerTip = 'vol',
   innerTip = 'param',
   mode = 'dual', // 'dual' | 'single'
+  innerCircular = false, // inner knob rotates 360° with wrap
 }) {
   const knobRef = useRef(null)
   const innerNotchRef = useRef(null)
@@ -31,8 +32,12 @@ export const DualKnob = memo(function DualKnob({
   const startParam = useRef(0)
 
   const paramRange = maxParam - minParam
-  const paramRatio = Math.max(0, Math.min(1, (paramValue - minParam) / paramRange))
-  const paramAngle = MIN_ANGLE + paramRatio * ANGLE_RANGE
+  const paramRatio = innerCircular
+    ? (paramValue / maxParam)
+    : Math.max(0, Math.min(1, (paramValue - minParam) / paramRange))
+  const paramAngle = innerCircular
+    ? (paramValue / maxParam) * 360
+    : MIN_ANGLE + paramRatio * ANGLE_RANGE
   const mixAngle = mixValue * ANGLE_RANGE
 
   const strokeWidth = size * 0.115
@@ -53,12 +58,18 @@ export const DualKnob = memo(function DualKnob({
   }, [circumference])
 
   const applyParamVisuals = useCallback((v) => {
-    const ratio = (v - minParam) / paramRange
-    const deg = MIN_ANGLE + ratio * ANGLE_RANGE
+    let deg, ratio
+    if (innerCircular) {
+      ratio = (v / maxParam) % 1
+      deg = (v / maxParam) * 360
+    } else {
+      ratio = (v - minParam) / paramRange
+      deg = MIN_ANGLE + ratio * ANGLE_RANGE
+    }
     if (innerNotchRef.current) innerNotchRef.current.style.transform = `rotate(${deg}deg)`
     if (ghostThumbRef.current && draggingZone.current === 'inner')
       ghostThumbRef.current.style.top = `${(1 - ratio) * 100}%`
-  }, [minParam, paramRange])
+  }, [innerCircular, minParam, paramRange, maxParam])
 
   const getZone = useCallback((e) => {
     if (mode === 'single') return 'outer'
@@ -83,8 +94,14 @@ export const DualKnob = memo(function DualKnob({
   const onPointerMove = useCallback((e) => {
     if (!draggingZone.current) { applyHoverZone(getZone(e)); return }
     if (draggingZone.current === 'inner') {
-      const next = Math.max(minParam, Math.min(maxParam,
-        startParam.current - (e.movementY / 200) * paramRange))
+      let next
+      if (innerCircular) {
+        const delta = (e.movementY / 200) * maxParam
+        next = ((startParam.current - delta) % maxParam + maxParam) % maxParam
+      } else {
+        next = Math.max(minParam, Math.min(maxParam,
+          startParam.current - (e.movementY / 200) * paramRange))
+      }
       startParam.current = next
       applyParamVisuals(next)
       onParamChange(next)

@@ -140,10 +140,10 @@
   transform: translateY(-50%);
 }
 
-/* Zone hover tips */
+/* Zone hover tips — both positioned inside vk__body to avoid parent overflow clipping */
 .vk__tip {
   position: absolute;
-  top: -18px;
+  bottom: 7px;
   left: 50%;
   transform: translateX(-50%);
   font-family: 'SF Mono', 'Fira Code', monospace;
@@ -151,8 +151,8 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.85);
-  background: rgba(8, 8, 12, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 8, 12, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 2px 5px;
   border-radius: 3px;
   white-space: nowrap;
@@ -162,9 +162,14 @@
   z-index: 20;
 }
 
+/* Inner tip floats in center of inner circle — doesn't overlap labels */
 .vk__tip--inner {
-  top: auto;
-  bottom: -18px;
+  bottom: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.38rem;
+  background: rgba(4, 4, 10, 0.9);
 }
 
 .vk__body[data-zone="outer"] .vk__tip--outer { opacity: 1; }

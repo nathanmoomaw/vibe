@@ -11,7 +11,7 @@ function fmtParam(v, label) {
 export default function SoundSlot({
   id, label, color, glow,
   active, volume, param, paramLabel, paramMin, paramMax,
-  onToggle, onVolume, onParam,
+  onToggle, onVolume, onParam, innerCircular = false,
 }) {
   const handleVolume = useCallback((v) => onVolume(Math.round(v * 100) / 100), [onVolume])
   const handleParam  = useCallback((v) => onParam?.(v), [onParam])
@@ -47,11 +47,12 @@ export default function SoundSlot({
           color={color}
           size={69}
           mixLabel={`${Math.round(volume * 100)}%`}
-          paramLabel={param !== undefined ? fmtParam(param, paramLabel) : undefined}
+          paramLabel={param !== undefined ? (innerCircular ? paramLabel : fmtParam(param, paramLabel)) : undefined}
           minParam={paramMin ?? 0}
           maxParam={paramMax ?? 1}
           outerTip="vol"
           innerTip={paramLabel ?? 'param'}
+          innerCircular={innerCircular}
         />
       </div>
     </div>

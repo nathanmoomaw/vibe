@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { getAnalyser } from './audio/engine.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq } from './audio/noise.js'
-import { startTone, stopTone, setToneVolume } from './audio/tones.js'
+import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
 import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
@@ -23,9 +23,21 @@ export const TONES = [
   { id: 'gong',  label: 'gong',  color: '#ff9944', glow: 'rgba(255,153,68,0.4)',  periodic: true,  rateDefault: 55, rateMin: 20,  rateMax: 120 },
   { id: 'birds', label: 'birds', color: '#88ee88', glow: 'rgba(136,238,136,0.4)', periodic: true,  rateDefault: 14, rateMin: 5,   rateMax: 60 },
   { id: 'wind',  label: 'wind',  color: '#aaddcc', glow: 'rgba(170,221,204,0.4)', periodic: false },
-  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false },
+  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false, hasType: true },
+  { id: 'fire',  label: 'fire',  color: '#ff6633', glow: 'rgba(255,102,51,0.4)',  periodic: false, hasType: true },
   { id: 'earth', label: 'earth', color: '#cc8855', glow: 'rgba(204,136,85,0.4)',  periodic: false },
 ]
+
+const WATER_TYPES = ['stream', 'rain', 'ocean']
+const FIRE_TYPES  = ['candle', 'campfire', 'bonfire']
+
+function getTypeName(id, angle) {
+  const a = ((angle % 360) + 360) % 360
+  const idx = a < 60 || a >= 300 ? 0 : a < 180 ? 1 : 2
+  if (id === 'water') return WATER_TYPES[idx]
+  if (id === 'fire')  return FIRE_TYPES[idx]
+  return undefined
+}
 
 function initState(slots, extra) {
   return Object.fromEntries(slots.map(s => [s.id, { on: false, volume: 0.5, ...extra(s) }]))
@@ -34,7 +46,7 @@ function initState(slots, extra) {
 export default function App() {
   const [mode, setMode] = useState('party')
   const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
-  const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20 })))
+  const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20, typeAngle: 0 })))
   const [dispDragging, setDispDragging] = useState(false)
   const [dispFlashing, setDispFlashing] = useState(false)
 
@@ -214,7 +226,13 @@ export default function App() {
   const toggleTone = useCallback((id) => {
     setTones(prev => {
       const s = prev[id]
-      s.on ? stopTone(id) : startTone(id, s.volume, s.rate)
+      const meta = TONES.find(t => t.id === id)
+      if (s.on) {
+        stopTone(id)
+      } else {
+        const param = meta?.hasType ? s.typeAngle : (meta?.periodic ? s.rate : null)
+        startTone(id, s.volume, param)
+      }
       return { ...prev, [id]: { ...s, on: !s.on } }
     })
   }, [])
@@ -228,6 +246,13 @@ export default function App() {
       const s = prev[id]
       if (s.on) { stopTone(id); startTone(id, s.volume, r) }
       return { ...prev, [id]: { ...s, rate: r } }
+    })
+  }, [])
+
+  const setToneTypeCb = useCallback((id, angle) => {
+    setTones(prev => {
+      setToneParam(id, angle)
+      return { ...prev, [id]: { ...prev[id], typeAngle: angle } }
     })
   }, [])
 
@@ -296,13 +321,14 @@ export default function App() {
                         key={s.id} {...s}
                         active={tones[s.id].on}
                         volume={tones[s.id].volume}
-                        param={s.periodic ? tones[s.id].rate : undefined}
-                        paramLabel={s.periodic ? 'rate' : undefined}
-                        paramMin={s.periodic ? s.rateMin : undefined}
-                        paramMax={s.periodic ? s.rateMax : undefined}
+                        param={s.hasType ? tones[s.id].typeAngle : (s.periodic ? tones[s.id].rate : undefined)}
+                        paramLabel={s.hasType ? getTypeName(s.id, tones[s.id].typeAngle) : (s.periodic ? 'rate' : undefined)}
+                        paramMin={s.hasType ? 0 : (s.periodic ? s.rateMin : undefined)}
+                        paramMax={s.hasType ? 360 : (s.periodic ? s.rateMax : undefined)}
+                        innerCircular={!!s.hasType}
                         onToggle={() => toggleTone(s.id)}
                         onVolume={v => setToneVol(s.id, v)}
-                        onParam={s.periodic ? (r => setToneRate(s.id, r)) : undefined}
+                        onParam={s.hasType ? (a => setToneTypeCb(s.id, a)) : (s.periodic ? (r => setToneRate(s.id, r)) : undefined)}
                       />
                     ))}
                   </div>

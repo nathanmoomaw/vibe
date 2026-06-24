@@ -1,5 +1,15 @@
 # DEVLOG — vibe
 
+## Jun 24 2026 — wind softened, water/fire types, real starfield, tip fixes
+
+- Wind: switched to pink noise (Voss-McCartney), added HPF+LPF chain, slower+narrower LFO → much more relaxing
+- Water: 3 synthesis engines (stream / rain / ocean) crossfade via circular inner knob (0°→120°→240°→360°)
+- Fire: new sound — 3 engines (candle / campfire / bonfire) with same circular type-selector paradigm
+- Both water+fire use `setTargetAtTime` crossfade (50ms tau) for seamless blend between types
+- DualKnob: `innerCircular` prop — inner notch rotates full 360°, drag wraps without clamping
+- Starfield: replaced random star positions with real sky using RA/Dec→Alt/Az computation; 60 named stars + 120 faint; geolocation API (default: LA 34.05°N 118.24°W); updates every 60s
+- Tips fix: outer tip (was clipped by `overflow:hidden`) and inner tip (was covering value labels) both now positioned inside `vk__body` — outer at bottom of outer ring, inner centered on inner circle
+
 ## Jun 23 2026 — v0.0.0 released to vibe.obfusco.us
 
 - Merged dev/v0 → main, tagged v0.0.0

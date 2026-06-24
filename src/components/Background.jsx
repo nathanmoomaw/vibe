@@ -2,13 +2,79 @@ import { useEffect, useRef } from 'react'
 import { getAnalyser } from '../audio/engine.js'
 import './Background.css'
 
-const STARS = Array.from({ length: 180 }, () => ({
-  x: Math.random(),
-  y: Math.random(),
-  r: Math.random() * 1.4 + 0.2,
-  o: Math.random() * 0.45 + 0.05,
-  twinkle: Math.random() * Math.PI * 2,
+// ── Star catalog: [ra_deg, dec_deg, magnitude, twinkle_phase] ────────
+const D2R = Math.PI / 180
+
+const NAMED_STARS = [
+  [101.3, -16.7, -1.46], [96.0, -52.7, -0.74], [213.9, 19.2, -0.05],
+  [279.2,  38.8,  0.03], [ 79.2,  46.0,  0.08], [ 78.6,  -8.2,  0.12],
+  [114.8,   5.2,  0.38], [ 24.4, -57.2,  0.46], [ 88.8,   7.4,  0.50],
+  [210.9, -60.4,  0.61], [297.7,   8.9,  0.77], [ 68.9,  16.5,  0.85],
+  [201.3, -11.2,  0.97], [247.4, -26.4,  1.06], [116.3,  28.0,  1.14],
+  [344.4, -29.6,  1.16], [310.4,  45.3,  1.25], [191.9, -59.7,  1.25],
+  [152.1,  12.0,  1.35], [104.7, -29.0,  1.50], [113.6,  31.9,  1.58],
+  [263.4, -37.1,  1.62], [187.8, -57.1,  1.63], [ 81.3,   6.3,  1.64],
+  [ 81.6,  28.6,  1.65], [138.3, -69.7,  1.68], [ 84.1,  -1.2,  1.70],
+  [ 85.2,  -1.9,  1.74], [193.5,  56.0,  1.76], [ 51.1,  49.9,  1.79],
+  [165.9,  61.8,  1.79], [107.1, -26.4,  1.83], [276.0, -34.4,  1.85],
+  [206.9,  49.3,  1.86], [252.2, -69.0,  1.92], [ 99.4,  16.4,  1.93],
+  [130.8, -54.7,  1.93], [306.4, -56.7,  1.94], [ 95.7, -18.0,  1.98],
+  [141.9,  -8.7,  2.00], [ 38.0,  89.3,  1.97], [ 31.8,  23.5,  2.00],
+  [ 10.9, -18.0,  2.04], [283.8, -26.3,  2.05], [ 86.9,  -9.7,  2.07],
+  [  2.1,  29.1,  2.07], [222.7,  74.2,  2.08], [263.7,  12.6,  2.08],
+  [ 56.9,  31.9,  2.07], [ 47.0,  41.0,  2.09], [177.3,  14.6,  2.14],
+  [120.9, -40.0,  2.25], [139.3, -59.3,  2.21], [204.9, -53.5,  2.29],
+  [218.9, -42.2,  2.30], [116.3,  28.0,  2.40], [163.1, -14.8,  2.59],
+].map(([ra, dec, mag], i) => ({ ra, dec, mag, phase: i * 1.618 }))
+
+// Faint background stars (golden-angle RA, uniform-sphere Dec)
+const FAINT_STARS = Array.from({ length: 120 }, (_, i) => ({
+  ra:    (i * 137.508) % 360,
+  dec:   Math.asin(2 * ((i * 0.618034) % 1) - 1) / D2R,
+  mag:   2.5 + (i % 30) / 12,
+  phase: i * 0.937,
 }))
+
+const ALL_STARS = [...NAMED_STARS, ...FAINT_STARS]
+
+// Default location: Los Angeles
+const DEFAULT_LOC = { lat: 34.05, lon: -118.24 }
+
+function julianDate(date) {
+  return date.getTime() / 86400000 + 2440587.5
+}
+
+function computeVisibleStars(loc, date, width, height) {
+  const jd = julianDate(date)
+  const T  = (jd - 2451545.0) / 36525
+  const gmst_deg = ((280.46061837 + 360.98564736629 * (jd - 2451545.0)
+    + T * T * 0.000387933 - T * T * T / 38710000) % 360 + 360) % 360
+  const lst = ((gmst_deg + loc.lon) % 360 + 360) % 360
+
+  const lat_r = loc.lat * D2R
+  const cx = width / 2, cy = height / 2
+  const skyR = Math.min(width, height) * 0.46
+
+  return ALL_STARS.flatMap(s => {
+    const ha_r  = ((lst - s.ra + 360) % 360) * D2R
+    const dec_r = s.dec * D2R
+    const alt = Math.asin(
+      Math.sin(dec_r) * Math.sin(lat_r) + Math.cos(dec_r) * Math.cos(lat_r) * Math.cos(ha_r)
+    ) / D2R
+    if (alt < -1) return []   // below horizon
+
+    const az_r = Math.atan2(
+      -Math.cos(dec_r) * Math.sin(ha_r),
+      Math.sin(dec_r) * Math.cos(lat_r) - Math.cos(dec_r) * Math.sin(lat_r) * Math.cos(ha_r)
+    )
+    const dist = Math.max(0, (90 - alt) / 90) * skyR
+    const sx = cx + dist * Math.sin(az_r)
+    const sy = cy - dist * Math.cos(az_r)
+    const r  = Math.max(0.35, 2.1 - s.mag * 0.45)
+    const baseAlpha = Math.max(0.06, Math.min(0.9, 0.95 - s.mag * 0.22))
+    return [{ sx, sy, r, baseAlpha, phase: s.phase }]
+  })
+}
 
 // Per-sound pulse shape config
 const SOUND_SHAPE = {
@@ -21,6 +87,7 @@ const SOUND_SHAPE = {
   birds: { shape: 'star',   points: 8 },
   wind:  { shape: 'halo',   petals: 0 },
   water: { shape: 'flower', petals: 5 },
+  fire:  { shape: 'flower', petals: 3 },
   earth: { shape: 'halo',   petals: 0 },
 }
 
@@ -95,10 +162,23 @@ function drawStar(ctx, cx, cy, r, points, rotation, alpha, glow, age) {
 // ─────────────────────────────────────────────────────────────────
 
 export default function Background({ anyOn, activeSounds }) {
-  const canvasRef = useRef(null)
-  const stateRef  = useRef({ anyOn, activeSounds })
+  const canvasRef      = useRef(null)
+  const stateRef       = useRef({ anyOn, activeSounds })
+  const locationRef    = useRef(DEFAULT_LOC)
+  const starsRef       = useRef([])
+  const lastStarCalc   = useRef(0)
+  const canvasSizeRef  = useRef({ w: 0, h: 0 })
 
   useEffect(() => { stateRef.current = { anyOn, activeSounds } }, [anyOn, activeSounds])
+
+  // Geolocation — fall back to LA silently
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(pos => {
+      locationRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude }
+      lastStarCalc.current = 0  // force recompute
+    }, () => {})
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -111,6 +191,8 @@ export default function Background({ anyOn, activeSounds }) {
     function resize() {
       canvas.width  = window.innerWidth
       canvas.height = window.innerHeight
+      canvasSizeRef.current = { w: canvas.width, h: canvas.height }
+      lastStarCalc.current = 0  // recompute on resize
     }
     resize()
     window.addEventListener('resize', resize)
@@ -150,12 +232,20 @@ export default function Background({ anyOn, activeSounds }) {
         ctx.fillRect(0, 0, width, height)
       }
 
-      // Stars
-      for (const s of STARS) {
-        const twink = Math.sin(t * 0.0008 + s.twinkle) * 0.15
+      // Recompute real star positions every 60s or on first draw
+      if (t - lastStarCalc.current > 60000 || starsRef.current.length === 0) {
+        const { w, h } = canvasSizeRef.current
+        starsRef.current = computeVisibleStars(locationRef.current, new Date(), w || width, h || height)
+        lastStarCalc.current = t
+      }
+
+      // Draw real sky stars
+      for (const s of starsRef.current) {
+        const twink = Math.sin(t * 0.0008 + s.phase) * 0.14
+        const alpha = Math.max(0, Math.min(1, s.baseAlpha + twink))
         ctx.beginPath()
-        ctx.arc(s.x * width, s.y * height, s.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255,255,255,${Math.max(0, s.o + twink)})`
+        ctx.arc(s.sx, s.sy, s.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`
         ctx.fill()
       }
 
