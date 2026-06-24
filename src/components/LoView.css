@@ -1,0 +1,122 @@
+.lo {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.lo__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lo__head {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: #333;
+  margin-bottom: 0.3rem;
+}
+
+.lo-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.lo-row__main {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lo-row__toggle {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: #444;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.04em;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.lo-row__toggle:hover { color: #888; }
+
+.lo-row__label {
+  width: 5ch;
+  color: #4a4a4a;
+  letter-spacing: 0.04em;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.lo-row__label--on { color: #bbb; }
+
+.lo-row__bar {
+  color: #2e2e2e;
+  letter-spacing: -0.06em;
+  font-size: 0.7rem;
+}
+
+.lo-row__param {
+  color: #3a3a3a;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+}
+
+.lo-row__unit {
+  font-size: 0.55rem;
+  color: #2e2e2e;
+  margin-left: 1px;
+}
+
+/* Sliders revealed when active */
+.lo-row__sliders {
+  padding-left: 6.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.lo-row__slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lo-row__slider-lbl {
+  font-size: 0.55rem;
+  color: #333;
+  letter-spacing: 0.1em;
+  width: 2.5ch;
+  flex-shrink: 0;
+}
+
+.lo-row__slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 1px;
+  background: #242424;
+  outline: none;
+  cursor: pointer;
+}
+
+.lo-row__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #666;
+  cursor: pointer;
+}
+
+.lo-row__slider::-webkit-slider-thumb:hover {
+  background: #aaa;
+}

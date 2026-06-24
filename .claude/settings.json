@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe log --oneline -5)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe remote -v)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe branch -a)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(i['Id'], i['DomainName'], [a['Items'][0] for a in [i['Aliases']] if a['Quantity']>0]\\) for i in d['DistributionList']['Items']]\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(json.loads\\(d['Policy']\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; [print\\(z['Id'], z['Name']\\) for z in json.load\\(sys.stdin\\)['HostedZones']]\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\)['Certificate']; print\\('Domain:', d['DomainName']\\); print\\('SANs:', d.get\\('SubjectAlternativeNames', []\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\)['Distribution']; print\\('ID:', d['Id']\\); print\\('Domain:', d['DomainName']\\); print\\('Status:', d['Status']\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d['ChangeInfo']['Status'], d['ChangeInfo']['Id']\\)\")",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe branch)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe log --oneline -3)",
+      "Skill(fewer-permission-prompts)",
+      "Skill(fewer-permission-prompts:*)",
+      "Bash(xargs ls -t)",
+      "Bash(npm show *)",
+      "Bash(git -C /Users/nathanmoomaw/Sites/vibe status)",
+      "Bash(sed -i '' 's/\\\\[\\\\] style like a physical unit/[x] style like a physical unit/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] give it a party\\\\/lo switch/[x] give it a party\\\\/lo switch/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] the pulsing is too fast/[x] the pulsing is too fast/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t wanna see the fake rivets/[x] i don'\\\\''t wanna see the fake rivets/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] i can'\\\\''t seem to adjust the slider in lo mode/[x] i can'\\\\''t seem to adjust the slider in lo mode/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] in party mode all sliders should be knobs/[x] in party mode all sliders should be knobs/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t see the design referencing the images/[x] i don'\\\\''t see the design referencing the images/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] give hover tips for which of the 2 knobs/[x] give hover tips for which of the 2 knobs/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] want to be able to drag around on this visual/[x] want to be able to drag around on this visual/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] make knobs 50% larger/[x] make knobs 50% larger/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] pulses should be more varied/[x] pulses should be more varied/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
+    ]
+  }
+}

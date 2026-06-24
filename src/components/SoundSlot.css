@@ -1,0 +1,83 @@
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0.7rem 0.5rem 0.6rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.018);
+  transition: border-color 0.4s, box-shadow 0.5s, background 0.4s;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+.slot:focus-visible {
+  border-color: rgba(255,255,255,0.15);
+}
+
+.slot:hover:not(.slot--on) {
+  background: rgba(255,255,255,0.03);
+}
+
+.slot--on {
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.035);
+  box-shadow: 0 0 20px var(--glow), inset 0 0 12px rgba(255,255,255,0.015);
+  animation: slot-pulse 7s ease-in-out infinite;
+}
+
+@keyframes slot-pulse {
+  0%, 100% { box-shadow: 0 0 14px var(--glow), inset 0 0 8px rgba(255,255,255,0.01); }
+  50%       { box-shadow: 0 0 32px var(--glow), inset 0 0 18px rgba(255,255,255,0.03); }
+}
+
+.slot__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.slot__label {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  color: rgba(255,255,255,0.28);
+  transition: color 0.3s;
+}
+
+.slot--on .slot__label {
+  color: var(--color);
+}
+
+.slot__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.slot__dot--on {
+  background: var(--color);
+  box-shadow: 0 0 8px var(--glow);
+}
+
+/* Knob area — slides in when active */
+.slot__knob-wrap {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease;
+  margin-top: 0;
+}
+
+.slot__knob-wrap--on {
+  max-height: 115px;
+  opacity: 1;
+  margin-top: 0.7rem;
+}
