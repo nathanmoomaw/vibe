@@ -45,7 +45,7 @@ export default function SoundSlot({
           onMixChange={handleVolume}
           onParamChange={handleParam}
           color={color}
-          size={46}
+          size={69}
           mixLabel={`${Math.round(volume * 100)}%`}
           paramLabel={param !== undefined ? fmtParam(param, paramLabel) : undefined}
           minParam={paramMin ?? 0}

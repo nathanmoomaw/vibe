@@ -42,9 +42,9 @@ export default function App() {
   const dispDragRef = useRef(false)
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
-  const activeColors = [
-    ...NOISE.filter(s => noise[s.id].on).map(s => s.glow),
-    ...TONES.filter(s => tones[s.id].on).map(s => s.glow),
+  const activeSounds = [
+    ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
+    ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
   ]
 
   // Radial spectrum visualizer
@@ -187,7 +187,7 @@ export default function App() {
 
   return (
     <>
-      {mode === 'party' && <Background anyOn={anyOn} activeColors={activeColors} />}
+      {mode === 'party' && <Background anyOn={anyOn} activeSounds={activeSounds} />}
 
       <div className={`shell shell--${mode}`}>
         <div className="unit">

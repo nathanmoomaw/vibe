@@ -77,7 +77,7 @@
 }
 
 .slot__knob-wrap--on {
-  max-height: 80px;
+  max-height: 115px;
   opacity: 1;
-  margin-top: 0.6rem;
+  margin-top: 0.7rem;
 }

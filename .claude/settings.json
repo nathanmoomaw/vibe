@@ -26,7 +26,9 @@
       "Bash(sed -i '' 's/\\\\[\\\\] in party mode all sliders should be knobs/[x] in party mode all sliders should be knobs/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
       "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t see the design referencing the images/[x] i don'\\\\''t see the design referencing the images/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
       "Bash(sed -i '' 's/\\\\[\\\\] give hover tips for which of the 2 knobs/[x] give hover tips for which of the 2 knobs/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
-      "Bash(sed -i '' 's/\\\\[\\\\] want to be able to drag around on this visual/[x] want to be able to drag around on this visual/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
+      "Bash(sed -i '' 's/\\\\[\\\\] want to be able to drag around on this visual/[x] want to be able to drag around on this visual/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] make knobs 50% larger/[x] make knobs 50% larger/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] pulses should be more varied/[x] pulses should be more varied/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
     ]
   }
 }

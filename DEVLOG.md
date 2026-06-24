@@ -1,5 +1,17 @@
 # DEVLOG — vibe
 
+## Jun 23 2026 — Larger knobs + varied pulse shapes
+
+- DualKnob size increased 50%: 46→69px; slot knob-wrap max-height updated
+- Background pulse shapes now vary by sound type:
+  - white/bell/wind/earth → halo (3-layer concentric rings, thick outer glow)
+  - pink/gong/water → flower (rose curve, 4/6/5 petals, rotates as it expands)
+  - blue/chime/birds → star (polygon, 6/5/8 points, rotates as it expands)
+- All shapes include a soft inner glow shell behind the main outline
+- Halos are now 3-layer with 22/10/3px strokes; flowers/stars add a blurred circle halo
+- Each ripple gets a random starting rotation + speed, reversed direction randomly
+- Shape type tracked per ripple; activeSounds now passed as {id, glow} objects
+
 ## Jun 23 2026 — Knob tips, display drag, full-card tap
 
 - DualKnob: `outerTip`/`innerTip` props — tooltip fades in on zone hover (vol / freq | rate)
