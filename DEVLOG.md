@@ -1,5 +1,16 @@
 # DEVLOG — vibe
 
+## Jun 24 2026 — I Ching elemental section with morphing trigrams
+
+- Separated "element" section (fire/wind/water/earth) from "tone" section (bell/chime/gong/birds)
+- Elemental sounds ordered per Fu Xi sequence: Li (fire 3) → Xun (wind 5) → Kan (water 6) → Kun (earth 8)
+- Each elemental slot shows an SVG trigram (3 horizontal bars, yang=solid / yin=broken) replacing the dot indicator
+- Trigram morphs continuously toward its I Ching complement as inner knob rotates:
+  - fire Li ☲ ↔ water Kan ☵ | wind Xun ☴ ↔ thunder Zhen ☳ | water Kan ☵ ↔ fire Li ☲ | earth Kun ☷ ↔ heaven Qian ☰
+- At 0°=base trigram, 180°=complement, 360°=back — cosine interpolation; each line's gap closes smoothly
+- Wind quality knob: breeze→gale→squall (Xun→Zhen) adjusts BPF frequency + LFO sweep depth live
+- Earth quality knob: loam→stone→crystal (Kun→Qian) adjusts LPF cutoff + sub oscillator mix live
+
 ## Jun 24 2026 — wind softened, water/fire types, real starfield, tip fixes
 
 - Wind: switched to pink noise (Voss-McCartney), added HPF+LPF chain, slower+narrower LFO → much more relaxing

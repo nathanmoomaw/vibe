@@ -9,6 +9,7 @@
 - [ ] Mic input for environment-reactive soundscape
 
 ## Completed
+- [x] I Ching elemental section: SVG trigrams + morphing via paired complements + elemental ordering
 - [x] Wind softened to pink noise + gentler synthesis
 - [x] Water: stream/rain/ocean via circular dual-knob type selector
 - [x] Fire sound: candle/campfire/bonfire via circular dual-knob type selector

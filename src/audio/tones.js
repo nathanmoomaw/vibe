@@ -104,7 +104,7 @@ function triggerBirds(ctx, out, vol) {
 
 // --- Continuous sources (wind, water, earth) ---
 
-function makeWind(ctx) {
+function makeWind(ctx, initialAngle = 0) {
   // Pink-ish noise (softer than white) via Voss-McCartney
   const len = Math.floor(ctx.sampleRate * 8)
   const buf = ctx.createBuffer(2, len, ctx.sampleRate)
@@ -124,25 +124,21 @@ function makeWind(ctx) {
   const src = ctx.createBufferSource()
   src.buffer = buf; src.loop = true
 
-  // Highpass removes sub rumble; lowpass cuts harshness
   const hpf = ctx.createBiquadFilter()
   hpf.type = 'highpass'; hpf.frequency.value = 60
 
   const lpf = ctx.createBiquadFilter()
   lpf.type = 'lowpass'; lpf.frequency.value = 2000; lpf.Q.value = 0.5
 
-  // Narrow bandpass for airy whisper quality
   const bpf = ctx.createBiquadFilter()
   bpf.type = 'bandpass'; bpf.frequency.value = 380; bpf.Q.value = 0.7
 
-  // Slow LFO: gentle wafting filter sweep
   const lfo = ctx.createOscillator()
   const lfoG = ctx.createGain()
   lfo.type = 'sine'; lfo.frequency.value = 0.04
   lfoG.gain.value = 180
   lfo.connect(lfoG); lfoG.connect(bpf.frequency)
 
-  // Very slow amplitude breath
   const aLfo = ctx.createOscillator()
   const aLfoG = ctx.createGain()
   aLfo.type = 'sine'; aLfo.frequency.value = 0.06
@@ -154,7 +150,19 @@ function makeWind(ctx) {
   src.connect(hpf); hpf.connect(lpf); lpf.connect(bpf); bpf.connect(gain)
   src.start(); lfo.start(); aLfo.start()
 
-  return { gain, filter: bpf, stop() { try { src.stop(); lfo.stop(); aLfo.stop() } catch(_){} } }
+  // quality: 0°=Xun breeze, 180°=Zhen squall, 360°=breeze again
+  function setParam(angle) {
+    const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+    const now = ctx.currentTime
+    bpf.frequency.setTargetAtTime(380 + t * 500, now, 0.15)
+    lfoG.gain.setTargetAtTime(180 + t * 440, now, 0.15)
+    lfo.frequency.setTargetAtTime(0.04 + t * 0.14, now, 0.15)
+    gain.gain.setTargetAtTime(0.45 + t * 0.22, now, 0.15)
+  }
+
+  setParam(initialAngle)
+
+  return { gain, filter: bpf, setParam, stop() { try { src.stop(); lfo.stop(); aLfo.stop() } catch(_){} } }
 }
 
 // ── Water types: stream (0°), rain (120°), ocean (240°) ──────────────
@@ -390,7 +398,7 @@ function makeFire(ctx, initialAngle = 0) {
   return { gain: master, setParam, stop() { candle.stop(); campfire.stop(); bonfire.stop() } }
 }
 
-function makeEarth(ctx) {
+function makeEarth(ctx, initialAngle = 0) {
   const len = Math.floor(ctx.sampleRate * 8)
   const buf = ctx.createBuffer(2, len, ctx.sampleRate)
   for (let ch = 0; ch < 2; ch++) {
@@ -418,7 +426,19 @@ function makeEarth(ctx) {
   sub.connect(subG); subG.connect(gain)
   src.start(); sub.start(); aLfo.start()
 
-  return { gain, filter: lpf, stop() { try { src.stop(); sub.stop(); aLfo.stop() } catch(_){} } }
+  // quality: 0°=Kun deep loam, 180°=Qian crystalline, 360°=loam again
+  function setParam(angle) {
+    const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+    const now = ctx.currentTime
+    lpf.frequency.setTargetAtTime(90 + t * 320, now, 0.2)
+    lpf.Q.setTargetAtTime(1.5 - t * 0.85, now, 0.2)
+    subG.gain.setTargetAtTime(0.4 * (1 - t * 0.82), now, 0.2)
+    aLfoG.gain.setTargetAtTime(0.2 * (1 - t * 0.6), now, 0.2)
+  }
+
+  setParam(initialAngle)
+
+  return { gain, filter: lpf, setParam, stop() { try { src.stop(); sub.stop(); aLfo.stop() } catch(_){} } }
 }
 
 // --- Public API ---
