@@ -36,10 +36,12 @@ export default function App() {
   const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
   const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20 })))
   const [dispDragging, setDispDragging] = useState(false)
+  const [dispFlashing, setDispFlashing] = useState(false)
 
-  const canvasRef = useRef(null)
-  const rafRef    = useRef(null)
-  const dispDragRef = useRef(false)
+  const canvasRef       = useRef(null)
+  const rafRef          = useRef(null)
+  const dispDragRef     = useRef(false)
+  const dispTotalMoved  = useRef(0)
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeSounds = [
@@ -95,18 +97,57 @@ export default function App() {
     return () => cancelAnimationFrame(rafRef.current)
   }, [anyOn])
 
-  // ── Circular display drag — controls all active sound knobs ──────
+  // ── Randomize all active sounds' parameters ───────────────────────
+  const randomizeActive = useCallback(() => {
+    setNoise(prev => {
+      const next = { ...prev }
+      for (const s of NOISE) {
+        if (!prev[s.id].on) continue
+        const newVol = Math.max(0.1, Math.min(1,
+          prev[s.id].volume + (Math.random() - 0.5) * 0.5))
+        const freqRange = s.filterMax - s.filterMin
+        const newFreq = Math.max(s.filterMin, Math.min(s.filterMax,
+          prev[s.id].freq + (Math.random() - 0.5) * freqRange * 0.5))
+        setNoiseVolume(s.id, newVol)
+        setNoiseFreq(s.id, newFreq)
+        next[s.id] = { ...prev[s.id], volume: newVol, freq: newFreq }
+      }
+      return next
+    })
+    setTones(prev => {
+      const next = { ...prev }
+      for (const s of TONES) {
+        if (!prev[s.id].on) continue
+        const newVol = Math.max(0.1, Math.min(1,
+          prev[s.id].volume + (Math.random() - 0.5) * 0.5))
+        setToneVolume(s.id, newVol)
+        let updates = { volume: newVol }
+        if (s.periodic) {
+          const rateRange = s.rateMax - s.rateMin
+          const newRate = Math.max(s.rateMin, Math.min(s.rateMax,
+            prev[s.id].rate + (Math.random() - 0.5) * rateRange * 0.5))
+          updates.rate = newRate
+        }
+        next[s.id] = { ...prev[s.id], ...updates }
+      }
+      return next
+    })
+  }, [])
+
+  // ── Circular display drag + tap ───────────────────────────────────
   const onDisplayDown = useCallback((e) => {
-    if (!anyOn) return
     dispDragRef.current = true
-    setDispDragging(true)
+    dispTotalMoved.current = 0
+    setDispDragging(anyOn)
     e.currentTarget.setPointerCapture(e.pointerId)
   }, [anyOn])
 
   const onDisplayMove = useCallback((e) => {
-    if (!dispDragRef.current) return
-    const dy = e.movementY   // up (neg) = vol up
-    const dx = e.movementX   // right (pos) = freq/rate up
+    dispTotalMoved.current += Math.abs(e.movementX) + Math.abs(e.movementY)
+    // Only start adjusting after crossing tap-vs-drag threshold
+    if (!dispDragRef.current || !anyOn || dispTotalMoved.current < 6) return
+    const dy = e.movementY
+    const dx = e.movementX
 
     setNoise(prev => {
       const next = { ...prev }
@@ -122,7 +163,6 @@ export default function App() {
       }
       return next
     })
-
     setTones(prev => {
       const next = { ...prev }
       for (const s of TONES) {
@@ -143,9 +183,15 @@ export default function App() {
   }, [anyOn])
 
   const onDisplayUp = useCallback(() => {
+    const wasTap = dispTotalMoved.current < 6
     dispDragRef.current = false
     setDispDragging(false)
-  }, [])
+    if (wasTap && anyOn) {
+      randomizeActive()
+      setDispFlashing(true)
+      setTimeout(() => setDispFlashing(false), 700)
+    }
+  }, [anyOn, randomizeActive])
 
   // ── Noise handlers ────────────────────────────────────────────────
   const toggleNoise = useCallback((id) => {
@@ -194,7 +240,7 @@ export default function App() {
 
           {/* Circular display — drag to control active knobs */}
           <div
-            className={`unit__display-ring${dispDragging ? ' unit__display-ring--drag' : ''}`}
+            className={`unit__display-ring${dispDragging ? ' unit__display-ring--drag' : ''}${dispFlashing ? ' unit__display-ring--flash' : ''}`}
             onPointerDown={onDisplayDown}
             onPointerMove={onDisplayMove}
             onPointerUp={onDisplayUp}

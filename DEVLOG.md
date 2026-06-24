@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Jun 23 2026 — Tap display to randomize
+
+- Tapping the circular display (vs dragging) detects via cumulative movement threshold (<6px)
+- On tap with sounds active: randomizes all active sounds' vol ±25% and freq/rate ±25% of range
+- Display ring flashes an expanding amber halo animation to confirm the tap
+- Drag logic unchanged; movement threshold gates drag from triggering on short taps
+
 ## Jun 23 2026 — Larger knobs + varied pulse shapes
 
 - DualKnob size increased 50%: 46→69px; slot knob-wrap max-height updated

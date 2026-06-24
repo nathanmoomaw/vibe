@@ -87,6 +87,20 @@
   pointer-events: none;
 }
 
+/* Tap-to-randomize flash */
+.unit__display-ring--flash {
+  animation: display-flash 0.7s ease-out forwards;
+}
+
+@keyframes display-flash {
+  0%   { box-shadow: 0 0 0 5px rgba(20,14,6,0.9), 0 0 0 7px rgba(255,220,100,0.6),
+                     0 0 0 9px rgba(15,10,4,0.85), inset 0 0 40px rgba(0,0,0,0.95); }
+  40%  { box-shadow: 0 0 0 5px rgba(20,14,6,0.9), 0 0 0 14px rgba(255,200,80,0.5),
+                     0 0 0 22px rgba(255,180,60,0.2), inset 0 0 30px rgba(0,0,0,0.8); }
+  100% { box-shadow: 0 0 0 5px rgba(20,14,6,0.9), 0 0 0 7px rgba(180,140,60,0.12),
+                     0 0 0 9px rgba(15,10,4,0.85), inset 0 0 40px rgba(0,0,0,0.95); }
+}
+
 /* Active drag state — brighten the bezel */
 .unit__display-ring--drag {
   border-color: rgba(255, 255, 255, 0.12);
