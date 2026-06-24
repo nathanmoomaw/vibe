@@ -307,7 +307,7 @@ export default function App() {
           {/* Nameplate */}
           <div className="unit__nameplate">
             <span className="unit__brand">vibe</span>
-            <span className="unit__model">frequency field</span>
+            <span className="unit__model">freq gen</span>
           </div>
 
           {/* Controls */}
