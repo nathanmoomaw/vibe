@@ -140,6 +140,36 @@
   transform: translateY(-50%);
 }
 
+/* Zone hover tips */
+.vk__tip {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.42rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(8, 8, 12, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  z-index: 20;
+}
+
+.vk__tip--inner {
+  top: auto;
+  bottom: -18px;
+}
+
+.vk__body[data-zone="outer"] .vk__tip--outer { opacity: 1; }
+.vk__body[data-zone="inner"] .vk__tip--inner { opacity: 1; }
+
 .vk__labels {
   display: flex;
   gap: 5px;

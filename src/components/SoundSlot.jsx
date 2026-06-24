@@ -20,19 +20,24 @@ export default function SoundSlot({
     <div
       className={`slot ${active ? 'slot--on' : ''}`}
       style={{ '--glow': glow, '--color': color }}
-      data-id={id}
+      role="button"
+      tabIndex={0}
+      aria-pressed={active}
+      aria-label={label}
+      onClick={onToggle}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onToggle()}
     >
-      <button
-        className="slot__toggle"
-        onClick={onToggle}
-        aria-pressed={active}
-        aria-label={label}
-      >
+      {/* Label + indicator — clicking anywhere on card toggles */}
+      <div className="slot__header">
         <span className="slot__label">{label}</span>
         <span className={`slot__dot ${active ? 'slot__dot--on' : ''}`} />
-      </button>
+      </div>
 
-      <div className={`slot__knob-wrap ${active ? 'slot__knob-wrap--on' : ''}`}>
+      {/* Knob — stop click propagation so dragging knob doesn't toggle */}
+      <div
+        className={`slot__knob-wrap ${active ? 'slot__knob-wrap--on' : ''}`}
+        onClick={e => e.stopPropagation()}
+      >
         <DualKnob
           mode={onParam ? 'dual' : 'single'}
           mixValue={volume}
@@ -45,6 +50,8 @@ export default function SoundSlot({
           paramLabel={param !== undefined ? fmtParam(param, paramLabel) : undefined}
           minParam={paramMin ?? 0}
           maxParam={paramMax ?? 1}
+          outerTip="vol"
+          innerTip={paramLabel ?? 'param'}
         />
       </div>
     </div>

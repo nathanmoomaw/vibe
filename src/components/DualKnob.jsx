@@ -17,6 +17,8 @@ export const DualKnob = memo(function DualKnob({
   maxParam = 1,
   mixLabel,
   paramLabel,
+  outerTip = 'vol',
+  innerTip = 'param',
   mode = 'dual', // 'dual' | 'single'
 }) {
   const knobRef = useRef(null)
@@ -140,6 +142,10 @@ export const DualKnob = memo(function DualKnob({
           <div className="vk__ghost-thumb" ref={ghostThumbRef}
             style={{ top: `${(1-(draggingZone.current==='inner' ? paramRatio : mixValue))*100}%` }} />
         </div>
+
+        {/* Zone hover tips */}
+        <div className="vk__tip vk__tip--outer">{outerTip}</div>
+        {mode === 'dual' && <div className="vk__tip vk__tip--inner">{innerTip}</div>}
       </div>
 
       <div className="vk__labels">

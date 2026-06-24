@@ -24,7 +24,9 @@
       "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t wanna see the fake rivets/[x] i don'\\\\''t wanna see the fake rivets/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
       "Bash(sed -i '' 's/\\\\[\\\\] i can'\\\\''t seem to adjust the slider in lo mode/[x] i can'\\\\''t seem to adjust the slider in lo mode/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
       "Bash(sed -i '' 's/\\\\[\\\\] in party mode all sliders should be knobs/[x] in party mode all sliders should be knobs/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
-      "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t see the design referencing the images/[x] i don'\\\\''t see the design referencing the images/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
+      "Bash(sed -i '' 's/\\\\[\\\\] i don'\\\\''t see the design referencing the images/[x] i don'\\\\''t see the design referencing the images/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] give hover tips for which of the 2 knobs/[x] give hover tips for which of the 2 knobs/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)",
+      "Bash(sed -i '' 's/\\\\[\\\\] want to be able to drag around on this visual/[x] want to be able to drag around on this visual/' /Users/nathanmoomaw/Sites/LIFE/dumps/vibe.md)"
     ]
   }
 }

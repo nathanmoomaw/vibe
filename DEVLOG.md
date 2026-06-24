@@ -1,5 +1,15 @@
 # DEVLOG — vibe
 
+## Jun 23 2026 — Knob tips, display drag, full-card tap
+
+- DualKnob: `outerTip`/`innerTip` props — tooltip fades in on zone hover (vol / freq | rate)
+  Made default behavior; SoundSlot passes "vol" + paramLabel automatically
+- Circular display: pointer drag now controls all active sounds simultaneously
+  ↕ (up/down) = volume, ↔ (left/right) = noise freq / tone rate
+  Drag hint label fades in when any sound is active; bezel brightens on drag
+- SoundSlot cards: entire card is now the click target (role=button, onClick)
+  DualKnob area stops propagation so knob drag doesn't accidentally toggle
+
 ## Jun 23 2026 — Polish pass: knobs, vintage design, fixes
 
 - Slowed ripple background: interval 1.8–5s, lifetime 9s (was 0.3–1.4s / 4s)

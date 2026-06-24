@@ -35,9 +35,11 @@ export default function App() {
   const [mode, setMode] = useState('party')
   const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
   const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20 })))
+  const [dispDragging, setDispDragging] = useState(false)
 
   const canvasRef = useRef(null)
-  const rafRef = useRef(null)
+  const rafRef    = useRef(null)
+  const dispDragRef = useRef(false)
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeColors = [
@@ -51,8 +53,7 @@ export default function App() {
     if (!canvas) return
     if (!anyOn) {
       cancelAnimationFrame(rafRef.current)
-      const ctx = canvas.getContext('2d')
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
       return
     }
     const analyser = getAnalyser()
@@ -84,7 +85,6 @@ export default function App() {
         ctx.stroke()
       }
 
-      // Center dot
       const avg = data.reduce((a, b) => a + b, 0) / data.length / 255
       ctx.beginPath()
       ctx.arc(cx, cy, minR * 0.35, 0, Math.PI * 2)
@@ -95,7 +95,59 @@ export default function App() {
     return () => cancelAnimationFrame(rafRef.current)
   }, [anyOn])
 
-  // Noise handlers
+  // ── Circular display drag — controls all active sound knobs ──────
+  const onDisplayDown = useCallback((e) => {
+    if (!anyOn) return
+    dispDragRef.current = true
+    setDispDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [anyOn])
+
+  const onDisplayMove = useCallback((e) => {
+    if (!dispDragRef.current) return
+    const dy = e.movementY   // up (neg) = vol up
+    const dx = e.movementX   // right (pos) = freq/rate up
+
+    setNoise(prev => {
+      const next = { ...prev }
+      for (const s of NOISE) {
+        if (!prev[s.id].on) continue
+        const newVol = Math.max(0, Math.min(1, prev[s.id].volume - dy / 400))
+        const freqRange = s.filterMax - s.filterMin
+        const newFreq = Math.max(s.filterMin, Math.min(s.filterMax,
+          prev[s.id].freq + dx / 500 * freqRange))
+        setNoiseVolume(s.id, newVol)
+        setNoiseFreq(s.id, newFreq)
+        next[s.id] = { ...prev[s.id], volume: newVol, freq: newFreq }
+      }
+      return next
+    })
+
+    setTones(prev => {
+      const next = { ...prev }
+      for (const s of TONES) {
+        if (!prev[s.id].on) continue
+        const newVol = Math.max(0, Math.min(1, prev[s.id].volume - dy / 400))
+        setToneVolume(s.id, newVol)
+        let updates = { volume: newVol }
+        if (s.periodic) {
+          const rateRange = s.rateMax - s.rateMin
+          const newRate = Math.max(s.rateMin, Math.min(s.rateMax,
+            prev[s.id].rate + dx / 500 * rateRange))
+          updates.rate = newRate
+        }
+        next[s.id] = { ...prev[s.id], ...updates }
+      }
+      return next
+    })
+  }, [anyOn])
+
+  const onDisplayUp = useCallback(() => {
+    dispDragRef.current = false
+    setDispDragging(false)
+  }, [])
+
+  // ── Noise handlers ────────────────────────────────────────────────
   const toggleNoise = useCallback((id) => {
     setNoise(prev => {
       const s = prev[id]
@@ -112,7 +164,7 @@ export default function App() {
     setNoise(prev => { setNoiseFreq(id, hz); return { ...prev, [id]: { ...prev[id], freq: hz } } })
   }, [])
 
-  // Tone handlers
+  // ── Tone handlers ─────────────────────────────────────────────────
   const toggleTone = useCallback((id) => {
     setTones(prev => {
       const s = prev[id]
@@ -140,18 +192,25 @@ export default function App() {
       <div className={`shell shell--${mode}`}>
         <div className="unit">
 
-          {/* Speaker display — circular radial spectrum */}
-          <div className="unit__display-ring">
-            <canvas
-              ref={canvasRef}
-              className="unit__viz"
-              width={200}
-              height={200}
-            />
+          {/* Circular display — drag to control active knobs */}
+          <div
+            className={`unit__display-ring${dispDragging ? ' unit__display-ring--drag' : ''}`}
+            onPointerDown={onDisplayDown}
+            onPointerMove={onDisplayMove}
+            onPointerUp={onDisplayUp}
+            onPointerCancel={onDisplayUp}
+            style={{ touchAction: 'none', cursor: anyOn ? (dispDragging ? 'grabbing' : 'crosshair') : 'default' }}
+          >
+            <canvas ref={canvasRef} className="unit__viz" width={200} height={200} />
             {!anyOn && <div className="unit__display-idle">vibe</div>}
           </div>
 
-          {/* Faceplate label */}
+          {/* Drag hint — shown below display */}
+          <div className={`unit__display-hint${anyOn ? ' unit__display-hint--on' : ''}`}>
+            ↔ freq &nbsp;·&nbsp; ↕ vol
+          </div>
+
+          {/* Nameplate */}
           <div className="unit__nameplate">
             <span className="unit__brand">vibe</span>
             <span className="unit__model">frequency field</span>
