@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Jun 23 2026 — v0.0.0 released to vibe.obfusco.us
+
+- Merged dev/v0 → main, tagged v0.0.0
+- Deployed to vibe.obfusco.us via GitHub Actions
+
 ## Jun 23 2026 — Tap display to randomize
 
 - Tapping the circular display (vs dragging) detects via cumulative movement threshold (<6px)

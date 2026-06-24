@@ -9,6 +9,7 @@
 - [ ] Mic input for environment-reactive soundscape
 
 ## Completed
+- [x] **v0.0.0** — live at vibe.obfusco.us
 - [x] Scaffold Vite + React app
 - [x] CI/CD: main → vibe.obfusco.us, dev/v0 → vibe-dev.obfusco.us
 - [x] Colored noise synthesis: white, pink, blue (with frequency control)
