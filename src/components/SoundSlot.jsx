@@ -13,7 +13,7 @@ export default function SoundSlot({
   id, label, color, glow,
   active, volume, param, paramLabel, paramMin, paramMax,
   onToggle, onVolume, onParam, innerCircular = false,
-  elemental = false, trigramLines = null,
+  elemental = false, trigramLines = null, trigramLabel = null,
 }) {
   const handleVolume = useCallback((v) => onVolume(Math.round(v * 100) / 100), [onVolume])
   const handleParam  = useCallback((v) => onParam?.(v), [onParam])
@@ -33,11 +33,17 @@ export default function SoundSlot({
       <div className="slot__header">
         <span className="slot__label">{label}</span>
         {elemental && trigramLines ? (
-          <Trigram
-            lines={trigramLines}
-            color={active ? color : 'rgba(255,255,255,0.15)'}
-            size={22}
-          />
+          <>
+            <Trigram
+              lines={trigramLines}
+              color={active ? color : 'rgba(255,255,255,0.15)'}
+              size={22}
+            />
+            <span className={`slot__trigram-lbl ${active ? 'slot__trigram-lbl--on' : ''}`}
+              style={active ? { '--color': color } : {}}>
+              {trigramLabel}
+            </span>
+          </>
         ) : (
           <span className={`slot__dot ${active ? 'slot__dot--on' : ''}`} />
         )}

@@ -67,6 +67,20 @@
   box-shadow: 0 0 8px var(--glow);
 }
 
+.slot__trigram-lbl {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.40rem;
+  letter-spacing: 0.16em;
+  text-transform: lowercase;
+  color: rgba(255,255,255,0.22);
+  transition: color 0.35s;
+}
+
+.slot__trigram-lbl--on {
+  color: var(--color);
+  opacity: 0.75;
+}
+
 /* Knob area — slides in when active */
 .slot__knob-wrap {
   overflow: hidden;

@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Jun 24 2026 — Richer background wash + trigram labels
+
+- Background: primary aura boosted (0.12 base + 0.34×energy vs 0.04 + 0.18); gradient radius widened to 0.72× max dimension
+- Added a slow orbiting secondary wash that drifts off-center and cycles through sound colors at a different rate (9s vs 3.5s), creating a residual color field across the whole canvas
+- Elemental slot labels: each trigram now shows its I Ching name (li / kan / xun / zhen / kun / qian) below the SVG; switches at the morph midpoint (morphT=0.5), lit in the element's color when on
+
 ## Jun 24 2026 — I Ching elemental section with morphing trigrams
 
 - Separated "element" section (fire/wind/water/earth) from "tone" section (bell/chime/gong/birds)

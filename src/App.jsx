@@ -35,6 +35,11 @@ function morphTrigram(base, pair, angle) {
   return base.map((b, i) => b + (pair[i] - b) * t)
 }
 
+function getTrigramLabel(s, angle) {
+  const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+  return (t < 0.5 ? s.trigram : s.pairTrigram).toLowerCase()
+}
+
 export const TONES = [
   { id: 'bell',  label: 'bell',  color: '#ffd166', glow: 'rgba(255,209,102,0.4)', periodic: true, rateDefault: 25, rateMin: 8,  rateMax: 90  },
   { id: 'chime', label: 'chime', color: '#ffe8a0', glow: 'rgba(255,232,160,0.4)', periodic: true, rateDefault: 10, rateMin: 3,  rateMax: 40  },
@@ -373,6 +378,7 @@ export default function App() {
                         innerCircular
                         elemental
                         trigramLines={morphTrigram(TRIGRAMS[s.trigram], TRIGRAMS[s.pairTrigram], tones[s.id].typeAngle)}
+                        trigramLabel={getTrigramLabel(s, tones[s.id].typeAngle)}
                         onToggle={() => toggleTone(s.id)}
                         onVolume={v => setToneVol(s.id, v)}
                         onParam={a => setToneTypeCb(s.id, a)}
