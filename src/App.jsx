@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { getAnalyser } from './audio/engine.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq } from './audio/noise.js'
-import { startTone, stopTone, setToneVolume } from './audio/tones.js'
+import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
 import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
@@ -17,15 +17,50 @@ export const NOISE = [
     filterDefault: 3500, filterMin: 500, filterMax: 10000 },
 ]
 
+// I Ching trigrams: [top, middle, bottom] 1=yang(solid), 0=yin(broken)
+const TRIGRAMS = {
+  Qian: [1, 1, 1],  // ☰ Heaven
+  Dui:  [0, 1, 1],  // ☱ Lake
+  Li:   [1, 0, 1],  // ☲ Fire
+  Zhen: [0, 0, 1],  // ☳ Thunder
+  Xun:  [1, 1, 0],  // ☴ Wind
+  Kan:  [0, 1, 0],  // ☵ Water
+  Gen:  [1, 0, 0],  // ☶ Mountain
+  Kun:  [0, 0, 0],  // ☷ Earth
+}
+
+// Cosine morph: 0°=base, 180°=pair, 360°=base
+function morphTrigram(base, pair, angle) {
+  const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+  return base.map((b, i) => b + (pair[i] - b) * t)
+}
+
 export const TONES = [
-  { id: 'bell',  label: 'bell',  color: '#ffd166', glow: 'rgba(255,209,102,0.4)', periodic: true,  rateDefault: 25, rateMin: 8,   rateMax: 90 },
-  { id: 'chime', label: 'chime', color: '#ffe8a0', glow: 'rgba(255,232,160,0.4)', periodic: true,  rateDefault: 10, rateMin: 3,   rateMax: 40 },
-  { id: 'gong',  label: 'gong',  color: '#ff9944', glow: 'rgba(255,153,68,0.4)',  periodic: true,  rateDefault: 55, rateMin: 20,  rateMax: 120 },
-  { id: 'birds', label: 'birds', color: '#88ee88', glow: 'rgba(136,238,136,0.4)', periodic: true,  rateDefault: 14, rateMin: 5,   rateMax: 60 },
-  { id: 'wind',  label: 'wind',  color: '#aaddcc', glow: 'rgba(170,221,204,0.4)', periodic: false },
-  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false },
-  { id: 'earth', label: 'earth', color: '#cc8855', glow: 'rgba(204,136,85,0.4)',  periodic: false },
+  { id: 'bell',  label: 'bell',  color: '#ffd166', glow: 'rgba(255,209,102,0.4)', periodic: true, rateDefault: 25, rateMin: 8,  rateMax: 90  },
+  { id: 'chime', label: 'chime', color: '#ffe8a0', glow: 'rgba(255,232,160,0.4)', periodic: true, rateDefault: 10, rateMin: 3,  rateMax: 40  },
+  { id: 'gong',  label: 'gong',  color: '#ff9944', glow: 'rgba(255,153,68,0.4)',  periodic: true, rateDefault: 55, rateMin: 20, rateMax: 120 },
+  { id: 'birds', label: 'birds', color: '#88ee88', glow: 'rgba(136,238,136,0.4)', periodic: true, rateDefault: 14, rateMin: 5,  rateMax: 60  },
+  // Elemental sounds — I Ching Fu Xi order: Li (3) → Xun (5) → Kan (6) → Kun (8)
+  { id: 'fire',  label: 'fire',  color: '#ff6633', glow: 'rgba(255,102,51,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Li',  pairTrigram: 'Kan'  },
+  { id: 'wind',  label: 'wind',  color: '#aaddcc', glow: 'rgba(170,221,204,0.4)', periodic: false, hasType: true, elemental: true, trigram: 'Xun', pairTrigram: 'Zhen' },
+  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kan', pairTrigram: 'Li'   },
+  { id: 'earth', label: 'earth', color: '#cc8855', glow: 'rgba(204,136,85,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kun', pairTrigram: 'Qian' },
 ]
+
+const WATER_TYPES = ['stream', 'rain', 'ocean']
+const FIRE_TYPES  = ['candle', 'campfire', 'bonfire']
+const WIND_TYPES  = ['breeze', 'gale', 'squall']
+const EARTH_TYPES = ['loam', 'stone', 'crystal']
+
+function getTypeName(id, angle) {
+  const a = ((angle % 360) + 360) % 360
+  const idx = a < 60 || a >= 300 ? 0 : a < 180 ? 1 : 2
+  if (id === 'water') return WATER_TYPES[idx]
+  if (id === 'fire')  return FIRE_TYPES[idx]
+  if (id === 'wind')  return WIND_TYPES[idx]
+  if (id === 'earth') return EARTH_TYPES[idx]
+  return undefined
+}
 
 function initState(slots, extra) {
   return Object.fromEntries(slots.map(s => [s.id, { on: false, volume: 0.5, ...extra(s) }]))
@@ -34,7 +69,7 @@ function initState(slots, extra) {
 export default function App() {
   const [mode, setMode] = useState('party')
   const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
-  const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20 })))
+  const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20, typeAngle: 0 })))
   const [dispDragging, setDispDragging] = useState(false)
   const [dispFlashing, setDispFlashing] = useState(false)
 
@@ -214,7 +249,13 @@ export default function App() {
   const toggleTone = useCallback((id) => {
     setTones(prev => {
       const s = prev[id]
-      s.on ? stopTone(id) : startTone(id, s.volume, s.rate)
+      const meta = TONES.find(t => t.id === id)
+      if (s.on) {
+        stopTone(id)
+      } else {
+        const param = meta?.hasType ? s.typeAngle : (meta?.periodic ? s.rate : null)
+        startTone(id, s.volume, param)
+      }
       return { ...prev, [id]: { ...s, on: !s.on } }
     })
   }, [])
@@ -228,6 +269,13 @@ export default function App() {
       const s = prev[id]
       if (s.on) { stopTone(id); startTone(id, s.volume, r) }
       return { ...prev, [id]: { ...s, rate: r } }
+    })
+  }, [])
+
+  const setToneTypeCb = useCallback((id, angle) => {
+    setTones(prev => {
+      setToneParam(id, angle)
+      return { ...prev, [id]: { ...prev[id], typeAngle: angle } }
     })
   }, [])
 
@@ -259,7 +307,7 @@ export default function App() {
           {/* Nameplate */}
           <div className="unit__nameplate">
             <span className="unit__brand">vibe</span>
-            <span className="unit__model">frequency field</span>
+            <span className="unit__model">freq gen</span>
           </div>
 
           {/* Controls */}
@@ -291,7 +339,7 @@ export default function App() {
                 <section className="unit__section">
                   <div className="unit__section-label">tone</div>
                   <div className="unit__grid unit__grid--4">
-                    {TONES.map(s => (
+                    {TONES.filter(s => !s.elemental).map(s => (
                       <SoundSlot
                         key={s.id} {...s}
                         active={tones[s.id].on}
@@ -303,6 +351,31 @@ export default function App() {
                         onToggle={() => toggleTone(s.id)}
                         onVolume={v => setToneVol(s.id, v)}
                         onParam={s.periodic ? (r => setToneRate(s.id, r)) : undefined}
+                      />
+                    ))}
+                  </div>
+                </section>
+
+                <div className="unit__divider" />
+
+                <section className="unit__section">
+                  <div className="unit__section-label">element</div>
+                  <div className="unit__grid unit__grid--4">
+                    {TONES.filter(s => s.elemental).map(s => (
+                      <SoundSlot
+                        key={s.id} {...s}
+                        active={tones[s.id].on}
+                        volume={tones[s.id].volume}
+                        param={tones[s.id].typeAngle}
+                        paramLabel={getTypeName(s.id, tones[s.id].typeAngle)}
+                        paramMin={0}
+                        paramMax={360}
+                        innerCircular
+                        elemental
+                        trigramLines={morphTrigram(TRIGRAMS[s.trigram], TRIGRAMS[s.pairTrigram], tones[s.id].typeAngle)}
+                        onToggle={() => toggleTone(s.id)}
+                        onVolume={v => setToneVol(s.id, v)}
+                        onParam={a => setToneTypeCb(s.id, a)}
                       />
                     ))}
                   </div>

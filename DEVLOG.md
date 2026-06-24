@@ -1,5 +1,26 @@
 # DEVLOG — vibe
 
+## Jun 24 2026 — I Ching elemental section with morphing trigrams
+
+- Separated "element" section (fire/wind/water/earth) from "tone" section (bell/chime/gong/birds)
+- Elemental sounds ordered per Fu Xi sequence: Li (fire 3) → Xun (wind 5) → Kan (water 6) → Kun (earth 8)
+- Each elemental slot shows an SVG trigram (3 horizontal bars, yang=solid / yin=broken) replacing the dot indicator
+- Trigram morphs continuously toward its I Ching complement as inner knob rotates:
+  - fire Li ☲ ↔ water Kan ☵ | wind Xun ☴ ↔ thunder Zhen ☳ | water Kan ☵ ↔ fire Li ☲ | earth Kun ☷ ↔ heaven Qian ☰
+- At 0°=base trigram, 180°=complement, 360°=back — cosine interpolation; each line's gap closes smoothly
+- Wind quality knob: breeze→gale→squall (Xun→Zhen) adjusts BPF frequency + LFO sweep depth live
+- Earth quality knob: loam→stone→crystal (Kun→Qian) adjusts LPF cutoff + sub oscillator mix live
+
+## Jun 24 2026 — wind softened, water/fire types, real starfield, tip fixes
+
+- Wind: switched to pink noise (Voss-McCartney), added HPF+LPF chain, slower+narrower LFO → much more relaxing
+- Water: 3 synthesis engines (stream / rain / ocean) crossfade via circular inner knob (0°→120°→240°→360°)
+- Fire: new sound — 3 engines (candle / campfire / bonfire) with same circular type-selector paradigm
+- Both water+fire use `setTargetAtTime` crossfade (50ms tau) for seamless blend between types
+- DualKnob: `innerCircular` prop — inner notch rotates full 360°, drag wraps without clamping
+- Starfield: replaced random star positions with real sky using RA/Dec→Alt/Az computation; 60 named stars + 120 faint; geolocation API (default: LA 34.05°N 118.24°W); updates every 60s
+- Tips fix: outer tip (was clipped by `overflow:hidden`) and inner tip (was covering value labels) both now positioned inside `vk__body` — outer at bottom of outer ring, inner centered on inner circle
+
 ## Jun 23 2026 — v0.0.0 released to vibe.obfusco.us
 
 - Merged dev/v0 → main, tagged v0.0.0

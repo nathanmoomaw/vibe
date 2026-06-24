@@ -104,40 +104,71 @@ function triggerBirds(ctx, out, vol) {
 
 // --- Continuous sources (wind, water, earth) ---
 
-function makeWind(ctx) {
+function makeWind(ctx, initialAngle = 0) {
+  // Pink-ish noise (softer than white) via Voss-McCartney
   const len = Math.floor(ctx.sampleRate * 8)
   const buf = ctx.createBuffer(2, len, ctx.sampleRate)
   for (let ch = 0; ch < 2; ch++) {
     const d = buf.getChannelData(ch)
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1
+    let b0=0, b1=0, b2=0, b3=0, b4=0
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1
+      b0 = 0.99886*b0 + w*0.0555179
+      b1 = 0.99332*b1 + w*0.0750759
+      b2 = 0.96900*b2 + w*0.1538520
+      b3 = 0.86650*b3 + w*0.3104856
+      b4 = 0.55000*b4 + w*0.5329522
+      d[i] = (b0 + b1 + b2 + b3 + b4) * 0.18
+    }
   }
   const src = ctx.createBufferSource()
   src.buffer = buf; src.loop = true
 
+  const hpf = ctx.createBiquadFilter()
+  hpf.type = 'highpass'; hpf.frequency.value = 60
+
+  const lpf = ctx.createBiquadFilter()
+  lpf.type = 'lowpass'; lpf.frequency.value = 2000; lpf.Q.value = 0.5
+
   const bpf = ctx.createBiquadFilter()
-  bpf.type = 'bandpass'; bpf.frequency.value = 700; bpf.Q.value = 0.4
+  bpf.type = 'bandpass'; bpf.frequency.value = 380; bpf.Q.value = 0.7
 
   const lfo = ctx.createOscillator()
   const lfoG = ctx.createGain()
-  lfo.type = 'sine'; lfo.frequency.value = 0.08
-  lfoG.gain.value = 400
+  lfo.type = 'sine'; lfo.frequency.value = 0.04
+  lfoG.gain.value = 180
   lfo.connect(lfoG); lfoG.connect(bpf.frequency)
 
   const aLfo = ctx.createOscillator()
   const aLfoG = ctx.createGain()
-  aLfo.frequency.value = 0.15; aLfoG.gain.value = 0.25
+  aLfo.type = 'sine'; aLfo.frequency.value = 0.06
+  aLfoG.gain.value = 0.10
   aLfo.connect(aLfoG)
 
-  const gain = ctx.createGain(); gain.gain.value = 0.65
+  const gain = ctx.createGain(); gain.gain.value = 0.45
   aLfoG.connect(gain.gain)
-  src.connect(bpf); bpf.connect(gain)
+  src.connect(hpf); hpf.connect(lpf); lpf.connect(bpf); bpf.connect(gain)
   src.start(); lfo.start(); aLfo.start()
 
-  return { gain, filter: bpf, stop() { try { src.stop(); lfo.stop(); aLfo.stop() } catch(_){} } }
+  // quality: 0°=Xun breeze, 180°=Zhen squall, 360°=breeze again
+  function setParam(angle) {
+    const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+    const now = ctx.currentTime
+    bpf.frequency.setTargetAtTime(380 + t * 500, now, 0.15)
+    lfoG.gain.setTargetAtTime(180 + t * 440, now, 0.15)
+    lfo.frequency.setTargetAtTime(0.04 + t * 0.14, now, 0.15)
+    gain.gain.setTargetAtTime(0.45 + t * 0.22, now, 0.15)
+  }
+
+  setParam(initialAngle)
+
+  return { gain, filter: bpf, setParam, stop() { try { src.stop(); lfo.stop(); aLfo.stop() } catch(_){} } }
 }
 
-function makeWater(ctx) {
-  const len = Math.floor(ctx.sampleRate * 6)
+// ── Water types: stream (0°), rain (120°), ocean (240°) ──────────────
+
+function makePinkNoiseBuf(ctx, sec = 6) {
+  const len = Math.floor(ctx.sampleRate * sec)
   const buf = ctx.createBuffer(2, len, ctx.sampleRate)
   for (let ch = 0; ch < 2; ch++) {
     const d = buf.getChannelData(ch)
@@ -150,28 +181,224 @@ function makeWater(ctx) {
       d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11; b6=w*0.115926
     }
   }
+  return buf
+}
+
+function makeWaterStream(ctx) {
   const src = ctx.createBufferSource()
-  src.buffer = buf; src.loop = true
+  src.buffer = makePinkNoiseBuf(ctx, 6); src.loop = true
 
-  const hpf = ctx.createBiquadFilter()
-  hpf.type = 'highpass'; hpf.frequency.value = 300
+  const bpf1 = ctx.createBiquadFilter()
+  bpf1.type = 'bandpass'; bpf1.frequency.value = 900; bpf1.Q.value = 1.4
 
-  const bpf = ctx.createBiquadFilter()
-  bpf.type = 'bandpass'; bpf.frequency.value = 1800; bpf.Q.value = 0.6
+  const bpf2 = ctx.createBiquadFilter()
+  bpf2.type = 'bandpass'; bpf2.frequency.value = 2000; bpf2.Q.value = 0.7
 
   const lfo = ctx.createOscillator()
   const lfoG = ctx.createGain()
-  lfo.frequency.value = 0.5; lfoG.gain.value = 700
-  lfo.connect(lfoG); lfoG.connect(bpf.frequency)
+  lfo.frequency.value = 0.9; lfoG.gain.value = 350
+  lfo.connect(lfoG); lfoG.connect(bpf1.frequency)
 
   const gain = ctx.createGain(); gain.gain.value = 0.7
+  src.connect(bpf1); src.connect(bpf2); bpf1.connect(gain); bpf2.connect(gain)
+  src.start(); lfo.start()
+
+  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+}
+
+function makeWaterRain(ctx) {
+  const src = ctx.createBufferSource()
+  src.buffer = makePinkNoiseBuf(ctx, 6); src.loop = true
+
+  const hpf = ctx.createBiquadFilter()
+  hpf.type = 'highpass'; hpf.frequency.value = 600
+
+  const bpf = ctx.createBiquadFilter()
+  bpf.type = 'bandpass'; bpf.frequency.value = 2800; bpf.Q.value = 0.5
+
+  const lfo = ctx.createOscillator()
+  const lfoG = ctx.createGain()
+  lfo.frequency.value = 0.45; lfoG.gain.value = 700
+  lfo.connect(lfoG); lfoG.connect(bpf.frequency)
+
+  const gain = ctx.createGain(); gain.gain.value = 0.65
   src.connect(hpf); hpf.connect(bpf); bpf.connect(gain)
   src.start(); lfo.start()
 
-  return { gain, filter: bpf, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
 }
 
-function makeEarth(ctx) {
+function makeWaterOcean(ctx) {
+  const src = ctx.createBufferSource()
+  src.buffer = makePinkNoiseBuf(ctx, 10); src.loop = true
+
+  const lpf = ctx.createBiquadFilter()
+  lpf.type = 'lowpass'; lpf.frequency.value = 650; lpf.Q.value = 0.9
+
+  // Very slow wave LFO
+  const lfo = ctx.createOscillator()
+  const lfoG = ctx.createGain()
+  lfo.type = 'sine'; lfo.frequency.value = 0.06; lfoG.gain.value = 0.45
+  lfo.connect(lfoG)
+
+  // Sub rumble
+  const subSrc = ctx.createBufferSource()
+  const subBuf = ctx.createBuffer(2, Math.floor(ctx.sampleRate * 4), ctx.sampleRate)
+  for (let ch = 0; ch < 2; ch++) { const d = subBuf.getChannelData(ch); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1 }
+  subSrc.buffer = subBuf; subSrc.loop = true
+  const subLpf = ctx.createBiquadFilter(); subLpf.type='lowpass'; subLpf.frequency.value=80
+  const subG = ctx.createGain(); subG.gain.value = 0.28
+
+  const gain = ctx.createGain(); gain.gain.value = 0.6
+  lfoG.connect(gain.gain)
+  src.connect(lpf); lpf.connect(gain)
+  subSrc.connect(subLpf); subLpf.connect(subG); subG.connect(gain)
+  src.start(); subSrc.start(); lfo.start()
+
+  return { gain, stop() { try { src.stop(); subSrc.stop(); lfo.stop() } catch(_){} } }
+}
+
+function typeWeights(angle, positions = [0, 120, 240]) {
+  const a = ((angle % 360) + 360) % 360
+  const w = positions.map(t => {
+    const dist = Math.min(Math.abs(a - t), 360 - Math.abs(a - t))
+    return Math.max(0, 1 - dist / 120)
+  })
+  const total = w.reduce((s, x) => s + x, 0) || 1
+  return w.map(x => x / total)
+}
+
+function makeWater(ctx, initialAngle = 0) {
+  const stream = makeWaterStream(ctx)
+  const rain   = makeWaterRain(ctx)
+  const ocean  = makeWaterOcean(ctx)
+
+  const master = ctx.createGain(); master.gain.value = 1
+  stream.gain.connect(master); rain.gain.connect(master); ocean.gain.connect(master)
+
+  function setParam(angle) {
+    const [ws, wr, wo] = typeWeights(angle)
+    const now = ctx.currentTime
+    stream.gain.gain.setTargetAtTime(ws * 0.85, now, 0.06)
+    rain.gain.gain.setTargetAtTime(wr * 0.85, now, 0.06)
+    ocean.gain.gain.setTargetAtTime(wo * 0.85, now, 0.06)
+  }
+
+  setParam(initialAngle)
+
+  return { gain: master, setParam, stop() { stream.stop(); rain.stop(); ocean.stop() } }
+}
+
+// ── Fire types: candle (0°), campfire (120°), bonfire (240°) ─────────
+
+function makeFireCandle(ctx) {
+  const len = Math.floor(ctx.sampleRate * 6)
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    let b0=0, b1=0
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1
+      b0 = 0.99886*b0 + w*0.0555179; b1 = 0.99332*b1 + w*0.0750759
+      d[i] = (b0 + b1) * 0.5
+    }
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true
+
+  const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=420; lpf.Q.value=0.9
+
+  const lfo = ctx.createOscillator(); const lfoG = ctx.createGain()
+  lfo.type='sine'; lfo.frequency.value=0.6; lfoG.gain.value=0.09
+  lfo.connect(lfoG)
+
+  const gain = ctx.createGain(); gain.gain.value = 0.22
+  lfoG.connect(gain.gain)
+  src.connect(lpf); lpf.connect(gain); src.start(); lfo.start()
+
+  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+}
+
+function makeFireCampfire(ctx) {
+  const len = Math.floor(ctx.sampleRate * 6)
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    let b0=0,b1=0,b2=0,b3=0
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1
+      b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759
+      b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856
+      d[i] = (b0+b1+b2+b3) * 0.25
+    }
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true
+
+  const bpf = ctx.createBiquadFilter(); bpf.type='bandpass'; bpf.frequency.value=620; bpf.Q.value=0.5
+  const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2200
+
+  const lfo = ctx.createOscillator(); const lfoG = ctx.createGain()
+  lfo.frequency.value=0.9; lfoG.gain.value=0.22; lfo.connect(lfoG)
+
+  const gain = ctx.createGain(); gain.gain.value = 0.48
+  lfoG.connect(gain.gain)
+  src.connect(bpf); bpf.connect(lpf); lpf.connect(gain); src.start(); lfo.start()
+
+  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+}
+
+function makeFireBonfire(ctx) {
+  const len = Math.floor(ctx.sampleRate * 6)
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    let b0=0,b1=0,b2=0,b3=0,b4=0
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1
+      b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759
+      b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856
+      b4=0.55000*b4+w*0.5329522
+      d[i] = (b0+b1+b2+b3+b4) * 0.22
+    }
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true
+
+  const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=1300; lpf.Q.value=1.1
+  const sub = ctx.createOscillator(); const subG = ctx.createGain()
+  sub.type='sine'; sub.frequency.value=52; subG.gain.value=0.28
+
+  const lfo = ctx.createOscillator(); const lfoG = ctx.createGain()
+  lfo.frequency.value=1.4; lfoG.gain.value=0.28; lfo.connect(lfoG)
+
+  const gain = ctx.createGain(); gain.gain.value = 0.68
+  lfoG.connect(gain.gain)
+  src.connect(lpf); lpf.connect(gain); sub.connect(subG); subG.connect(gain)
+  src.start(); lfo.start(); sub.start()
+
+  return { gain, stop() { try { src.stop(); lfo.stop(); sub.stop() } catch(_){} } }
+}
+
+function makeFire(ctx, initialAngle = 0) {
+  const candle   = makeFireCandle(ctx)
+  const campfire = makeFireCampfire(ctx)
+  const bonfire  = makeFireBonfire(ctx)
+
+  const master = ctx.createGain(); master.gain.value = 1
+  candle.gain.connect(master); campfire.gain.connect(master); bonfire.gain.connect(master)
+
+  function setParam(angle) {
+    const [wc, wm, wb] = typeWeights(angle)
+    const now = ctx.currentTime
+    candle.gain.gain.setTargetAtTime(wc * 0.85, now, 0.06)
+    campfire.gain.gain.setTargetAtTime(wm * 0.85, now, 0.06)
+    bonfire.gain.gain.setTargetAtTime(wb * 0.85, now, 0.06)
+  }
+
+  setParam(initialAngle)
+
+  return { gain: master, setParam, stop() { candle.stop(); campfire.stop(); bonfire.stop() } }
+}
+
+function makeEarth(ctx, initialAngle = 0) {
   const len = Math.floor(ctx.sampleRate * 8)
   const buf = ctx.createBuffer(2, len, ctx.sampleRate)
   for (let ch = 0; ch < 2; ch++) {
@@ -199,13 +426,25 @@ function makeEarth(ctx) {
   sub.connect(subG); subG.connect(gain)
   src.start(); sub.start(); aLfo.start()
 
-  return { gain, filter: lpf, stop() { try { src.stop(); sub.stop(); aLfo.stop() } catch(_){} } }
+  // quality: 0°=Kun deep loam, 180°=Qian crystalline, 360°=loam again
+  function setParam(angle) {
+    const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+    const now = ctx.currentTime
+    lpf.frequency.setTargetAtTime(90 + t * 320, now, 0.2)
+    lpf.Q.setTargetAtTime(1.5 - t * 0.85, now, 0.2)
+    subG.gain.setTargetAtTime(0.4 * (1 - t * 0.82), now, 0.2)
+    aLfoG.gain.setTargetAtTime(0.2 * (1 - t * 0.6), now, 0.2)
+  }
+
+  setParam(initialAngle)
+
+  return { gain, filter: lpf, setParam, stop() { try { src.stop(); sub.stop(); aLfo.stop() } catch(_){} } }
 }
 
 // --- Public API ---
 
 const TRIGGER_FN = { bell: triggerBell, chime: triggerChime, gong: triggerGong, birds: triggerBirds }
-const CONTINUOUS_FN = { wind: makeWind, water: makeWater, earth: makeEarth }
+const CONTINUOUS_FN = { wind: makeWind, water: makeWater, fire: makeFire, earth: makeEarth }
 
 const activeIntervals = {}
 const activeContinuous = {}
@@ -249,11 +488,16 @@ export function startTone(id, volume = 0.5, rateSec = null) {
   }
 
   if (CONTINUOUS_FN[id]) {
-    const src = CONTINUOUS_FN[id](ctx)
+    // rateSec doubles as initialAngle for typed sounds (water, fire)
+    const src = CONTINUOUS_FN[id](ctx, rateSec ?? 0)
     src.gain.gain.value = volume
     src.gain.connect(getMaster())
     activeContinuous[id] = src
   }
+}
+
+export function setToneParam(id, value) {
+  if (activeContinuous[id]?.setParam) activeContinuous[id].setParam(value)
 }
 
 export function stopTone(id) {

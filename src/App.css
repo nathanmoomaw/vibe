@@ -149,7 +149,7 @@
 .unit__model {
   font-size: 0.5rem;
   letter-spacing: 0.3em;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   color: rgba(255, 255, 255, 0.12);
 }
 

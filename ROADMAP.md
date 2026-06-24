@@ -9,6 +9,12 @@
 - [ ] Mic input for environment-reactive soundscape
 
 ## Completed
+- [x] I Ching elemental section: SVG trigrams + morphing via paired complements + elemental ordering
+- [x] Wind softened to pink noise + gentler synthesis
+- [x] Water: stream/rain/ocean via circular dual-knob type selector
+- [x] Fire sound: candle/campfire/bonfire via circular dual-knob type selector
+- [x] Real starfield: geolocation → RA/Dec→Alt/Az projection (default: LA)
+- [x] DualKnob tip positioning fixed (outer visible, inner no longer covers values)
 - [x] **v0.0.0** — live at vibe.obfusco.us
 - [x] Scaffold Vite + React app
 - [x] CI/CD: main → vibe.obfusco.us, dev/v0 → vibe-dev.obfusco.us
