@@ -1,3 +1,13 @@
+// URL-safe base64: avoids + / = chars that corrupt URL query params
+function b64enc(str) {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+function b64dec(str) {
+  let s = str.replace(/-/g, '+').replace(/_/g, '/')
+  while (s.length % 4) s += '='
+  return atob(s)
+}
+
 // Encode/decode current vibe settings as a compact URL-safe string
 
 export function encodeSettings(noise, tones, NOISE, TONES) {
@@ -14,12 +24,12 @@ export function encodeSettings(noise, tones, NOISE, TONES) {
         : 0
     return [v.on ? 1 : 0, Math.round(v.volume * 100), param]
   })
-  return btoa(JSON.stringify({ n, t }))
+  return b64enc(JSON.stringify({ n, t }))
 }
 
 export function decodeSettings(encoded, noise, tones, NOISE, TONES) {
   try {
-    const { n, t } = JSON.parse(atob(encoded))
+    const { n, t } = JSON.parse(b64dec(encoded))
     const nextNoise = { ...noise }
     const nextTones = { ...tones }
 

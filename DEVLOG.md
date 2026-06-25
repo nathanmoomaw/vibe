@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Jun 25 2026 — Fix QR codes (two bugs)
+
+- Bug 1: gradient pass read from composited canvas (dark bg = all alpha=255) so it colored the entire image, making the QR unreadable. Fix: read raw pixel data from the tmp canvas *before* compositing — only dark QR modules have alpha>0, so the iridescent color applies correctly.
+- Bug 2: `btoa()` produces `+`/`/`/`=` chars that corrupt URL query params when scanned. Fix: URL-safe base64 in settings.js (`+`→`-`, `/`→`_`, `=` removed, reversed on decode).
+- Also: name label was drawn at y=82% of canvas which overlapped the QR area. Fix: canvas grows by nameH pixels and name is rendered below the QR boundary.
+- Error correction lowered from 'H' (30%) to 'M' (15%) for shorter/denser QR.
+
 ## Jun 24 2026 — QR share modal
 
 - `◈` button in footer opens VibeQR modal (adapted from ribbon/PresetQR lineage)

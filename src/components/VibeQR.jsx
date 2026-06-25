@@ -80,44 +80,48 @@ function drawSpills(ctx, w, h, rng, gradient) {
 }
 
 export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
-  const QR  = 260
-  const sp  = 22
-  const SZ  = QR + sp * 2
+  const QR      = 260
+  const sp      = 22
+  const nameH   = name?.trim() ? 34 : 0   // extra canvas height below QR for name
+  const W       = QR + sp * 2
+  const H       = QR + sp * 2 + nameH
 
-  canvas.width  = SZ
-  canvas.height = SZ
+  canvas.width  = W
+  canvas.height = H
 
   const gradient = activeGlows.length >= 2
     ? gradientFromGlows(activeGlows)
     : DEFAULT_GRADIENT
 
   const tmp = document.createElement('canvas')
+  // Always use 'M' — 'H' (30% redundancy) makes QR denser and harder to scan
   QRCode.toCanvas(tmp, url, {
     width: QR, margin: 2,
     color: { dark: '#000000', light: '#00000000' },
-    errorCorrectionLevel: name ? 'H' : 'M',
+    errorCorrectionLevel: 'M',
   }, () => {
     const ctx = canvas.getContext('2d')
-    ctx.clearRect(0, 0, SZ, SZ)
+    ctx.clearRect(0, 0, W, H)
     ctx.fillStyle = '#010206'
-    ctx.fillRect(0, 0, SZ, SZ)
+    ctx.fillRect(0, 0, W, H)
 
     const rng = mulberry32(hashStr(url) ^ Math.floor(seed * 0x7fffffff))
 
-    // Spill behind
+    // Spill edges behind QR
     ctx.save(); ctx.translate(sp, sp); drawSpills(ctx, QR, QR, rng, gradient); ctx.restore()
 
-    // QR image
-    ctx.drawImage(tmp, sp, sp)
+    // Read raw QR pixel data BEFORE compositing with dark background.
+    // tmp has transparent light modules (alpha=0) and opaque dark modules (alpha=255).
+    // This is the correct way to identify which pixels are QR dark modules.
+    const rawCtx  = tmp.getContext('2d')
+    const rawData = rawCtx.getImageData(0, 0, QR, QR)
+    const d       = rawData.data
+    const off     = seed % 1
 
-    // Iridescent color pass
-    const imgData = ctx.getImageData(sp, sp, QR, QR)
-    const d = imgData.data
-    const off = seed % 1
     for (let y = 0; y < QR; y++) {
       for (let x = 0; x < QR; x++) {
         const i = (y * QR + x) * 4
-        if (d[i + 3] > 128) {
+        if (d[i + 3] > 128) {                 // dark module — apply gradient color
           const cx_ = x / QR - 0.5
           const cy_ = y / QR - 0.5
           const ang  = Math.atan2(cy_, cx_) / (Math.PI * 2) + 0.5
@@ -125,12 +129,20 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
           const t    = (ang * 0.55 + dist * 0.45 + (x + y) / (QR * 3) + off) % 1
           const [r, g, b] = lerpColor(gradient, t)
           d[i] = r; d[i+1] = g; d[i+2] = b; d[i+3] = 255
+        } else {                               // light module — stay transparent (shows bg)
+          d[i+3] = 0
         }
       }
     }
-    ctx.putImageData(imgData, sp, sp)
 
-    // Edge glow
+    // Render colored modules onto a temp canvas, then composite onto main
+    const coloredQR    = document.createElement('canvas')
+    coloredQR.width    = QR
+    coloredQR.height   = QR
+    coloredQR.getContext('2d').putImageData(rawData, 0, 0)
+    ctx.drawImage(coloredQR, sp, sp)
+
+    // Edge glow (screen composite so it doesn't obscure modules)
     const [r0, g0, b0] = lerpColor(gradient, 0)
     const [r1, g1, b1] = lerpColor(gradient, 0.5)
     ctx.save(); ctx.translate(sp, sp)
@@ -140,30 +152,27 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
     gGrad.addColorStop(1,   `rgba(${r0},${g0},${b0},0.14)`)
     ctx.globalCompositeOperation = 'screen'
     ctx.fillStyle = gGrad
-    ctx.fillRect(-sp, -sp, SZ, SZ)
+    ctx.fillRect(-sp, -sp, W, H)
     ctx.globalCompositeOperation = 'source-over'
     ctx.restore()
 
-    // Spill on top
+    // Spill on top (lighter)
     ctx.save(); ctx.translate(sp, sp)
-    ctx.globalAlpha = 0.35; drawSpills(ctx, QR, QR, rng, gradient); ctx.globalAlpha = 1
+    ctx.globalAlpha = 0.32; drawSpills(ctx, QR, QR, rng, gradient); ctx.globalAlpha = 1
     ctx.restore()
 
-    // Name label
-    if (name?.trim()) {
+    // Name label BELOW the QR in the extra space — never overlaps modules
+    if (name?.trim() && nameH > 0) {
       const txt = name.trim()
-      const fs  = Math.min(18, Math.max(9, Math.floor(SZ / (txt.length * 0.75))))
+      const fs  = Math.min(14, Math.max(9, Math.floor(W / (txt.length * 0.9))))
       ctx.font = `bold ${fs}px 'SF Mono','Fira Code',monospace`
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-      const tw = ctx.measureText(txt).width + 16
-      const ty = SZ * 0.82
-      ctx.fillStyle = 'rgba(1,2,6,0.75)'
-      ctx.fillRect(SZ/2 - tw/2, ty - fs*0.85, tw, fs*1.7)
+      const ty = sp + QR + nameH / 2
       const [cr, cg, cb] = lerpColor(gradient, 0.22)
       ctx.fillStyle = `rgb(${cr},${cg},${cb})`
-      ctx.shadowColor = `rgba(${cr},${cg},${cb},0.9)`
-      ctx.shadowBlur = 8
-      ctx.fillText(txt, SZ/2, ty)
+      ctx.shadowColor = `rgba(${cr},${cg},${cb},0.85)`
+      ctx.shadowBlur = 7
+      ctx.fillText(txt, W / 2, ty)
       ctx.shadowBlur = 0
     }
   })
