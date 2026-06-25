@@ -1,5 +1,16 @@
 # DEVLOG — vibe
 
+## Jun 25 2026 — 3D revolving celestial globe
+
+- Replaced flat azimuthal sky projection (updated every 60s) with a proper 3D celestial globe rendered every frame
+- Stars pre-computed as Cartesian unit-sphere coords from RA/Dec: (x,y,z) = (cos(dec)cos(ra), cos(dec)sin(ra), sin(dec))
+- Each frame: 3 rotation passes — sidereal (Z-axis, 1 rev/hour), slow wobble X (±3.1°, 240s), slow wobble Z (±2.2°, 416s)
+- Orthographic projection: camera at +Y looking −Y → screenX = cx + X·R, screenY = cy − Z·R
+- Globe radius = 1.62× half-diagonal so stars cover full canvas edge-to-edge; back hemisphere (y<0) culled
+- Limb darkening: stars fade as depth (y) approaches 0 (visible hemisphere edge), `alpha *= y^0.38`
+- Removed geolocation, computeVisibleStars, starsRef/lastStarCalc/canvasSizeRef (no longer needed)
+- 56 named bright stars + 130 golden-angle faint fill stars = 186 total; 60–100 visible at any moment
+
 ## Jun 25 2026 — Fix QR codes (two bugs)
 
 - Bug 1: gradient pass read from composited canvas (dark bg = all alpha=255) so it colored the entire image, making the QR unreadable. Fix: read raw pixel data from the tmp canvas *before* compositing — only dark QR modules have alpha>0, so the iridescent color applies correctly.
