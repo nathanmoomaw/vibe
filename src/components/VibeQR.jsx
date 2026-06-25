@@ -106,9 +106,7 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
     ctx.fillRect(0, 0, W, H)
 
     const rng = mulberry32(hashStr(url) ^ Math.floor(seed * 0x7fffffff))
-
-    // Spill edges behind QR
-    ctx.save(); ctx.translate(sp, sp); drawSpills(ctx, QR, QR, rng, gradient); ctx.restore()
+    void rng  // keep rng seeded for consistency even if unused
 
     // Read raw QR pixel data BEFORE compositing with dark background.
     // tmp has transparent light modules (alpha=0) and opaque dark modules (alpha=255).
@@ -154,11 +152,6 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
     ctx.fillStyle = gGrad
     ctx.fillRect(-sp, -sp, W, H)
     ctx.globalCompositeOperation = 'source-over'
-    ctx.restore()
-
-    // Spill on top (lighter)
-    ctx.save(); ctx.translate(sp, sp)
-    ctx.globalAlpha = 0.32; drawSpills(ctx, QR, QR, rng, gradient); ctx.globalAlpha = 1
     ctx.restore()
 
     // Name label BELOW the QR in the extra space — never overlaps modules

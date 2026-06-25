@@ -205,6 +205,41 @@ export default function App() {
     })
   }, [])
 
+  // ── Curated first-tap presets ─────────────────────────────────────
+  const randomizeFirst = useCallback(() => {
+    const presets = [
+      { n: [{id:'pink',v:0.55,f:800}],  t: [{id:'wind',v:0.48,p:30}, {id:'bell',v:0.3,p:32}] },
+      { n: [{id:'blue',v:0.5,f:3500}],  t: [{id:'water',v:0.52,p:0}, {id:'chime',v:0.32,p:11}] },
+      { n: [{id:'white',v:0.45,f:1800}], t: [{id:'earth',v:0.5,p:0}, {id:'gong',v:0.28,p:65}] },
+      { n: [{id:'pink',v:0.52,f:700}],  t: [{id:'fire',v:0.48,p:120},{id:'birds',v:0.3,p:18}] },
+      { n: [{id:'blue',v:0.48,f:4200}], t: [{id:'wind',v:0.5,p:85}, {id:'gong',v:0.26,p:72}] },
+    ]
+    const preset = presets[Math.floor(Math.random() * presets.length)]
+    setNoise(prev => {
+      const next = { ...prev }
+      for (const { id, v, f } of preset.n) {
+        startNoise(id, v, f)
+        next[id] = { ...prev[id], on: true, volume: v, freq: f }
+      }
+      return next
+    })
+    setTones(prev => {
+      const next = { ...prev }
+      const meta = (id) => TONES.find(t => t.id === id)
+      for (const { id, v, p } of preset.t) {
+        const m = meta(id)
+        const param = m?.hasType ? p : (m?.periodic ? p : null)
+        startTone(id, v, param)
+        if (m?.hasType) next[id] = { ...prev[id], on: true, volume: v, typeAngle: p }
+        else if (m?.periodic) next[id] = { ...prev[id], on: true, volume: v, rate: p }
+        else next[id] = { ...prev[id], on: true, volume: v }
+      }
+      return next
+    })
+    setDispFlashing(true)
+    setTimeout(() => setDispFlashing(false), 700)
+  }, [])
+
   // ── Circular display drag + tap ───────────────────────────────────
   const onDisplayDown = useCallback((e) => {
     dispDragRef.current = true
@@ -261,8 +296,10 @@ export default function App() {
       randomizeActive()
       setDispFlashing(true)
       setTimeout(() => setDispFlashing(false), 700)
+    } else if (wasTap && !anyOn) {
+      randomizeFirst()
     }
-  }, [anyOn, randomizeActive])
+  }, [anyOn, randomizeActive, randomizeFirst])
 
   // ── Noise handlers ────────────────────────────────────────────────
   const toggleNoise = useCallback((id) => {

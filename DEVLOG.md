@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Jun 25 2026 — QR streak fix + first-tap preset
+
+- Removed spill drip streaks from QR modal (both behind and on top drawSpills calls removed)
+- First tap on the circular display when no sounds are active now starts a curated pleasant preset:
+  5 combos (e.g. pink+wind+bell, blue+water+chime, white+earth+gong, pink+fire+birds, blue+wind+gong);
+  one picked at random, sounds started, display flashes to confirm
+
 ## Jun 25 2026 — 3D revolving celestial globe
 
 - Replaced flat azimuthal sky projection (updated every 60s) with a proper 3D celestial globe rendered every frame
