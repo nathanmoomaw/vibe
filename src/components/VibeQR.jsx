@@ -106,7 +106,13 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
     ctx.fillRect(0, 0, W, H)
 
     const rng = mulberry32(hashStr(url) ^ Math.floor(seed * 0x7fffffff))
-    void rng  // keep rng seeded for consistency even if unused
+
+    // Spill streaks clipped to QR boundary — no bleed outside
+    ctx.save()
+    ctx.translate(sp, sp)
+    ctx.beginPath(); ctx.rect(0, 0, QR, QR); ctx.clip()
+    drawSpills(ctx, QR, QR, rng, gradient)
+    ctx.restore()
 
     // Read raw QR pixel data BEFORE compositing with dark background.
     // tmp has transparent light modules (alpha=0) and opaque dark modules (alpha=255).
