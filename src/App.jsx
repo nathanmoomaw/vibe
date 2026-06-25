@@ -6,6 +6,8 @@ import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
 import ModeSwitch from './components/ModeSwitch.jsx'
+import { VibeQR } from './components/VibeQR.jsx'
+import { encodeSettings, decodeSettings } from './utils/settings.js'
 import './App.css'
 
 export const NOISE = [
@@ -77,6 +79,7 @@ export default function App() {
   const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20, typeAngle: 0 })))
   const [dispDragging, setDispDragging] = useState(false)
   const [dispFlashing, setDispFlashing] = useState(false)
+  const [showQR, setShowQR] = useState(false)
 
   const canvasRef       = useRef(null)
   const rafRef          = useRef(null)
@@ -88,6 +91,34 @@ export default function App() {
     ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
     ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
   ]
+
+  // Decode settings from URL on first load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const encoded = params.get('v')
+    if (!encoded) return
+    setNoise(n => {
+      setTones(t => {
+        const decoded = decodeSettings(encoded, n, t, NOISE, TONES)
+        if (!decoded) return t
+        // Start any sounds that are on in the decoded state
+        NOISE.forEach(s => {
+          if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].freq)
+        })
+        TONES.forEach(s => {
+          const ds = decoded.tones[s.id]
+          if (ds.on) {
+            const param = s.hasType ? ds.typeAngle : (s.periodic ? ds.rate : null)
+            startTone(s.id, ds.volume, param)
+          }
+        })
+        setTimeout(() => setNoise(() => decoded.noise), 0)
+        return decoded.tones
+      })
+      return n
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Radial spectrum visualizer
   useEffect(() => {
@@ -403,9 +434,21 @@ export default function App() {
           {/* Footer */}
           <div className="unit__foot">
             <ModeSwitch mode={mode} onChange={setMode} />
+            <button className="unit__qr-btn" onClick={() => setShowQR(true)} title="Share / QR code">
+              ◈
+            </button>
           </div>
         </div>
       </div>
+
+      {showQR && (
+        <VibeQR
+          baseUrl={`${window.location.origin}${window.location.pathname}?v=${encodeSettings(noise, tones, NOISE, TONES)}`}
+          name={new URLSearchParams(window.location.search).get('p') || ''}
+          activeSounds={activeSounds}
+          onClose={() => setShowQR(false)}
+        />
+      )}
     </>
   )
 }

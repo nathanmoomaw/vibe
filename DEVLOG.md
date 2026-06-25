@@ -1,5 +1,15 @@
 # DEVLOG — vibe
 
+## Jun 24 2026 — QR share modal
+
+- `◈` button in footer opens VibeQR modal (adapted from ribbon/PresetQR lineage)
+- Settings encoded as compact base64 JSON (noise: on/vol/freq; tones: on/vol/typeAngle|rate) appended to URL as `?v=`
+- Iridescent QR canvas: swirling spiral gradient using active sound glow colors (falls back to deep-space palette); spill drip edges; edge glow; name label burned into QR
+- Name input updates QR live; name added to URL as `?p=`; `⚡` button reshuffles gradient
+- Copy link / save PNG actions
+- On page load: if `?v=` present in URL, decodes settings and starts matching sounds automatically
+- `src/utils/settings.js` — encodeSettings / decodeSettings utilities
+
 ## Jun 24 2026 — Richer background wash + trigram labels
 
 - Background: primary aura boosted (0.12 base + 0.34×energy vs 0.04 + 0.18); gradient radius widened to 0.72× max dimension
