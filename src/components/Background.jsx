@@ -218,17 +218,29 @@ export default function Background({ anyOn, activeSounds }) {
       ctx.fillStyle = '#010206'
       ctx.fillRect(0, 0, width, height)
 
-      // Center aura
+      // Primary center aura — stronger intensity
       if (anyOn && activeSounds.length) {
-        const auraR = Math.max(width, height) * 0.55
-        const s = activeSounds[Math.floor(t / 4000) % activeSounds.length]
+        const s = activeSounds[Math.floor(t / 3500) % activeSounds.length]
+        const a = (0.12 + energy * 0.34).toFixed(3)
+        const auraR = Math.max(width, height) * 0.72
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, auraR)
-        const a = (0.04 + energy * 0.18).toFixed(3)
-        const c = s.glow.replace(/[\d.]+\)$/, `${a})`)
-        grad.addColorStop(0, c)
-        grad.addColorStop(0.5, s.glow.replace(/[\d.]+\)$/, `${(a * 0.3).toFixed(3)})`))
-        grad.addColorStop(1, 'rgba(0,0,0,0)')
+        grad.addColorStop(0,   s.glow.replace(/[\d.]+\)$/, `${a})`))
+        grad.addColorStop(0.5, s.glow.replace(/[\d.]+\)$/, `${(a * 0.38).toFixed(3)})`))
+        grad.addColorStop(1,   'rgba(0,0,0,0)')
         ctx.fillStyle = grad
+        ctx.fillRect(0, 0, width, height)
+
+        // Slow orbiting secondary wash — drifts off-center, cycles sounds at different rate
+        const s2 = activeSounds[Math.floor(t / 9000) % activeSounds.length]
+        const θ  = t * 0.000048
+        const offX = cx + Math.cos(θ) * width * 0.18
+        const offY = cy + Math.sin(θ) * height * 0.14
+        const a2 = (0.06 + energy * 0.14).toFixed(3)
+        const grad2 = ctx.createRadialGradient(offX, offY, 0, offX, offY, Math.max(width, height) * 0.92)
+        grad2.addColorStop(0,   s2.glow.replace(/[\d.]+\)$/, `${a2})`))
+        grad2.addColorStop(0.55, s2.glow.replace(/[\d.]+\)$/, `${(a2 * 0.22).toFixed(3)})`))
+        grad2.addColorStop(1,   'rgba(0,0,0,0)')
+        ctx.fillStyle = grad2
         ctx.fillRect(0, 0, width, height)
       }
 
