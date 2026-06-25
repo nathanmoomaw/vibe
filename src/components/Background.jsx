@@ -50,8 +50,9 @@ const STAR_3D = [...RAW_STARS, ...FAINT_RAW].map(([ra, dec, mag], i) => {
     x: Math.cos(dr) * Math.cos(rr),
     y: Math.cos(dr) * Math.sin(rr),
     z: Math.sin(dr),
-    r: Math.max(0.35, 2.1 - mag * 0.45),
-    baseAlpha: Math.max(0.06, Math.min(0.88, 0.92 - mag * 0.21)),
+    r: Math.max(0.55, 2.7 - mag * 0.42),          // larger dots
+    baseAlpha: Math.max(0.14, Math.min(1.0, 1.08 - mag * 0.20)), // brighter
+    glow: mag < 1.0,                                // bright stars get a halo
     phase: (i < RAW_STARS.length ? i * 1.618 : i * 0.937),
   }
 })
@@ -248,12 +249,20 @@ export default function Background({ anyOn, activeSounds }) {
         // Cull off-screen with small margin
         if (sx < -3 || sx > width + 3 || sy < -3 || sy > height + 3) continue
 
-        // Limb darkening: stars near the horizon of the visible hemisphere fade out
-        const limbFade = Math.pow(y3, 0.38)
+        // Limb darkening: reduced fade so edge stars stay visible
+        const limbFade = Math.pow(y3, 0.20)
 
-        const twink = Math.sin(t * 0.0008 + s.phase) * 0.12
+        const twink = Math.sin(t * 0.0008 + s.phase) * 0.16
         const alpha = Math.max(0, Math.min(1, (s.baseAlpha + twink) * limbFade))
-        if (alpha < 0.018) continue
+        if (alpha < 0.01) continue
+
+        // Glow halo for bright stars
+        if (s.glow) {
+          ctx.beginPath()
+          ctx.arc(sx, sy, s.r * 2.8, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(220,230,255,${(alpha * 0.18).toFixed(3)})`
+          ctx.fill()
+        }
 
         ctx.beginPath()
         ctx.arc(sx, sy, s.r, 0, Math.PI * 2)

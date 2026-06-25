@@ -10,6 +10,40 @@ import { VibeQR } from './components/VibeQR.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
 import './App.css'
 
+// ── Planetary Cousto frequencies (Cosmic Octave, orbital period → Hz via 2ⁿ) ──
+const PLANETS = [
+  { name: 'Sun',     symbol: '☉', freq: 126.22 },
+  { name: 'Moon',    symbol: '☽', freq: 210.42 },
+  { name: 'Mercury', symbol: '☿', freq: 141.27 },
+  { name: 'Venus',   symbol: '♀', freq: 221.23 },
+  { name: 'Mars',    symbol: '♂', freq: 144.72 },
+  { name: 'Jupiter', symbol: '♃', freq: 183.58 },
+  { name: 'Saturn',  symbol: '♄', freq: 147.85 },
+  { name: 'Uranus',  symbol: '♅', freq: 207.36 },
+  { name: 'Neptune', symbol: '♆', freq: 211.44 },
+]
+
+// Mean ecliptic longitude from J2000.0 (Jan 1.5, 2000) using mean motion
+const J2000_ORBITS = {
+  Sun: { L0: 280.460, rate: 0.9856474 }, Moon: { L0: 218.316, rate: 13.176396 },
+  Mercury: { L0: 252.250, rate: 4.092317 }, Venus: { L0: 181.979, rate: 1.602130 },
+  Mars: { L0: 355.453, rate: 0.524039 }, Jupiter: { L0: 34.396, rate: 0.083091 },
+  Saturn: { L0: 50.066, rate: 0.033460 }, Uranus: { L0: 314.055, rate: 0.011733 },
+  Neptune: { L0: 304.349, rate: 0.005996 },
+}
+function eclipticLon(name) {
+  const d = Date.now() / 86400000 - 10957.5  // days since J2000.0
+  const o = J2000_ORBITS[name]
+  return ((o.L0 + o.rate * d) % 360 + 360) % 360
+}
+
+// Octave-invariant frequency proximity (cents deviation, mod 1200)
+function planetFade(noiseFreq, planetFreq) {
+  const logR = Math.log2(noiseFreq / planetFreq)
+  const centsDev = Math.abs(logR - Math.round(logR)) * 1200
+  return Math.max(0, 1 - centsDev / 280)
+}
+
 export const NOISE = [
   { id: 'white', label: 'white', color: '#d4d4d4', glow: 'rgba(212,212,212,0.35)',
     filterDefault: 2000, filterMin: 200, filterMax: 8000 },
@@ -85,6 +119,8 @@ export default function App() {
   const rafRef          = useRef(null)
   const dispDragRef     = useRef(false)
   const dispTotalMoved  = useRef(0)
+  const noiseRef        = useRef(noise)
+  useEffect(() => { noiseRef.current = noise }, [noise])
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeSounds = [
@@ -163,6 +199,34 @@ export default function App() {
       ctx.arc(cx, cy, minR * 0.35, 0, Math.PI * 2)
       ctx.fillStyle = `rgba(255,255,255,${0.05 + avg * 0.12})`
       ctx.fill()
+
+      // ── Planetary symbols — fade in when a noise frequency matches a Cousto planet freq ──
+      const activeFreqs = NOISE
+        .filter(s => noiseRef.current[s.id]?.on)
+        .map(s => noiseRef.current[s.id].freq)
+
+      if (activeFreqs.length > 0) {
+        for (const p of PLANETS) {
+          const fade = Math.max(...activeFreqs.map(f => planetFade(f, p.freq)))
+          if (fade < 0.02) continue
+
+          const angle = (eclipticLon(p.name) * Math.PI / 180) - Math.PI / 2
+          const pr = maxR + 9
+          const px = cx + Math.cos(angle) * pr
+          const py = cy + Math.sin(angle) * pr
+
+          ctx.save()
+          ctx.globalAlpha = fade * 0.9
+          ctx.shadowColor = 'rgba(255,200,80,0.9)'
+          ctx.shadowBlur = 5
+          ctx.font = `bold ${9 + Math.round(fade * 4)}px serif`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillStyle = '#ffd080'
+          ctx.fillText(p.symbol, px, py)
+          ctx.restore()
+        }
+      }
     }
     draw()
     return () => cancelAnimationFrame(rafRef.current)

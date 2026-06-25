@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Jun 25 2026 — Brighter stars + planetary visualizer overlay
+
+- Globe stars: radius 2.7−0.42m (was 2.1−0.45m), alpha 1.08−0.20m (was 0.92−0.21m), limb fade power 0.20 (was 0.38), twinkle ±0.16 (was ±0.12); bright stars (mag<1) get a soft glow halo
+- Planetary symbols (☉☽☿♀♂♃♄♅♆) fade onto the edge of the circular frequency visualizer when any active noise frequency is harmonically close to a Cousto planetary frequency (octave-invariant, ±280 cents)
+- Symbols positioned at the planet's current ecliptic longitude (mean motion from J2000.0 + live clock)
+- Source: tone_science memory (Cousto Cosmic Octave frequencies); Sun=126.22 Hz, Moon=210.42, Mercury=141.27, Venus=221.23, Mars=144.72, Jupiter=183.58, Saturn=147.85, Uranus=207.36, Neptune=211.44
+
 ## Jun 25 2026 — QR streak fix + first-tap preset
 
 - Removed spill drip streaks from QR modal (both behind and on top drawSpills calls removed)
