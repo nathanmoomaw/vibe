@@ -1,6 +1,18 @@
 # MYTHOS — vibe
 
-Relaxation, meditation, focus: VIBE
+## The Six States
+
+**calming · relaxing · focussing · meditating · dreaming · floating**
+
+These are what VIBE is for. Not ambient music. Not noise generation. *State induction.*
+
+Each state has a character:
+- **calming** — tension releasing, like a warm room after cold air
+- **relaxing** — body unwinding, breath slowing, the next thought arriving later
+- **focussing** — a narrow cone of attention, background dissolved
+- **meditating** — presence without content, awareness without object
+- **dreaming** — the threshold state, hypnagogic, loosely associative
+- **floating** — weightless, unmoored from time, the body forgotten
 
 VIBE makes noise to disappear into.
 
