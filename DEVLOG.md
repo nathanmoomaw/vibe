@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Jun 26 2026 — v0.1.0 released to vibe.obfusco.us
+
+- Merged dev/v0 → main, tagged v0.1.0
+- Includes: fire sound, water/fire types, gentler wind, real celestial globe, I Ching elemental section, planetary frequency visualizer, QR share modal, first-tap presets, and more
+
 ## Jun 25 2026 — Brighter stars + planetary visualizer overlay
 
 - Globe stars: radius 2.7−0.42m (was 2.1−0.45m), alpha 1.08−0.20m (was 0.92−0.21m), limb fade power 0.20 (was 0.38), twinkle ±0.16 (was ±0.12); bright stars (mag<1) get a soft glow halo
