@@ -1,5 +1,52 @@
 # DEVLOG — vibe
 
+## Jun 26 2026 — v0.1.0 released to vibe.obfusco.us
+
+- Merged dev/v0 → main, tagged v0.1.0
+- Includes: fire sound, water/fire types, gentler wind, real celestial globe, I Ching elemental section, planetary frequency visualizer, QR share modal, first-tap presets, and more
+
+## Jun 25 2026 — Brighter stars + planetary visualizer overlay
+
+- Globe stars: radius 2.7−0.42m (was 2.1−0.45m), alpha 1.08−0.20m (was 0.92−0.21m), limb fade power 0.20 (was 0.38), twinkle ±0.16 (was ±0.12); bright stars (mag<1) get a soft glow halo
+- Planetary symbols (☉☽☿♀♂♃♄♅♆) fade onto the edge of the circular frequency visualizer when any active noise frequency is harmonically close to a Cousto planetary frequency (octave-invariant, ±280 cents)
+- Symbols positioned at the planet's current ecliptic longitude (mean motion from J2000.0 + live clock)
+- Source: tone_science memory (Cousto Cosmic Octave frequencies); Sun=126.22 Hz, Moon=210.42, Mercury=141.27, Venus=221.23, Mars=144.72, Jupiter=183.58, Saturn=147.85, Uranus=207.36, Neptune=211.44
+
+## Jun 25 2026 — QR streak fix + first-tap preset
+
+- Removed spill drip streaks from QR modal (both behind and on top drawSpills calls removed)
+- First tap on the circular display when no sounds are active now starts a curated pleasant preset:
+  5 combos (e.g. pink+wind+bell, blue+water+chime, white+earth+gong, pink+fire+birds, blue+wind+gong);
+  one picked at random, sounds started, display flashes to confirm
+
+## Jun 25 2026 — 3D revolving celestial globe
+
+- Replaced flat azimuthal sky projection (updated every 60s) with a proper 3D celestial globe rendered every frame
+- Stars pre-computed as Cartesian unit-sphere coords from RA/Dec: (x,y,z) = (cos(dec)cos(ra), cos(dec)sin(ra), sin(dec))
+- Each frame: 3 rotation passes — sidereal (Z-axis, 1 rev/hour), slow wobble X (±3.1°, 240s), slow wobble Z (±2.2°, 416s)
+- Orthographic projection: camera at +Y looking −Y → screenX = cx + X·R, screenY = cy − Z·R
+- Globe radius = 1.62× half-diagonal so stars cover full canvas edge-to-edge; back hemisphere (y<0) culled
+- Limb darkening: stars fade as depth (y) approaches 0 (visible hemisphere edge), `alpha *= y^0.38`
+- Removed geolocation, computeVisibleStars, starsRef/lastStarCalc/canvasSizeRef (no longer needed)
+- 56 named bright stars + 130 golden-angle faint fill stars = 186 total; 60–100 visible at any moment
+
+## Jun 25 2026 — Fix QR codes (two bugs)
+
+- Bug 1: gradient pass read from composited canvas (dark bg = all alpha=255) so it colored the entire image, making the QR unreadable. Fix: read raw pixel data from the tmp canvas *before* compositing — only dark QR modules have alpha>0, so the iridescent color applies correctly.
+- Bug 2: `btoa()` produces `+`/`/`/`=` chars that corrupt URL query params when scanned. Fix: URL-safe base64 in settings.js (`+`→`-`, `/`→`_`, `=` removed, reversed on decode).
+- Also: name label was drawn at y=82% of canvas which overlapped the QR area. Fix: canvas grows by nameH pixels and name is rendered below the QR boundary.
+- Error correction lowered from 'H' (30%) to 'M' (15%) for shorter/denser QR.
+
+## Jun 24 2026 — QR share modal
+
+- `◈` button in footer opens VibeQR modal (adapted from ribbon/PresetQR lineage)
+- Settings encoded as compact base64 JSON (noise: on/vol/freq; tones: on/vol/typeAngle|rate) appended to URL as `?v=`
+- Iridescent QR canvas: swirling spiral gradient using active sound glow colors (falls back to deep-space palette); spill drip edges; edge glow; name label burned into QR
+- Name input updates QR live; name added to URL as `?p=`; `⚡` button reshuffles gradient
+- Copy link / save PNG actions
+- On page load: if `?v=` present in URL, decodes settings and starts matching sounds automatically
+- `src/utils/settings.js` — encodeSettings / decodeSettings utilities
+
 ## Jun 24 2026 — Richer background wash + trigram labels
 
 - Background: primary aura boosted (0.12 base + 0.34×energy vs 0.04 + 0.18); gradient radius widened to 0.72× max dimension

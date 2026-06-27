@@ -17,6 +17,10 @@ Domain: vibe.obfusco.us (main) / vibe-dev.obfusco.us (dev/v0)
 - Subtle astro/numerical/divination UI concepts (think: now, moveloose)
 - Frequency ranges always kept "enjoyable" — filtering out harsh harmonics
 
+## Intent / Mood Concepts
+VIBE is for: **calming, relaxing, focussing, meditating, dreaming, floating**
+These six states are the core use cases. Every design and synthesis decision should serve at least one of them. New features should be evaluated against this list — does it help the user enter or deepen one of these states?
+
 ## Lineage
 - Extends audness engine: new colored noise synthesis + ambient tone generation
 - See LIFE/LINEAGE.md for full family tree

@@ -6,7 +6,43 @@ import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
 import ModeSwitch from './components/ModeSwitch.jsx'
+import { VibeQR } from './components/VibeQR.jsx'
+import { encodeSettings, decodeSettings } from './utils/settings.js'
 import './App.css'
+
+// ── Planetary Cousto frequencies (Cosmic Octave, orbital period → Hz via 2ⁿ) ──
+const PLANETS = [
+  { name: 'Sun',     symbol: '☉', freq: 126.22 },
+  { name: 'Moon',    symbol: '☽', freq: 210.42 },
+  { name: 'Mercury', symbol: '☿', freq: 141.27 },
+  { name: 'Venus',   symbol: '♀', freq: 221.23 },
+  { name: 'Mars',    symbol: '♂', freq: 144.72 },
+  { name: 'Jupiter', symbol: '♃', freq: 183.58 },
+  { name: 'Saturn',  symbol: '♄', freq: 147.85 },
+  { name: 'Uranus',  symbol: '♅', freq: 207.36 },
+  { name: 'Neptune', symbol: '♆', freq: 211.44 },
+]
+
+// Mean ecliptic longitude from J2000.0 (Jan 1.5, 2000) using mean motion
+const J2000_ORBITS = {
+  Sun: { L0: 280.460, rate: 0.9856474 }, Moon: { L0: 218.316, rate: 13.176396 },
+  Mercury: { L0: 252.250, rate: 4.092317 }, Venus: { L0: 181.979, rate: 1.602130 },
+  Mars: { L0: 355.453, rate: 0.524039 }, Jupiter: { L0: 34.396, rate: 0.083091 },
+  Saturn: { L0: 50.066, rate: 0.033460 }, Uranus: { L0: 314.055, rate: 0.011733 },
+  Neptune: { L0: 304.349, rate: 0.005996 },
+}
+function eclipticLon(name) {
+  const d = Date.now() / 86400000 - 10957.5  // days since J2000.0
+  const o = J2000_ORBITS[name]
+  return ((o.L0 + o.rate * d) % 360 + 360) % 360
+}
+
+// Octave-invariant frequency proximity (cents deviation, mod 1200)
+function planetFade(noiseFreq, planetFreq) {
+  const logR = Math.log2(noiseFreq / planetFreq)
+  const centsDev = Math.abs(logR - Math.round(logR)) * 1200
+  return Math.max(0, 1 - centsDev / 280)
+}
 
 export const NOISE = [
   { id: 'white', label: 'white', color: '#d4d4d4', glow: 'rgba(212,212,212,0.35)',
@@ -77,17 +113,48 @@ export default function App() {
   const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20, typeAngle: 0 })))
   const [dispDragging, setDispDragging] = useState(false)
   const [dispFlashing, setDispFlashing] = useState(false)
+  const [showQR, setShowQR] = useState(false)
 
   const canvasRef       = useRef(null)
   const rafRef          = useRef(null)
   const dispDragRef     = useRef(false)
   const dispTotalMoved  = useRef(0)
+  const noiseRef        = useRef(noise)
+  useEffect(() => { noiseRef.current = noise }, [noise])
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeSounds = [
     ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
     ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
   ]
+
+  // Decode settings from URL on first load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const encoded = params.get('v')
+    if (!encoded) return
+    setNoise(n => {
+      setTones(t => {
+        const decoded = decodeSettings(encoded, n, t, NOISE, TONES)
+        if (!decoded) return t
+        // Start any sounds that are on in the decoded state
+        NOISE.forEach(s => {
+          if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].freq)
+        })
+        TONES.forEach(s => {
+          const ds = decoded.tones[s.id]
+          if (ds.on) {
+            const param = s.hasType ? ds.typeAngle : (s.periodic ? ds.rate : null)
+            startTone(s.id, ds.volume, param)
+          }
+        })
+        setTimeout(() => setNoise(() => decoded.noise), 0)
+        return decoded.tones
+      })
+      return n
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Radial spectrum visualizer
   useEffect(() => {
@@ -132,6 +199,34 @@ export default function App() {
       ctx.arc(cx, cy, minR * 0.35, 0, Math.PI * 2)
       ctx.fillStyle = `rgba(255,255,255,${0.05 + avg * 0.12})`
       ctx.fill()
+
+      // ── Planetary symbols — fade in when a noise frequency matches a Cousto planet freq ──
+      const activeFreqs = NOISE
+        .filter(s => noiseRef.current[s.id]?.on)
+        .map(s => noiseRef.current[s.id].freq)
+
+      if (activeFreqs.length > 0) {
+        for (const p of PLANETS) {
+          const fade = Math.max(...activeFreqs.map(f => planetFade(f, p.freq)))
+          if (fade < 0.02) continue
+
+          const angle = (eclipticLon(p.name) * Math.PI / 180) - Math.PI / 2
+          const pr = maxR + 9
+          const px = cx + Math.cos(angle) * pr
+          const py = cy + Math.sin(angle) * pr
+
+          ctx.save()
+          ctx.globalAlpha = fade * 0.9
+          ctx.shadowColor = 'rgba(255,200,80,0.9)'
+          ctx.shadowBlur = 5
+          ctx.font = `bold ${9 + Math.round(fade * 4)}px serif`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillStyle = '#ffd080'
+          ctx.fillText(p.symbol, px, py)
+          ctx.restore()
+        }
+      }
     }
     draw()
     return () => cancelAnimationFrame(rafRef.current)
@@ -172,6 +267,41 @@ export default function App() {
       }
       return next
     })
+  }, [])
+
+  // ── Curated first-tap presets ─────────────────────────────────────
+  const randomizeFirst = useCallback(() => {
+    const presets = [
+      { n: [{id:'pink',v:0.55,f:800}],  t: [{id:'wind',v:0.48,p:30}, {id:'bell',v:0.3,p:32}] },
+      { n: [{id:'blue',v:0.5,f:3500}],  t: [{id:'water',v:0.52,p:0}, {id:'chime',v:0.32,p:11}] },
+      { n: [{id:'white',v:0.45,f:1800}], t: [{id:'earth',v:0.5,p:0}, {id:'gong',v:0.28,p:65}] },
+      { n: [{id:'pink',v:0.52,f:700}],  t: [{id:'fire',v:0.48,p:120},{id:'birds',v:0.3,p:18}] },
+      { n: [{id:'blue',v:0.48,f:4200}], t: [{id:'wind',v:0.5,p:85}, {id:'gong',v:0.26,p:72}] },
+    ]
+    const preset = presets[Math.floor(Math.random() * presets.length)]
+    setNoise(prev => {
+      const next = { ...prev }
+      for (const { id, v, f } of preset.n) {
+        startNoise(id, v, f)
+        next[id] = { ...prev[id], on: true, volume: v, freq: f }
+      }
+      return next
+    })
+    setTones(prev => {
+      const next = { ...prev }
+      const meta = (id) => TONES.find(t => t.id === id)
+      for (const { id, v, p } of preset.t) {
+        const m = meta(id)
+        const param = m?.hasType ? p : (m?.periodic ? p : null)
+        startTone(id, v, param)
+        if (m?.hasType) next[id] = { ...prev[id], on: true, volume: v, typeAngle: p }
+        else if (m?.periodic) next[id] = { ...prev[id], on: true, volume: v, rate: p }
+        else next[id] = { ...prev[id], on: true, volume: v }
+      }
+      return next
+    })
+    setDispFlashing(true)
+    setTimeout(() => setDispFlashing(false), 700)
   }, [])
 
   // ── Circular display drag + tap ───────────────────────────────────
@@ -230,8 +360,10 @@ export default function App() {
       randomizeActive()
       setDispFlashing(true)
       setTimeout(() => setDispFlashing(false), 700)
+    } else if (wasTap && !anyOn) {
+      randomizeFirst()
     }
-  }, [anyOn, randomizeActive])
+  }, [anyOn, randomizeActive, randomizeFirst])
 
   // ── Noise handlers ────────────────────────────────────────────────
   const toggleNoise = useCallback((id) => {
@@ -403,9 +535,21 @@ export default function App() {
           {/* Footer */}
           <div className="unit__foot">
             <ModeSwitch mode={mode} onChange={setMode} />
+            <button className="unit__qr-btn" onClick={() => setShowQR(true)} title="Share / QR code">
+              ◈
+            </button>
           </div>
         </div>
       </div>
+
+      {showQR && (
+        <VibeQR
+          baseUrl={`${window.location.origin}${window.location.pathname}?v=${encodeSettings(noise, tones, NOISE, TONES)}`}
+          name={new URLSearchParams(window.location.search).get('p') || ''}
+          activeSounds={activeSounds}
+          onClose={() => setShowQR(false)}
+        />
+      )}
     </>
   )
 }
