@@ -7,13 +7,23 @@ const MOON_SYMBOL = {
   full: '🌕', waningGibbous: '🌖', lastQuarter: '🌗', waningCrescent: '🌘',
 }
 
-function SoundTag({ id, color }) {
-  return <span className="vrd__tag" style={{ borderColor: color + '55', color }}>{id}</span>
+function SoundCard({ card, color, label }) {
+  return (
+    <div className="vrd__card" style={{ '--card-color': color }}>
+      <div className="vrd__card-header">
+        <span className="vrd__card-dot" style={{ background: color }} />
+        <span className="vrd__card-name" style={{ color }}>{label}</span>
+        <span className="vrd__card-type">{card.type}</span>
+      </div>
+      <p className="vrd__card-reason">{card.reason}</p>
+    </div>
+  )
 }
 
-export function VibeReading({ onClose, onApply, activeSounds, NOISE, TONES }) {
+export function VibeReading({ onClose, onApply, NOISE, TONES }) {
   const [reading, setReading] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [revealed, setRevealed] = useState(0)
   const [applied, setApplied] = useState(false)
 
   useEffect(() => {
@@ -25,10 +35,19 @@ export function VibeReading({ onClose, onApply, activeSounds, NOISE, TONES }) {
     })
   }, [])
 
-  const recommendedSounds = reading ? [
-    ...NOISE.filter(s => reading.noise[s.id]?.on).map(s => ({ id: s.id, color: s.color })),
-    ...TONES.filter(s => reading.tones[s.id]?.on).map(s => ({ id: s.id, color: s.color })),
-  ] : []
+  // Merge soundCards with NOISE/TONES color + label data
+  const allSlots = reading ? reading.soundCards.map(card => {
+    const meta = card.type === 'noise'
+      ? NOISE.find(s => s.id === card.id)
+      : TONES.find(s => s.id === card.id)
+    return { ...card, color: meta?.color ?? '#888', label: meta?.label ?? card.id }
+  }) : []
+
+  const allRevealed = allSlots.length > 0 && revealed >= allSlots.length
+
+  function handleReveal() {
+    setRevealed(r => Math.min(r + 1, allSlots.length))
+  }
 
   function handleApply() {
     if (!reading) return
@@ -66,18 +85,28 @@ export function VibeReading({ onClose, onApply, activeSounds, NOISE, TONES }) {
               ))}
             </div>
 
-            <div className="vrd__sounds">
-              {recommendedSounds.map(s => (
-                <SoundTag key={s.id} id={s.id} color={s.color} />
-              ))}
-            </div>
+            {/* Revealed sound cards */}
+            {revealed > 0 && (
+              <div className="vrd__cards">
+                {allSlots.slice(0, revealed).map((card, i) => (
+                  <SoundCard key={card.id} card={card} color={card.color} label={card.label} />
+                ))}
+              </div>
+            )}
 
-            <button
-              className={`vrd__apply${applied ? ' vrd__apply--done' : ''}`}
-              onClick={handleApply}
-            >
-              {applied ? 'applied ✓' : 'apply reading'}
-            </button>
+            {/* Reveal next / apply */}
+            {!allRevealed ? (
+              <button className="vrd__reveal-btn" onClick={handleReveal}>
+                {revealed === 0 ? 'reveal the prescription ↓' : `next · ${allSlots.length - revealed} remaining`}
+              </button>
+            ) : (
+              <button
+                className={`vrd__apply${applied ? ' vrd__apply--done' : ''}`}
+                onClick={handleApply}
+              >
+                {applied ? 'applied ✓' : 'apply reading'}
+              </button>
+            )}
           </>
         )}
       </div>

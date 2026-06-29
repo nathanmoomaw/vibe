@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — vibe reading: progressive reveal + quiet noise
+
+- Sound cards now reveal one at a time via "reveal the prescription ↓" button; each card shows sound name, type badge, and a contextual reason explaining why it was chosen for the current moon/time/weather
+- All readings now guarantee a quiet noise channel (volume 0.12–0.14, time-scaling excluded); `waningGibbous` case previously had no noise — now adds pink noise at 0.13
+- `buildReading` adds `soundCards[]` array with per-sound `reason` strings; `VibeReading` merges colors from NOISE/TONES metadata
+
 ## Jun 29 2026 — vibe reading + audio input
 
 - **Vibe Reading** (`🃏` footer button): modal that reads current moon phase (synodic calculation from Jan 29 2025 new moon ref), time of day, and live weather (Open-Meteo, geolocation → LA fallback) → generates a 3-line poetic reading + recommended sound configuration; "apply reading" button loads the sounds

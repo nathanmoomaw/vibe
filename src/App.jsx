@@ -646,7 +646,6 @@ export default function App() {
         <VibeReading
           onClose={() => setShowReading(false)}
           onApply={applyReading}
-          activeSounds={activeSounds}
           NOISE={NOISE}
           TONES={TONES}
         />
