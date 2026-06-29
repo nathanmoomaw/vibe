@@ -1,5 +1,16 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — vibe reading: tidal + weather depth
+
+- Tidal state added: `tidalSpring(phase)` (1=spring/0=neap) and `tidalHeight(phase)` (high/low within lunar day, 12.42h cycle)
+- Noise frequencies shift ±8% with tide height (high tide → slightly higher freq)
+- Tone volumes modulated by tidal amplitude: spring tide +8%, neap tide −8%
+- Wind speed → `wind.typeAngle` (calm breeze=0°, gale=150°), with km/h annotation on reason
+- Precipitation → `water.typeAngle` (drizzle=stream/0°, rain=120°, heavy=ocean/270°), with mm annotation
+- High spring tide at flood → adds quiet water undertone (vol 0.22) if no water/weather already present
+- Weather entropy mixes into seed so same-hour readings vary with live conditions
+- Tidal label ("high tide · spring" etc.) shown in reading header below moon phase
+
 ## Jun 29 2026 — vibe reading: progressive reveal + quiet noise
 
 - Sound cards now reveal one at a time via "reveal the prescription ↓" button; each card shows sound name, type badge, and a contextual reason explaining why it was chosen for the current moon/time/weather

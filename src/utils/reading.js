@@ -121,6 +121,26 @@ const BASE_REASONS = {
   earth: 'earth receives — it grounds what cannot be held in the upper body',
 }
 
+// ── Tidal state (derived from moon phase) ─────────────────────────────────────
+// springFactor: 1.0 at new/full moon, 0.0 at quarter moons
+export function tidalSpring(phase) {
+  return Math.abs(Math.cos(phase * 2 * Math.PI))
+}
+
+// tidalHeight: approximate 0=low → 1=high, cycles ~twice per lunar day
+export function tidalHeight(phase) {
+  const hour = new Date().getHours()
+  // Lunar day ≈ 24.84h; approximate high/low within that cycle
+  const lunarDayPos = (phase * 29.53 * 24 + hour) / 12.42
+  return 0.5 + 0.5 * Math.cos(lunarDayPos * 2 * Math.PI)
+}
+
+export function tidalLabel(spring, height) {
+  const springStr = spring > 0.75 ? 'spring' : spring < 0.3 ? 'neap' : 'moderate'
+  const heightStr = height > 0.65 ? 'high' : height < 0.35 ? 'low' : 'mid'
+  return `${heightStr} tide · ${springStr}`
+}
+
 // ── Sound config builder ──────────────────────────────────────────────────────
 function pick(arr, seed) {
   return arr[Math.floor(seed * arr.length) % arr.length]
@@ -131,7 +151,12 @@ export function buildReading(phase, weather) {
   const moon = moonState(phase)
   const time = timePeriod(hour)
   const weatherEl = weatherElement(weather)
-  const seed = (Date.now() / 3600000) % 1 // changes each hour
+  const spring = tidalSpring(phase)
+  const height = tidalHeight(phase)
+
+  // Seed: hour-based + weather entropy so conditions vary the reading within an hour
+  const weatherEntropy = weather ? (weather.wind * 0.013 + weather.precip * 0.09) % 1 : 0
+  const seed = ((Date.now() / 3600000) + weatherEntropy * 0.6) % 1
 
   // Default state (all off) — noise volumes kept quiet by design
   const noise = {
@@ -220,10 +245,18 @@ export function buildReading(phase, weather) {
       break
   }
 
+  // Tidal influence on active noise frequencies (±8% based on high/low tide)
+  const tideFreqBias = (height - 0.5) * 0.16 // -8% at low tide, +8% at high tide
+  for (const k of Object.keys(noise)) {
+    if (noise[k].on) noise[k].freq = Math.round(noise[k].freq * (1 + tideFreqBias))
+  }
+
   // Time of day → volume modulation (noise stays quiet; tones scale naturally)
   const timeVol = { dawn: 0.82, morning: 1.0, midday: 1.0, afternoon: 0.92, evening: 0.85, night: 0.75, deepNight: 0.65 }[time] ?? 1.0
-  // Only modulate tones by time — noise stays at its quiet absolute level
-  for (const k of Object.keys(tones)) if (tones[k].on) tones[k].volume *= timeVol
+  // Spring tide boosts tone volume slightly; neap tide quiets it
+  const tidalVolMod = 0.92 + spring * 0.16 // 0.92 (neap) → 1.08 (spring)
+  // Only modulate tones by time + tidal — noise stays at its quiet absolute level
+  for (const k of Object.keys(tones)) if (tones[k].on) tones[k].volume *= timeVol * tidalVolMod
 
   // Weather → add/override elemental sound
   if (weatherEl && !tones[weatherEl]?.on) {
@@ -245,6 +278,32 @@ export function buildReading(phase, weather) {
     }
   }
 
+  // Weather → precise typeAngle for wind and water based on actual conditions
+  if (weather) {
+    if (tones.wind.on) {
+      const w = weather.wind ?? 0
+      // Calm breeze → 0°, moderate → 60°, strong gale → 150°
+      tones.wind.typeAngle = w < 8 ? Math.round(w * 4) : w < 25 ? Math.round(32 + (w - 8) * 3.5) : Math.min(150, Math.round(92 + (w - 25) * 2.5))
+      reasons.wind = (reasons.wind ?? BASE_REASONS.wind) +
+        ` (${w < 8 ? 'light breeze' : w < 25 ? 'moderate wind' : 'strong wind'} · ${Math.round(w)} km/h)`
+    }
+    if (tones.water.on) {
+      const p = weather.precip ?? 0
+      // Drizzle → stream (0°), rain → rain (120°), heavy → ocean (270°)
+      tones.water.typeAngle = p < 0.5 ? 0 : p < 3 ? 120 : 270
+      if (p > 0.1) {
+        reasons.water = (reasons.water ?? BASE_REASONS.water) +
+          ` (${p < 0.5 ? 'drizzle' : p < 3 ? 'rain' : 'heavy rain'} · ${p.toFixed(1)} mm)`
+      }
+    }
+  }
+
+  // High spring tide → add a water undertone if not already present
+  if (spring > 0.85 && height > 0.7 && !tones.water.on && !weatherEl) {
+    tones.water = { on: true, volume: 0.22 * timeVol * tidalVolMod, typeAngle: 0 }
+    reasons.water = 'spring tide at its height — the ocean frequency rises as a subtle undertone'
+  }
+
   // Narrative text (3 lines)
   const moonLine = pick(MOON_TEXT[moon], seed)
   const timeLine = pick(TIME_TEXT[time], seed * 1.37)
@@ -262,6 +321,7 @@ export function buildReading(phase, weather) {
 
   return {
     moonPhase: phase, moonState: moon, timePeriod: time, weatherEl, primaryEl,
+    tidal: { spring, height, label: tidalLabel(spring, height) },
     lines: [moonLine, timeLine, presLine],
     soundCards, noise, tones,
   }

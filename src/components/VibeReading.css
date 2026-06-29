@@ -87,11 +87,24 @@
   filter: drop-shadow(0 0 10px rgba(200, 180, 255, 0.5));
 }
 
+.vrd__moon-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .vrd__moon-label {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.5rem;
   letter-spacing: 0.22em;
   color: rgba(200, 180, 255, 0.45);
+}
+
+.vrd__tidal-label {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.42rem;
+  letter-spacing: 0.18em;
+  color: rgba(100, 180, 220, 0.35);
 }
 
 .vrd__lines {

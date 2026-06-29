@@ -76,7 +76,10 @@ export function VibeReading({ onClose, onApply, NOISE, TONES }) {
           <>
             <div className="vrd__moon">
               <span className="vrd__moon-icon">{MOON_SYMBOL[reading.moonState]}</span>
-              <span className="vrd__moon-label">{MOON_LABEL[reading.moonState]}</span>
+              <div className="vrd__moon-meta">
+                <span className="vrd__moon-label">{MOON_LABEL[reading.moonState]}</span>
+                <span className="vrd__tidal-label">{reading.tidal.label}</span>
+              </div>
             </div>
 
             <div className="vrd__lines">
