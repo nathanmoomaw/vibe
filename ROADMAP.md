@@ -9,6 +9,8 @@
 - [ ] Mic input for environment-reactive soundscape
 
 ## Completed
+- [x] Anti-Gimmick philosophy modal: 🃏 joker footer button → VibePhilosophy overlay with 6 UX principles
+- [x] Nearly transparent console + shimmer glitch animation (22s cycle, diagonal sweep + outward pulse)
 - [x] QR share modal: iridescent QR with active sound colors, nameable presets, URL encode/decode
 - [x] I Ching elemental section: SVG trigrams + morphing via paired complements + elemental ordering
 - [x] Wind softened to pink noise + gentler synthesis

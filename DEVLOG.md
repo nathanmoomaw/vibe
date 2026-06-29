@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — transparent console + shimmer glitch + philosophy modal
+
+- Console background nearly fully transparent (rgba alpha 0.05–0.08 from 0.72–0.88); backdrop-filter preserved for frosted glass
+- Occasional shimmer glitch: diagonal light sweep (`::before`) + outward glow pulse (`box-shadow` animation) on 22s cycle, fires at 84–93%
+- `🃏` joker button in footer opens Anti-Gimmick Principles modal (`VibePhilosophy`) — 6 principles from the Jun 27 learn digest (strip to minimum, progressive disclosure, dark by default, ritual aesthetic, sound follows symbol, page-turn pace)
+
 ## Jun 26 2026 — v0.1.0 released to vibe.obfusco.us
 
 - Merged dev/v0 → main, tagged v0.1.0

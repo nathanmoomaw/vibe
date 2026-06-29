@@ -7,6 +7,7 @@ import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
 import ModeSwitch from './components/ModeSwitch.jsx'
 import { VibeQR } from './components/VibeQR.jsx'
+import { VibePhilosophy } from './components/VibePhilosophy.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
 import './App.css'
 
@@ -114,6 +115,7 @@ export default function App() {
   const [dispDragging, setDispDragging] = useState(false)
   const [dispFlashing, setDispFlashing] = useState(false)
   const [showQR, setShowQR] = useState(false)
+  const [showPhilosophy, setShowPhilosophy] = useState(false)
 
   const canvasRef       = useRef(null)
   const rafRef          = useRef(null)
@@ -534,6 +536,9 @@ export default function App() {
 
           {/* Footer */}
           <div className="unit__foot">
+            <button className="unit__joker-btn" onClick={() => setShowPhilosophy(true)} title="Anti-gimmick principles">
+              🃏
+            </button>
             <ModeSwitch mode={mode} onChange={setMode} />
             <button className="unit__qr-btn" onClick={() => setShowQR(true)} title="Share / QR code">
               ◈
@@ -541,6 +546,10 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {showPhilosophy && (
+        <VibePhilosophy onClose={() => setShowPhilosophy(false)} />
+      )}
 
       {showQR && (
         <VibeQR
