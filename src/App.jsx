@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { getAnalyser } from './audio/engine.js'
+import { getAnalyser, setAudioInput, stopAudioInput } from './audio/engine.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
 import Background from './components/Background.jsx'
@@ -8,6 +8,7 @@ import LoView from './components/LoView.jsx'
 import ModeSwitch from './components/ModeSwitch.jsx'
 import { VibeQR } from './components/VibeQR.jsx'
 import { VibePhilosophy } from './components/VibePhilosophy.jsx'
+import { VibeReading } from './components/VibeReading.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
 import './App.css'
 
@@ -116,6 +117,10 @@ export default function App() {
   const [dispFlashing, setDispFlashing] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [showPhilosophy, setShowPhilosophy] = useState(false)
+  const [showReading, setShowReading] = useState(false)
+  const [showInput, setShowInput] = useState(false)
+  const [inputUrl, setInputUrl] = useState('')
+  const [inputStatus, setInputStatus] = useState('idle') // idle | loading | playing | error
 
   const canvasRef       = useRef(null)
   const rafRef          = useRef(null)
@@ -304,6 +309,64 @@ export default function App() {
     })
     setDispFlashing(true)
     setTimeout(() => setDispFlashing(false), 700)
+  }, [])
+
+  // ── Apply a reading preset ────────────────────────────────────────
+  const applyReading = useCallback((readingNoise, readingTones) => {
+    setNoise(prev => {
+      const next = { ...prev }
+      for (const s of NOISE) {
+        const cfg = readingNoise[s.id]
+        if (cfg.on) {
+          if (!prev[s.id].on) startNoise(s.id, cfg.volume, cfg.freq)
+          else { setNoiseVolume(s.id, cfg.volume); setNoiseFreq(s.id, cfg.freq) }
+        } else {
+          if (prev[s.id].on) stopNoise(s.id)
+        }
+        next[s.id] = { ...prev[s.id], ...cfg }
+      }
+      return next
+    })
+    setTones(prev => {
+      const next = { ...prev }
+      for (const s of TONES) {
+        const cfg = readingTones[s.id]
+        const meta = TONES.find(t => t.id === s.id)
+        if (cfg.on) {
+          if (!prev[s.id].on) {
+            const param = meta?.hasType ? cfg.typeAngle : (meta?.periodic ? cfg.rate : null)
+            startTone(s.id, cfg.volume, param)
+          } else {
+            setToneVolume(s.id, cfg.volume)
+          }
+        } else {
+          if (prev[s.id].on) stopTone(s.id)
+        }
+        next[s.id] = { ...prev[s.id], ...cfg }
+      }
+      return next
+    })
+    setShowReading(false)
+    setDispFlashing(true)
+    setTimeout(() => setDispFlashing(false), 700)
+  }, [])
+
+  // ── Audio input ───────────────────────────────────────────────────
+  const playInputUrl = useCallback((url) => {
+    const filterConfigs = NOISE
+      .filter(s => noise[s.id].on)
+      .map(s => ({ type: s.id === 'blue' ? 'highpass' : s.id === 'white' ? 'allpass' : 'bandpass', freq: noise[s.id].freq }))
+    setInputStatus('loading')
+    setAudioInput(url, filterConfigs)
+      .then(() => setInputStatus('playing'))
+      .catch(() => setInputStatus('error'))
+  }, [noise])
+
+  const stopInput = useCallback(() => {
+    stopAudioInput()
+    setInputStatus('idle')
+    setInputUrl('')
+    setShowInput(false)
   }, [])
 
   // ── Circular display drag + tap ───────────────────────────────────
@@ -534,12 +597,40 @@ export default function App() {
             )}
           </div>
 
+          {/* Audio input panel */}
+          {showInput && (
+            <div className="unit__input-panel">
+              <input
+                className="unit__input-url"
+                type="url"
+                placeholder="audio url (mp3, wav, ogg…)"
+                value={inputUrl}
+                onChange={e => setInputUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && inputUrl.trim() && playInputUrl(inputUrl.trim())}
+                autoFocus
+              />
+              {inputStatus === 'playing' && (
+                <button className="unit__input-stop" onClick={stopInput}>■</button>
+              )}
+              {inputStatus === 'error' && (
+                <span className="unit__input-err">cors blocked or bad url</span>
+              )}
+            </div>
+          )}
+
           {/* Footer */}
           <div className="unit__foot">
-            <button className="unit__joker-btn" onClick={() => setShowPhilosophy(true)} title="Anti-gimmick principles">
+            <button className="unit__joker-btn" onClick={() => setShowReading(true)} title="Your vibe reading">
               🃏
             </button>
             <ModeSwitch mode={mode} onChange={setMode} />
+            <button
+              className={`unit__input-btn${inputStatus === 'playing' ? ' unit__input-btn--active' : ''}`}
+              onClick={() => { if (inputStatus === 'playing') stopInput(); else setShowInput(v => !v) }}
+              title="Audio input"
+            >
+              ⊃
+            </button>
             <button className="unit__qr-btn" onClick={() => setShowQR(true)} title="Share / QR code">
               ◈
             </button>
@@ -549,6 +640,16 @@ export default function App() {
 
       {showPhilosophy && (
         <VibePhilosophy onClose={() => setShowPhilosophy(false)} />
+      )}
+
+      {showReading && (
+        <VibeReading
+          onClose={() => setShowReading(false)}
+          onApply={applyReading}
+          activeSounds={activeSounds}
+          NOISE={NOISE}
+          TONES={TONES}
+        />
       )}
 
       {showQR && (

@@ -9,6 +9,8 @@
 - [ ] Mic input for environment-reactive soundscape
 
 ## Completed
+- [x] Vibe Reading: 🃏 opens modal with moon phase + time + weather → poetic reading + sound preset, apply button loads sounds
+- [x] Audio input: ⊃ footer button → paste audio URL, filtered through active noise BiquadFilters via MediaElementSourceNode
 - [x] Anti-Gimmick philosophy modal: 🃏 joker footer button → VibePhilosophy overlay with 6 UX principles
 - [x] Nearly transparent console + shimmer glitch animation (22s cycle, diagonal sweep + outward pulse)
 - [x] QR share modal: iridescent QR with active sound colors, nameable presets, URL encode/decode

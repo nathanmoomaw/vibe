@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — vibe reading + audio input
+
+- **Vibe Reading** (`🃏` footer button): modal that reads current moon phase (synodic calculation from Jan 29 2025 new moon ref), time of day, and live weather (Open-Meteo, geolocation → LA fallback) → generates a 3-line poetic reading + recommended sound configuration; "apply reading" button loads the sounds
+- Reading algorithm (`src/utils/reading.js`): moon state × time period × weather element → noise/tones config + MOON_TEXT/TIME_TEXT/PRESCRIPTION narrative templates
+- **Audio input** (`⊃` footer button): paste a direct audio URL (mp3/wav/ogg — CORS-enabled sources only; YouTube is CORS-blocked); audio is routed through `createMediaElementSource()` and filtered through a parallel BiquadFilter bank mirroring active noise settings (bandpass per channel); stop button clears input
+- `src/audio/engine.js`: added `setAudioInput(url, filterConfigs)`, `stopAudioInput()`, `isAudioInputActive()`
+
 ## Jun 29 2026 — transparent console + shimmer glitch + philosophy modal
 
 - Console background nearly fully transparent (rgba alpha 0.05–0.08 from 0.72–0.88); backdrop-filter preserved for frosted glass
