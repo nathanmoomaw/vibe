@@ -141,6 +141,40 @@ export function tidalLabel(spring, height) {
   return `${heightStr} tide · ${springStr}`
 }
 
+// ── Wǔ Yīn pentatonic frequencies (I Ching → element → note) ─────────────────
+// Trigram → 5-Element → Wǔ Yīn tone → Hz (doubled octave for noise filter range)
+// Earth/Mountain=C(512) Metal=D(576) Wood=E(640) Fire=G(768) Water=A(864)
+// Basis: 3,000yr TCM/Taoist 五音 system + ancient 64-bell ritual bronze set
+const WU_YIN_HZ = { earth: 512, metal: 576, wood: 640, fire: 768, water: 864 }
+
+// Special: 136.1 Hz = Earth's orbital year cycle, "OM frequency", heart chakra anchor
+// Use for deep meditation / floating states via pink noise lowpass
+const OM_HZ = 136.1
+
+// Binaural beat targets per moon state (LFO ombak pulse Hz for amplitude modulation)
+// delta=floating, theta=meditating/dreaming, alpha=calming/relaxing, alpha+=focusing
+const PULSE_HZ = {
+  new:            2.5,  // δ — floating in the void
+  waxingCrescent: 7.0,  // θ — gathering, relaxed
+  firstQuarter:   12.0, // α+ — focused decision
+  waxingGibbous:  9.0,  // α — calming the charge
+  full:           7.83, // ♁ — Schumann resonance, peak meditation
+  waningGibbous:  7.0,  // θ — the slow exhale
+  lastQuarter:    9.0,  // α — clearing, calm
+  waningCrescent: 4.0,  // θ/δ — dreaming toward dark
+}
+
+const INTENT_LABEL = {
+  new:            'floating · δ 2.5 Hz',
+  waxingCrescent: 'relaxing · θ 7 Hz',
+  firstQuarter:   'focusing · α 12 Hz',
+  waxingGibbous:  'calming · α 9 Hz',
+  full:           'meditating · ♁ 7.83 Hz',
+  waningGibbous:  'relaxing · θ 7 Hz',
+  lastQuarter:    'calming · α 9 Hz',
+  waningCrescent: 'dreaming · θ 4 Hz',
+}
+
 // ── Sound config builder ──────────────────────────────────────────────────────
 function pick(arr, seed) {
   return arr[Math.floor(seed * arr.length) % arr.length]
@@ -181,65 +215,73 @@ export function buildReading(phase, weather) {
   let primaryEl = null
   let prescriptionKey = 'noise'
 
-  // Moon phase → primary sounds (noise always quiet; tones carry the reading)
+  // Moon phase → primary sounds (Wǔ Yīn-tuned noise frequencies; tones carry the reading)
   switch (moon) {
     case 'new':
-      noise.white = { on: true, volume: 0.14, freq: 1600 }
+      // New moon = void, Earth element (Kūn), Gōng tone (C = 512 Hz) deepened to OM anchor
+      noise.pink  = { on: true, volume: 0.13, freq: OM_HZ }
       tones.chime = { on: true, volume: 0.22, rate: 18, typeAngle: 0 }
-      reasons.white = 'white noise holds the empty space of the new moon — a clean field with no pull, no residue'
+      reasons.pink  = `pink noise lowpass at 136.1 Hz — the OM frequency, Earth's orbital year cycle. the lowest resonant field before a cycle begins`
       reasons.chime = 'a single chime at the threshold — the overtone you follow into stillness'
       primaryEl = 'chime'; prescriptionKey = 'chime'
       break
     case 'waxingCrescent':
-      noise.pink  = { on: true, volume: 0.13, freq: 700 }
+      // Xùn (Wind) = Wood element, Jué tone (E = 640 Hz)
+      noise.pink  = { on: true, volume: 0.13, freq: WU_YIN_HZ.wood }
       tones.chime = { on: true, volume: 0.28, rate: 12, typeAngle: 0 }
-      reasons.pink  = 'pink noise carries the warmth of gathering light — low, round, like something budding'
+      reasons.pink  = `pink noise at ${WU_YIN_HZ.wood} Hz — the Jué (角) Wood tone of the Wǔ Yīn system. warm and forward-leaning, like something budding`
       reasons.chime = 'chime shimmer mirrors the thin crescent — barely there, beckoning forward'
       primaryEl = 'chime'; prescriptionKey = 'chime'
       break
     case 'firstQuarter':
-      noise.blue = { on: true, volume: 0.14, freq: 3800 }
+      // Zhèn (Thunder) = Wood element, Jué tone (E). Blue highpass at E×2
+      noise.blue = { on: true, volume: 0.14, freq: WU_YIN_HZ.wood * 2 }
       tones.wind = { on: true, volume: 0.45, typeAngle: 60 }
-      reasons.blue = 'blue noise sharpens to the high frequencies — the crisp edge of a moment of decision'
+      reasons.blue = `blue noise highpass at ${WU_YIN_HZ.wood * 2} Hz — the Jué (角) Wood tone, upper octave. sharp, crisp, the edge of a decision`
       reasons.wind = 'the wind carries what you release at the turning — the moving air takes the decision outward'
       primaryEl = 'wind'; prescriptionKey = 'wind'
       break
     case 'waxingGibbous':
-      noise.pink  = { on: true, volume: 0.14, freq: 900 }
+      // Qián (Heaven) = Metal element, Shāng tone (D = 576 Hz)
+      noise.pink  = { on: true, volume: 0.14, freq: WU_YIN_HZ.metal }
       tones.water = { on: true, volume: 0.50, typeAngle: 0 }
-      reasons.pink  = 'pink noise holds the building pressure softly — a warm carrier for the waxing charge'
+      reasons.pink  = `pink noise at ${WU_YIN_HZ.metal} Hz — the Shāng (商) Metal tone of the Wǔ Yīn. grounded and clear, carrying the building charge`
       reasons.water = 'the waxing moon governs the tides — water rises to meet the pressure building in the body'
       primaryEl = 'water'; prescriptionKey = 'water'
       break
     case 'full':
-      noise.white = { on: true, volume: 0.13, freq: 2200 }
+      // Lí (Fire) = Fire element, Zhǐ tone (G = 768 Hz). Full moon = peak Fire
+      noise.white = { on: true, volume: 0.13, freq: WU_YIN_HZ.fire }
       tones.birds = { on: true, volume: 0.38, rate: 16, typeAngle: 0 }
       tones.water = { on: true, volume: 0.42, typeAngle: 180 }
-      reasons.white = 'white noise opens all frequencies — the full moon withholds nothing'
+      reasons.white = `white noise centered at the Zhǐ (徵) Fire tone — ${WU_YIN_HZ.fire} Hz. full moon opens all frequencies; the Fire note holds the peak`
       reasons.birds = 'birds sing loudest under the full moon — life at its fullest frequency'
-      reasons.water = 'ocean tide peaks with the full moon — the water is at its most potent now'
+      reasons.water = 'ocean tide peaks with the full moon — water is most potent now; Fire and Water in balance'
       primaryEl = 'birds'; prescriptionKey = 'birds'
       break
     case 'waningGibbous':
-      noise.pink  = { on: true, volume: 0.13, freq: 850 }
+      // Duì (Lake) = Metal element, Shāng tone (D = 576 Hz) — release begins
+      noise.pink  = { on: true, volume: 0.13, freq: WU_YIN_HZ.metal }
       tones.gong  = { on: true, volume: 0.44, rate: 65, typeAngle: 0 }
       tones.earth = { on: true, volume: 0.42, typeAngle: 0 }
-      reasons.pink  = 'pink noise at the exhale — soft and round for the long release after the full moon'
+      reasons.pink  = `pink noise at ${WU_YIN_HZ.metal} Hz — the Shāng (商) Metal tone. soft and round at the exhalation, carrying the release`
       reasons.gong  = "the gong's long decay mirrors the waning — sound dissolving exactly as the moon does"
       reasons.earth = 'earth holds what the full moon released — grounding at the beginning of the exhale'
       primaryEl = 'gong'; prescriptionKey = 'gong'
       break
     case 'lastQuarter':
-      noise.pink  = { on: true, volume: 0.14, freq: 750 }
+      // Gèn (Mountain) = Earth element, Gōng tone (C = 512 Hz) — clearing
+      noise.pink  = { on: true, volume: 0.14, freq: WU_YIN_HZ.earth }
       tones.earth = { on: true, volume: 0.44, typeAngle: 90 }
-      reasons.pink  = 'pink noise at the clearing — the warmest frequency for a half-shadowed hour'
+      reasons.pink  = `pink noise at ${WU_YIN_HZ.earth} Hz — the Gōng (宮) Earth tone, lowest of the Wǔ Yīn. rooted, stable, the ground of the clearing`
       reasons.earth = 'earth receives what you let go — steady ground for the final clearing before dark'
       primaryEl = 'earth'; prescriptionKey = 'earth'
       break
     case 'waningCrescent':
-      noise.white = { on: true, volume: 0.12, freq: 1400 }
+      // Kǎn (Water) = Water element, Yǔ tone (A = 864 Hz) + OM anchor
+      noise.pink  = { on: true, volume: 0.12, freq: OM_HZ }
       tones.bell  = { on: true, volume: 0.24, rate: 30, typeAngle: 0 }
-      reasons.white = 'white noise thins toward silence — the quietest field before the cycle renews'
+      reasons.pink  = `pink noise at 136.1 Hz — the OM frequency again, the Earth tone. going very quiet; the cycle closes where it opened`
       reasons.bell  = 'a distant bell escorts you toward the threshold — the tone that marks the final edge'
       primaryEl = 'bell'; prescriptionKey = 'bell'
       break
@@ -322,6 +364,8 @@ export function buildReading(phase, weather) {
   return {
     moonPhase: phase, moonState: moon, timePeriod: time, weatherEl, primaryEl,
     tidal: { spring, height, label: tidalLabel(spring, height) },
+    pulseHz: PULSE_HZ[moon] ?? 7.83,
+    intentLabel: INTENT_LABEL[moon] ?? 'meditating · ♁ 7.83 Hz',
     lines: [moonLine, timeLine, presLine],
     soundCards, noise, tones,
   }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { getAnalyser, setAudioInput, stopAudioInput } from './audio/engine.js'
+import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
 import Background from './components/Background.jsx'
@@ -312,7 +313,8 @@ export default function App() {
   }, [])
 
   // ── Apply a reading preset ────────────────────────────────────────
-  const applyReading = useCallback((readingNoise, readingTones) => {
+  const applyReading = useCallback((readingNoise, readingTones, pulseHz) => {
+    stopAllNoisePulses()
     setNoise(prev => {
       const next = { ...prev }
       for (const s of NOISE) {
@@ -320,6 +322,8 @@ export default function App() {
         if (cfg.on) {
           if (!prev[s.id].on) startNoise(s.id, cfg.volume, cfg.freq)
           else { setNoiseVolume(s.id, cfg.volume); setNoiseFreq(s.id, cfg.freq) }
+          // Apply LFO ombak pulse at binaural beat target frequency
+          if (pulseHz) setTimeout(() => setNoisePulse(s.id, pulseHz), 50)
         } else {
           if (prev[s.id].on) stopNoise(s.id)
         }

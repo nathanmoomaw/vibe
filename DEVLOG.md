@@ -1,5 +1,14 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — apply acoustomancy findings to dev
+
+- **Wǔ Yīn tuned noise frequencies**: each moon state's noise channel now uses the historically-grounded 五音 pentatonic frequency for its dominant I Ching element — Earth/Mountain=512Hz(C), Metal/Heaven=576Hz(D), Wood/Wind/Thunder=640Hz(E), Fire=768Hz(G), Water=864Hz(A)
+- **136.1 Hz OM anchor**: new moon and waning crescent now use pink noise lowpass at 136.1 Hz (Earth orbital year → audible Hz), the deepest meditative frequency in the Wǔ Yīn / heart chakra tradition
+- **LFO ombak pulse**: `setNoisePulse(id, beatHz)` in noise.js adds a sine LFO (±8% amplitude modulation) at the reading's binaural beat target — δ 2.5 Hz (floating), θ 4–7.83 Hz (meditating/dreaming), α 9–12 Hz (calming/focusing). Activates on "apply reading"
+- **Schumann resonance**: full moon reading targets 7.83 Hz (Schumann fundamental) as its pulse — peak meditation at lunar peak
+- **VibeReading modal**: shows intent label ("∿ meditating · ♁ 7.83 Hz") below tidal state in the moon section
+- **MYTHOS.md**: added structural precedents — Oracle at Dodona, Nada Brahma, Wǔ Yīn, 136.1 Hz, ombak pulse, three laws of pleasant sound combination
+
 ## Jun 29 2026 — acoustomancy / audmancy research session
 
 - Deep /learn session (tone + divination agents) focused on sound divination, psychoacoustics, and frequency combinations for mystic/pleasant states

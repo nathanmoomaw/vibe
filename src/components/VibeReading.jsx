@@ -51,7 +51,7 @@ export function VibeReading({ onClose, onApply, NOISE, TONES }) {
 
   function handleApply() {
     if (!reading) return
-    onApply(reading.noise, reading.tones)
+    onApply(reading.noise, reading.tones, reading.pulseHz)
     setApplied(true)
     setTimeout(() => setApplied(false), 2000)
   }
@@ -79,6 +79,7 @@ export function VibeReading({ onClose, onApply, NOISE, TONES }) {
               <div className="vrd__moon-meta">
                 <span className="vrd__moon-label">{MOON_LABEL[reading.moonState]}</span>
                 <span className="vrd__tidal-label">{reading.tidal.label}</span>
+                <span className="vrd__intent-label">∿ {reading.intentLabel}</span>
               </div>
             </div>
 

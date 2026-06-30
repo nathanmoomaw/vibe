@@ -91,3 +91,36 @@ export function setNoiseVolume(id, v) {
 export function setNoiseFreq(id, hz) {
   if (active[id]) active[id].filter.frequency.value = hz
 }
+
+// ── LFO ombak pulse (amplitude modulation at binaural beat target Hz) ──────
+// Connects a sine oscillator to the noise channel's gain AudioParam,
+// creating a slow amplitude pulse at the given Hz (theta/alpha/delta range).
+const lfoNodes = {}
+
+export function setNoisePulse(id, beatHz) {
+  const s = active[id]
+  if (!s) return
+  stopNoisePulse(id)
+  const ctx = getContext()
+  const lfo = ctx.createOscillator()
+  const lfoGain = ctx.createGain()
+  lfo.type = 'sine'
+  lfo.frequency.value = beatHz
+  lfoGain.gain.value = 0.08  // ±8% amplitude modulation depth
+  lfo.connect(lfoGain)
+  lfoGain.connect(s.gain.gain)
+  lfo.start()
+  lfoNodes[id] = { lfo, lfoGain }
+}
+
+export function stopNoisePulse(id) {
+  const n = lfoNodes[id]
+  if (!n) return
+  try { n.lfo.stop() } catch (_) {}
+  try { n.lfoGain.disconnect() } catch (_) {}
+  delete lfoNodes[id]
+}
+
+export function stopAllNoisePulses() {
+  for (const id of Object.keys(lfoNodes)) stopNoisePulse(id)
+}

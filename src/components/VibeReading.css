@@ -107,6 +107,13 @@
   color: rgba(100, 180, 220, 0.35);
 }
 
+.vrd__intent-label {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.42rem;
+  letter-spacing: 0.18em;
+  color: rgba(160, 130, 255, 0.4);
+}
+
 .vrd__lines {
   display: flex;
   flex-direction: column;
