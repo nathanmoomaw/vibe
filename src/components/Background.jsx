@@ -35,11 +35,11 @@ const RAW_STARS = [
   [218.9,-42.2,2.30],[116.3,28.0,2.40],[163.1,-14.8,2.59],
 ]
 
-// Faint fill stars: golden-angle RA, uniform-sphere Dec
-const FAINT_RAW = Array.from({ length: 130 }, (_, i) => [
+// Faint fill stars: golden-angle RA, uniform-sphere Dec — increased density
+const FAINT_RAW = Array.from({ length: 220 }, (_, i) => [
   (i * 137.508) % 360,
   Math.asin(2 * ((i * 0.618034) % 1) - 1) / D2R,
-  2.5 + (i % 30) / 12,
+  2.5 + (i % 40) / 14,
 ])
 
 // Pre-compute 3D Cartesian + rendering params once at module load
@@ -222,6 +222,11 @@ export default function Background({ anyOn, activeSounds }) {
       const cX = Math.cos(wobX), sX = Math.sin(wobX)
       const cZ = Math.cos(wobZ), sZ = Math.sin(wobZ)
 
+      // Trail: 24 seconds of sidereal rotation behind each star
+      const TRAIL_ANGLE = (24 / 3600) * Math.PI * 2
+      const θt = θ - TRAIL_ANGLE
+      const cθt = Math.cos(θt), sθt = Math.sin(θt)
+
       // Globe radius large enough to cover full screen — stars fill edge-to-edge
       const globeR = Math.hypot(cx, cy) * 1.62
 
@@ -255,6 +260,33 @@ export default function Background({ anyOn, activeSounds }) {
         const twink = Math.sin(t * 0.0008 + s.phase) * 0.16
         const alpha = Math.max(0, Math.min(1, (s.baseAlpha + twink) * limbFade))
         if (alpha < 0.01) continue
+
+        // ── Motion trail: star's position 24s ago (sidereal only, wobble stable) ──
+        const tx1 = s.x * cθt - s.y * sθt
+        const ty1 = s.x * sθt + s.y * cθt
+        const tx2 = tx1
+        const ty2 = ty1 * cX - z1 * sX
+        const tz2 = ty1 * sX + z1 * cX
+        const tx3 = tx2 * cZ - ty2 * sZ
+        const ty3 = tx2 * sZ + ty2 * cZ
+        const tz3 = tz2
+
+        if (ty3 > 0) {
+          const tSx = cx + tx3 * globeR
+          const tSy = cy - tz3 * globeR
+          const dist = Math.hypot(sx - tSx, sy - tSy)
+          if (dist > 0.3) {
+            const tGrad = ctx.createLinearGradient(tSx, tSy, sx, sy)
+            tGrad.addColorStop(0, 'rgba(200,210,255,0)')
+            tGrad.addColorStop(1, `rgba(200,210,255,${(alpha * 0.28).toFixed(3)})`)
+            ctx.beginPath()
+            ctx.moveTo(tSx, tSy)
+            ctx.lineTo(sx, sy)
+            ctx.strokeStyle = tGrad
+            ctx.lineWidth = s.r * 0.55
+            ctx.stroke()
+          }
+        }
 
         // Glow halo for bright stars
         if (s.glow) {

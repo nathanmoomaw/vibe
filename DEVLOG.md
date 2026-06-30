@@ -1,5 +1,13 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — trigrams, hover glows, stop button, star trails
+
+- **Trigrams**: size 22 → 30; added SVG border frame (thin rounded rect, 28% opacity) containing the bars — reduces floating-bars feel; inner bar layout uses padding so bars sit inside the frame
+- **Console silent hover**: `.unit--silent:hover` adds a soft purple glow (box-shadow) when no audio is playing; transitions smoothly in/out
+- **Circle viz silent hover**: `.unit__display-ring--silent:hover` glows the display ring with purple/violet haze when silent; also sets `cursor: pointer` to hint interactivity
+- **Stop-all button**: removed border; `■` styled with 5s slow animated radial dark-red gradient overlay (`::before`); subtle pulsing at rest, saturates on hover
+- **Star trail**: FAINT_RAW increased 130→220 stars; each star now draws a motion trail using its analytically-computed position 24 seconds in the past (same sidereal rotation at θ-24s); gradient line fades from transparent to 28% star alpha, lineWidth proportional to star radius
+
 ## Jun 29 2026 — six fixes and features
 
 - **First-tap noise volume**: first-tap presets now start noise at 0.12–0.13 (from 0.45–0.55); user scales up from there; Wǔ Yīn-tuned noise frequencies applied to presets too

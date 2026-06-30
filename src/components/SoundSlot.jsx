@@ -37,7 +37,7 @@ export default function SoundSlot({
             <Trigram
               lines={trigramLines}
               color={active ? color : 'rgba(255,255,255,0.15)'}
-              size={22}
+              size={30}
             />
             <span className={`slot__trigram-lbl ${active ? 'slot__trigram-lbl--on' : ''}`}
               style={active ? { '--color': color } : {}}>

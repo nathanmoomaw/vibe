@@ -513,7 +513,7 @@ export default function App() {
       {mode === 'party' && <Background anyOn={anyOn} activeSounds={activeSounds} />}
 
       <div className={`shell shell--${mode}`}>
-        <div className="unit">
+        <div className={`unit${!anyOn ? ' unit--silent' : ''}`}>
 
           {/* Stop-all button — upper right, only visible when sounds are playing */}
           {anyOn && (
@@ -534,7 +534,7 @@ export default function App() {
 
           {/* Circular display — drag to control active knobs */}
           <div
-            className={`unit__display-ring${dispDragging ? ' unit__display-ring--drag' : ''}${dispFlashing ? ' unit__display-ring--flash' : ''}`}
+            className={`unit__display-ring${dispDragging ? ' unit__display-ring--drag' : ''}${dispFlashing ? ' unit__display-ring--flash' : ''}${!anyOn ? ' unit__display-ring--silent' : ''}`}
             onPointerDown={onDisplayDown}
             onPointerMove={onDisplayMove}
             onPointerUp={onDisplayUp}
