@@ -20,7 +20,7 @@ function SoundCard({ card, color, label }) {
   )
 }
 
-export function VibeReading({ onClose, onApply, NOISE, TONES }) {
+export function VibeReading({ onClose, onApply, onRevealSound, NOISE, TONES }) {
   const [reading, setReading] = useState(null)
   const [loading, setLoading] = useState(true)
   const [revealed, setRevealed] = useState(0)
@@ -46,7 +46,14 @@ export function VibeReading({ onClose, onApply, NOISE, TONES }) {
   const allRevealed = allSlots.length > 0 && revealed >= allSlots.length
 
   function handleReveal() {
-    setRevealed(r => Math.min(r + 1, allSlots.length))
+    const next = Math.min(revealed + 1, allSlots.length)
+    setRevealed(next)
+    // Fade in the newly revealed sound
+    const card = allSlots[next - 1]
+    if (card && onRevealSound && reading) {
+      const cfg = card.type === 'noise' ? reading.noise[card.id] : reading.tones[card.id]
+      onRevealSound(card.id, card.type, cfg)
+    }
   }
 
   function handleApply() {

@@ -52,7 +52,11 @@ export const DualKnob = memo(function DualKnob({
 
   const applyMixVisuals = useCallback((v) => {
     const newFill = (v * ANGLE_RANGE / 360) * circumference
-    if (arcFillRef.current) arcFillRef.current.style.strokeDasharray = `${newFill} ${circumference}`
+    // Use setAttribute (not style) so React's prop can cleanly take over on re-render
+    if (arcFillRef.current) {
+      arcFillRef.current.setAttribute('stroke-dasharray', `${newFill} ${circumference}`)
+      arcFillRef.current.style.strokeDasharray = '' // clear any stale inline style
+    }
     if (ghostThumbRef.current && draggingZone.current === 'outer')
       ghostThumbRef.current.style.top = `${(1 - v) * 100}%`
   }, [circumference])
@@ -116,6 +120,8 @@ export const DualKnob = memo(function DualKnob({
   const onPointerUp = useCallback(() => {
     draggingZone.current = null
     if (ghostRef.current) ghostRef.current.classList.remove('vk__ghost--on')
+    // Clear inline style so React's strokeDasharray prop takes full control after drag
+    if (arcFillRef.current) arcFillRef.current.style.strokeDasharray = ''
     applyHoverZone(null)
   }, [applyHoverZone])
 

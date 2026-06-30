@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { getAnalyser, setAudioInput, stopAudioInput } from './audio/engine.js'
+import { getAnalyser, setAudioInput, stopAudioInput, fadeMaster } from './audio/engine.js'
 import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
@@ -279,12 +279,13 @@ export default function App() {
 
   // ── Curated first-tap presets ─────────────────────────────────────
   const randomizeFirst = useCallback(() => {
+    // Noise starts subtle (~0.13) — user turns up if they want more
     const presets = [
-      { n: [{id:'pink',v:0.55,f:800}],  t: [{id:'wind',v:0.48,p:30}, {id:'bell',v:0.3,p:32}] },
-      { n: [{id:'blue',v:0.5,f:3500}],  t: [{id:'water',v:0.52,p:0}, {id:'chime',v:0.32,p:11}] },
-      { n: [{id:'white',v:0.45,f:1800}], t: [{id:'earth',v:0.5,p:0}, {id:'gong',v:0.28,p:65}] },
-      { n: [{id:'pink',v:0.52,f:700}],  t: [{id:'fire',v:0.48,p:120},{id:'birds',v:0.3,p:18}] },
-      { n: [{id:'blue',v:0.48,f:4200}], t: [{id:'wind',v:0.5,p:85}, {id:'gong',v:0.26,p:72}] },
+      { n: [{id:'pink', v:0.13,f:640}],  t: [{id:'wind', v:0.48,p:30},  {id:'bell', v:0.3,p:32}] },
+      { n: [{id:'blue', v:0.13,f:1280}], t: [{id:'water',v:0.52,p:0},   {id:'chime',v:0.32,p:11}] },
+      { n: [{id:'pink', v:0.12,f:512}],  t: [{id:'earth',v:0.5,p:0},    {id:'gong', v:0.28,p:65}] },
+      { n: [{id:'pink', v:0.13,f:768}],  t: [{id:'fire', v:0.48,p:120}, {id:'birds',v:0.3,p:18}] },
+      { n: [{id:'blue', v:0.12,f:1280}], t: [{id:'wind', v:0.5,p:85},   {id:'gong', v:0.26,p:72}] },
     ]
     const preset = presets[Math.floor(Math.random() * presets.length)]
     setNoise(prev => {
@@ -350,9 +351,31 @@ export default function App() {
       }
       return next
     })
+    // Fade master back up after applying reading sounds
+    fadeMaster(0.85, 600)
     setShowReading(false)
     setDispFlashing(true)
     setTimeout(() => setDispFlashing(false), 700)
+  }, [])
+
+  // ── Reveal one reading sound (called as each card is tapped) ────────
+  const revealReadingSound = useCallback((id, type, cfg) => {
+    if (type === 'noise') {
+      setNoise(prev => {
+        startNoise(id, cfg.volume, cfg.freq)
+        return { ...prev, [id]: { ...prev[id], on: true, volume: cfg.volume, freq: cfg.freq } }
+      })
+    } else {
+      setTones(prev => {
+        const meta = TONES.find(t => t.id === id)
+        const param = meta?.hasType ? cfg.typeAngle : (meta?.periodic ? cfg.rate : null)
+        startTone(id, cfg.volume, param)
+        return { ...prev, [id]: { ...prev[id], on: true, volume: cfg.volume,
+          ...(meta?.hasType ? { typeAngle: cfg.typeAngle } : {}),
+          ...(meta?.periodic ? { rate: cfg.rate ?? prev[id].rate } : {}),
+        } }
+      })
+    }
   }, [])
 
   // ── Audio input ───────────────────────────────────────────────────
@@ -492,6 +515,23 @@ export default function App() {
       <div className={`shell shell--${mode}`}>
         <div className="unit">
 
+          {/* Stop-all button — upper right, only visible when sounds are playing */}
+          {anyOn && (
+            <button
+              className="unit__stop-all"
+              onClick={() => {
+                NOISE.forEach(s => { if (noise[s.id].on) stopNoise(s.id) })
+                TONES.forEach(s => { if (tones[s.id].on) stopTone(s.id) })
+                stopAllNoisePulses()
+                setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+                setTones(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+              }}
+              title="Stop all sounds"
+            >
+              ■
+            </button>
+          )}
+
           {/* Circular display — drag to control active knobs */}
           <div
             className={`unit__display-ring${dispDragging ? ' unit__display-ring--drag' : ''}${dispFlashing ? ' unit__display-ring--flash' : ''}`}
@@ -624,7 +664,20 @@ export default function App() {
 
           {/* Footer */}
           <div className="unit__foot">
-            <button className="unit__joker-btn" onClick={() => setShowReading(true)} title="Your vibe reading">
+            <button className="unit__joker-btn" onClick={() => {
+              if (anyOn) {
+                fadeMaster(0.06, 700)
+                // Stop all sounds after fade so reading starts clean
+                setTimeout(() => {
+                  NOISE.forEach(s => { if (noise[s.id].on) stopNoise(s.id) })
+                  TONES.forEach(s => { if (tones[s.id].on) stopTone(s.id) })
+                  setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+                  setTones(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+                  fadeMaster(0.85, 200)
+                }, 700)
+              }
+              setShowReading(true)
+            }} title="Your vibe reading">
               🃏
             </button>
             <ModeSwitch mode={mode} onChange={setMode} />
@@ -648,8 +701,9 @@ export default function App() {
 
       {showReading && (
         <VibeReading
-          onClose={() => setShowReading(false)}
+          onClose={() => { fadeMaster(0.85, 400); setShowReading(false) }}
           onApply={applyReading}
+          onRevealSound={revealReadingSound}
           NOISE={NOISE}
           TONES={TONES}
         />

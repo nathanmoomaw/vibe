@@ -35,6 +35,20 @@ export function getAnalyser() {
   return analyser
 }
 
+// Fade master gain to targetGain over durationMs, then call onDone
+export function fadeMaster(targetGain, durationMs, onDone) {
+  const ctx = getContext()
+  masterGain.gain.cancelScheduledValues(ctx.currentTime)
+  masterGain.gain.setValueAtTime(masterGain.gain.value, ctx.currentTime)
+  masterGain.gain.linearRampToValueAtTime(targetGain, ctx.currentTime + durationMs / 1000)
+  if (onDone) setTimeout(onDone, durationMs)
+}
+
+export function getMasterGain() {
+  getContext()
+  return masterGain.gain.value
+}
+
 // filterConfigs: [{ type, freq }] from active noise settings
 // Passes audio through a parallel bandpass bank matching active noise filters.
 export function setAudioInput(url, filterConfigs) {

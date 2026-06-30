@@ -1,5 +1,14 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — six fixes and features
+
+- **First-tap noise volume**: first-tap presets now start noise at 0.12–0.13 (from 0.45–0.55); user scales up from there; Wǔ Yīn-tuned noise frequencies applied to presets too
+- **DualKnob volume display bug fixed**: `applyMixVisuals` was setting `style.strokeDasharray` (inline CSS) which persisted and overrode React's `strokeDasharray` attribute on subsequent re-renders. Fix: use `setAttribute` during drag and clear inline style on pointer up so React takes control
+- **Reading fade flow**: opening the reading fades master to 0.06 and stops all current sounds (clean slate); each card reveal starts its sound; close/cancel fades back to 0.85; apply fades back in
+- **Test media**: moved 2 MP3 files from project root → `public/test-media/`. Reference as `/test-media/01-make-your-move.mp3` and `/test-media/02-class-1.mp3` in the audio input section
+- **Console transparency**: background alpha reduced further (0.02–0.03); borders and shadows also lightened; backdrop-filter softened to blur(18px)
+- **Stop-all button**: `■` button appears in unit upper-right when any sound is playing; stops all sounds and clears pulse LFOs; hidden when silent
+
 ## Jun 29 2026 — apply acoustomancy findings to dev
 
 - **Wǔ Yīn tuned noise frequencies**: each moon state's noise channel now uses the historically-grounded 五音 pentatonic frequency for its dominant I Ching element — Earth/Mountain=512Hz(C), Metal/Heaven=576Hz(D), Wood/Wind/Thunder=640Hz(E), Fire=768Hz(G), Water=864Hz(A)
