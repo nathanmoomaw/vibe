@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Jun 29 2026 — acoustomancy / audmancy research session
+
+- Deep /learn session (tone + divination agents) focused on sound divination, psychoacoustics, and frequency combinations for mystic/pleasant states
+- Saved as `learn_digest_2026-06-29.md` and `acoustomancy.md` in LIFE memory
+- Key findings for VIBE: I Ching trigram → Wǔ Yīn note mappings (C/D/E/G/A historically grounded), binaural beat targets per intent state (theta 4–8 Hz for meditating, delta for floating), 136.1 Hz OM frequency as meditation anchor, 7.83 Hz Schumann for binaural target, consonance laws (3:2, 4:3 ratio pairs), Oracle at Dodona as structural metaphor for VIBE Reading
+
 ## Jun 29 2026 — vibe reading: tidal + weather depth
 
 - Tidal state added: `tidalSpring(phase)` (1=spring/0=neap) and `tidalHeight(phase)` (high/low within lunar day, 12.42h cycle)
