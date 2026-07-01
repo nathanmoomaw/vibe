@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Jul 1 2026 — reading modal text size bump
+
+- All VibeReading modal font sizes increased ~20–25%: reading lines 0.82→1.02rem, title 0.62→0.78rem, moon label 0.5→0.65rem, tidal/intent 0.42→0.55rem, card reason 0.68→0.84rem, card name 0.54→0.68rem, reveal button 0.55→0.68rem, apply button 0.6→0.72rem
+- Modal width widened from min(360px, 88vw) to min(420px, 92vw)
+
 ## Jun 29 2026 — trigrams, hover glows, stop button, star trails
 
 - **Trigrams**: size 22 → 30; added SVG border frame (thin rounded rect, 28% opacity) containing the bars — reduces floating-bars feel; inner bar layout uses padding so bars sit inside the frame

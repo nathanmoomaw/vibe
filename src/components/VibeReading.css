@@ -22,8 +22,8 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-top-color: rgba(180, 150, 255, 0.12);
   border-radius: 18px;
-  padding: 36px 28px 28px;
-  width: min(360px, 88vw);
+  padding: 36px 32px 32px;
+  width: min(420px, 92vw);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -63,15 +63,15 @@
 
 .vrd__dateline {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.48rem;
-  letter-spacing: 0.28em;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
   color: rgba(255, 255, 255, 0.18);
 }
 
 .vrd__title {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.45em;
+  font-size: 0.78rem;
+  letter-spacing: 0.4em;
   color: rgba(180, 150, 255, 0.65);
 }
 
@@ -95,22 +95,22 @@
 
 .vrd__moon-label {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.5rem;
-  letter-spacing: 0.22em;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
   color: rgba(200, 180, 255, 0.45);
 }
 
 .vrd__tidal-label {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.42rem;
-  letter-spacing: 0.18em;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
   color: rgba(100, 180, 220, 0.35);
 }
 
 .vrd__intent-label {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.42rem;
-  letter-spacing: 0.18em;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
   color: rgba(160, 130, 255, 0.4);
 }
 
@@ -128,10 +128,10 @@
 .vrd__line {
   margin: 0;
   font-family: 'Jura', sans-serif;
-  font-size: 0.82rem;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.04em;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.58);
+  letter-spacing: 0.03em;
   animation: vrd-line-in 0.5s ease both;
 }
 
@@ -179,15 +179,15 @@
 
 .vrd__card-name {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.54rem;
-  letter-spacing: 0.2em;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
   opacity: 0.9;
 }
 
 .vrd__card-type {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.42rem;
-  letter-spacing: 0.15em;
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
   color: rgba(255, 255, 255, 0.18);
   margin-left: auto;
 }
@@ -195,9 +195,9 @@
 .vrd__card-reason {
   margin: 0;
   font-family: 'Jura', sans-serif;
-  font-size: 0.68rem;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.4);
   letter-spacing: 0.02em;
 }
 
@@ -209,9 +209,9 @@
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.3);
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.2em;
-  padding: 8px 18px;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  padding: 10px 22px;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
@@ -226,9 +226,9 @@
   border-radius: 6px;
   color: rgba(180, 150, 255, 0.8);
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.2em;
-  padding: 9px 22px;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  padding: 11px 26px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
@@ -245,8 +245,8 @@
 
 .vrd__loading {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.25em;
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
   color: rgba(255, 255, 255, 0.2);
   padding: 24px 0;
   animation: vrd-pulse 1.8s ease-in-out infinite;
