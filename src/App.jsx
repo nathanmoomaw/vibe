@@ -90,14 +90,18 @@ export const TONES = [
   { id: 'chime', label: 'chime', color: '#ffe8a0', glow: 'rgba(255,232,160,0.4)', periodic: true, rateDefault: 10, rateMin: 3,  rateMax: 40  },
   { id: 'gong',  label: 'gong',  color: '#ff9944', glow: 'rgba(255,153,68,0.4)',  periodic: true, rateDefault: 55, rateMin: 20, rateMax: 120 },
   { id: 'birds', label: 'birds', color: '#88ee88', glow: 'rgba(136,238,136,0.4)', periodic: true, rateDefault: 14, rateMin: 5,  rateMax: 60  },
-  // Elemental sounds — I Ching Fu Xi order: Li (3) → Xun (5) → Gen (7) → Kun (8).
-  // Each pairs with its true bitwise-opposite trigram, and together the four
-  // pairs cover all 8 trigrams with no repeats: Li/Kan (fire/water), Xun/Zhen
-  // (wind/thunder), Gen/Dui (mountain/lake — water's morph target, since Kan
-  // is already fire's opposite), Kun/Qian (earth/heaven).
-  { id: 'fire',  label: 'fire',  color: '#ff6633', glow: 'rgba(255,102,51,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Li',  pairTrigram: 'Kan'  },
-  { id: 'wind',  label: 'wind',  color: '#aaddcc', glow: 'rgba(170,221,204,0.4)', periodic: false, hasType: true, elemental: true, trigram: 'Xun', pairTrigram: 'Zhen' },
-  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Gen', pairTrigram: 'Dui'  },
+  // Elemental sounds — I Ching Fu Xi order: Li (3) → Xun (5) → Kan (6) → Kun (8).
+  // Each card's primary trigram matches its own header (fire=Li, wind=Xun,
+  // water=Kan, earth=Kun). Pair targets are a thematic "relative" from the
+  // remaining 4 non-elemental trigrams — never another of these 4 canonical
+  // elements, so no card ever morphs into a sibling's own name:
+  //   fire↔Zhen (thunder — lightning is fire from the sky)
+  //   wind↔Dui (lake — wind rippling a lake's surface)
+  //   water↔Gen (mountain — springs and rivers rise from mountains)
+  //   earth↔Qian (heaven — the primal Heaven/Earth duality)
+  { id: 'fire',  label: 'fire',  color: '#ff6633', glow: 'rgba(255,102,51,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Li',  pairTrigram: 'Zhen' },
+  { id: 'wind',  label: 'wind',  color: '#aaddcc', glow: 'rgba(170,221,204,0.4)', periodic: false, hasType: true, elemental: true, trigram: 'Xun', pairTrigram: 'Dui'  },
+  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kan', pairTrigram: 'Gen'  },
   { id: 'earth', label: 'earth', color: '#cc8855', glow: 'rgba(204,136,85,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kun', pairTrigram: 'Qian' },
 ]
 

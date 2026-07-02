@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Jul 2 2026 — trigram pairs rematched to non-elemental "relatives"
+
+- Each elemental card keeps its own literal primary trigram (fire=Li, wind=Xun, water=Kan, earth=Kun) but now morphs into a thematically related *non-elemental* trigram instead of another sibling element's name: fire↔Zhen (thunder — lightning is fire from the sky), wind↔Dui (lake — wind rippling water), water↔Gen (mountain — springs rise from mountains), earth↔Qian (heaven — the primal Heaven/Earth duality)
+- Previously fire paired with Kan (water) and vice versa, so the fire card could morph into literally showing "kan" — the water card's own name. Supersedes the Kan/Li ↔ Gen/Dui swap from earlier today; this restores water's original Kan identity while still keeping full 8-trigram coverage across the 4 elemental slots
+- Fu Xi ordering (Li 3 → Xun 5 → Kan 6 → Kun 8) stays ascending with no card reordering needed
+
 ## Jul 2 2026 — trigram click-to-enable, hypnotic visual sync, glitch variety, sparkle overlay, full 8-trigram coverage, spacebar
 
 - **Trigram tap-to-toggle**: hovering an inactive trigram now shows a normal pointer (not `ns-resize`) and a real click (press+release under 4px of movement) toggles the sound; a genuine vertical drag still adjusts the inner param and no longer accidentally toggles on release
