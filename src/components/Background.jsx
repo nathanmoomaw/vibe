@@ -72,6 +72,28 @@ const SOUND_SHAPE = {
   earth: { shape: 'halo',   petals: 0 },
 }
 
+// ── Hypnotic breathing rate ──────────────────────────────────────
+// Cousto Cosmic Octave method (f = 1/T × 2ⁿ) run in reverse: octave-divide a
+// sound's own frequency down into the ~0.08–0.25 Hz "breathing" band — the
+// same principle as using Schumann resonance as an LFO rate rather than an
+// audible tone. Periodic tones (bell/chime/gong) already cycle in that band
+// naturally via their trigger rate, so their real cadence is used directly.
+const BREATH_MIN_HZ = 0.08
+const BREATH_MAX_HZ = 0.25
+
+function toBreathHz(freq) {
+  let f = freq
+  while (f > BREATH_MAX_HZ) f /= 2
+  while (f < BREATH_MIN_HZ) f *= 2
+  return f
+}
+
+function breathHzFor(s) {
+  if (s.rateSec) return 1 / s.rateSec      // periodic tone's own trigger cadence
+  if (s.freq) return toBreathHz(s.freq)    // noise filter freq, octave-reduced
+  return 0.12                              // elemental drones: calm default
+}
+
 // ── Shape drawing functions ────────────────────────────────────────
 
 function drawHalo(ctx, cx, cy, r, alpha, glow, age) {
@@ -140,6 +162,32 @@ function drawStar(ctx, cx, cy, r, points, rotation, alpha, glow, age) {
   ctx.stroke()
 }
 
+// Selfie-filter style glint: a tapered 4-point sparkle, drawn twice (crossed)
+// with a bright center — the "sparkle" look from Snapchat/beauty-app overlays,
+// distinct from the console's diagonal shimmer sweep and the star twinkle.
+function drawGlintSpike(ctx, len, width) {
+  ctx.beginPath()
+  ctx.moveTo(0, -len)
+  ctx.quadraticCurveTo(width, 0, 0, len)
+  ctx.quadraticCurveTo(-width, 0, 0, -len)
+  ctx.fill()
+}
+
+function drawSparkle(ctx, x, y, r, alpha, color) {
+  if (alpha < 0.01 || r < 0.5) return
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.globalAlpha = alpha
+  ctx.fillStyle = color
+  drawGlintSpike(ctx, r, r * 0.16)
+  ctx.rotate(Math.PI / 2)
+  drawGlintSpike(ctx, r, r * 0.16)
+  ctx.beginPath()
+  ctx.arc(0, 0, r * 0.14, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
 // ─────────────────────────────────────────────────────────────────
 
 export default function Background({ anyOn, activeSounds }) {
@@ -152,6 +200,7 @@ export default function Background({ anyOn, activeSounds }) {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     const ripples = []
+    const sparkles = []
     let lastRipple = 0
     let fdata = null
     let raf
@@ -184,10 +233,12 @@ export default function Background({ anyOn, activeSounds }) {
       ctx.fillStyle = '#010206'
       ctx.fillRect(0, 0, width, height)
 
-      // Primary center aura — stronger intensity
+      // Primary center aura — stronger intensity, breathing in time with the sound's own rate
+      let avgBreathHz = 0.12
       if (anyOn && activeSounds.length) {
         const s = activeSounds[Math.floor(t / 3500) % activeSounds.length]
-        const a = (0.12 + energy * 0.34).toFixed(3)
+        const breath = 0.5 + 0.5 * Math.sin(t * 0.001 * breathHzFor(s) * 2 * Math.PI)
+        const a = ((0.12 + energy * 0.34) * (0.65 + 0.35 * breath)).toFixed(3)
         const auraR = Math.max(width, height) * 0.72
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, auraR)
         grad.addColorStop(0,   s.glow.replace(/[\d.]+\)$/, `${a})`))
@@ -196,18 +247,22 @@ export default function Background({ anyOn, activeSounds }) {
         ctx.fillStyle = grad
         ctx.fillRect(0, 0, width, height)
 
-        // Slow orbiting secondary wash — drifts off-center, cycles sounds at different rate
+        // Slow orbiting secondary wash — drifts off-center, cycles sounds at different rate,
+        // breathing a half-cycle out of phase with the primary aura
         const s2 = activeSounds[Math.floor(t / 9000) % activeSounds.length]
+        const breath2 = 0.5 + 0.5 * Math.sin(t * 0.001 * breathHzFor(s2) * 2 * Math.PI + Math.PI)
         const θ  = t * 0.000048
         const offX = cx + Math.cos(θ) * width * 0.18
         const offY = cy + Math.sin(θ) * height * 0.14
-        const a2 = (0.06 + energy * 0.14).toFixed(3)
+        const a2 = ((0.06 + energy * 0.14) * (0.65 + 0.35 * breath2)).toFixed(3)
         const grad2 = ctx.createRadialGradient(offX, offY, 0, offX, offY, Math.max(width, height) * 0.92)
         grad2.addColorStop(0,   s2.glow.replace(/[\d.]+\)$/, `${a2})`))
         grad2.addColorStop(0.55, s2.glow.replace(/[\d.]+\)$/, `${(a2 * 0.22).toFixed(3)})`))
         grad2.addColorStop(1,   'rgba(0,0,0,0)')
         ctx.fillStyle = grad2
         ctx.fillRect(0, 0, width, height)
+
+        avgBreathHz = activeSounds.reduce((sum, s3) => sum + breathHzFor(s3), 0) / activeSounds.length
       }
 
       // ── 3D Celestial Globe ─────────────────────────────────────────
@@ -302,8 +357,9 @@ export default function Background({ anyOn, activeSounds }) {
         ctx.fill()
       }
 
-      // Spawn ripple
-      const minInterval = anyOn ? Math.max(1800, 5000 - energy * 4000) : 99999
+      // Spawn ripple — cadence tracks the active sounds' own breathing rate
+      const breathPeriodMs = 1000 / avgBreathHz
+      const minInterval = anyOn ? Math.min(14000, Math.max(1800, breathPeriodMs * (1 - energy * 0.3))) : 99999
       if (anyOn && activeSounds.length && t - lastRipple > minInterval) {
         const src = activeSounds[Math.floor(Math.random() * activeSounds.length)]
         const cfg = SOUND_SHAPE[src.id] ?? { shape: 'halo' }
@@ -340,6 +396,32 @@ export default function Background({ anyOn, activeSounds }) {
           drawStar(ctx, cx, cy, r, rip.points, rot, alpha, rip.glow, age)
         }
         ctx.restore()
+      }
+
+      // Selfie-filter sparkle overlay — scattered glints that pop and fade,
+      // denser when a sound is actually playing (ties the flourish to energy
+      // rather than firing at a constant background rate)
+      const sparkleChance = anyOn ? 0.015 + energy * 0.05 : 0.003
+      if (Math.random() < sparkleChance) {
+        const src = activeSounds.length
+          ? activeSounds[Math.floor(Math.random() * activeSounds.length)]
+          : null
+        sparkles.push({
+          born: t,
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: 5 + Math.random() * 12,
+          life: 650 + Math.random() * 500,
+          color: src ? src.glow.replace(/[\d.]+\)$/, '0.9)') : 'rgba(255,255,255,0.85)',
+        })
+      }
+      for (let i = sparkles.length - 1; i >= 0; i--) {
+        const sp = sparkles[i]
+        const age = (t - sp.born) / sp.life
+        if (age >= 1) { sparkles.splice(i, 1); continue }
+        // pop in, hold, fade out
+        const scale = age < 0.25 ? age / 0.25 : age > 0.7 ? Math.max(0, 1 - (age - 0.7) / 0.3) : 1
+        drawSparkle(ctx, sp.x, sp.y, sp.r * scale, scale * 0.85, sp.color)
       }
     }
 

@@ -18,32 +18,47 @@ export default function SoundSlot({
   const handleVolume = useCallback((v) => onVolume(Math.round(v * 100) / 100), [onVolume])
   const handleParam  = useCallback((v) => onParam?.(v), [onParam])
 
-  // Dragging the trigram vertically adjusts the same param as the slot's inner knob
+  // Dragging the trigram vertically adjusts the same param as the slot's inner knob.
+  // A press+release with minimal movement is a tap instead — toggles the sound —
+  // so ending a drag never accidentally flips it on/off.
   const trigramDragging   = useRef(false)
+  const trigramMoved      = useRef(false)
+  const trigramStartPos   = useRef({ x: 0, y: 0 })
   const trigramStartParam = useRef(0)
 
   const onTrigramPointerDown = useCallback((e) => {
-    if (!onParam) return
     trigramDragging.current = true
+    trigramMoved.current = false
+    trigramStartPos.current = { x: e.clientX, y: e.clientY }
     trigramStartParam.current = param ?? 0
     e.currentTarget.setPointerCapture(e.pointerId)
     e.stopPropagation()
-  }, [onParam, param])
+  }, [param])
 
   const onTrigramPointerMove = useCallback((e) => {
-    if (!trigramDragging.current || !onParam) return
-    const max = paramMax ?? 360
-    const delta = (e.movementY / 200) * max
-    const next = ((trigramStartParam.current - delta) % max + max) % max
-    trigramStartParam.current = next
-    onParam(next)
+    if (!trigramDragging.current) return
+    if (!trigramMoved.current) {
+      const dx = e.clientX - trigramStartPos.current.x
+      const dy = e.clientY - trigramStartPos.current.y
+      if (Math.hypot(dx, dy) > 4) trigramMoved.current = true
+    }
+    if (trigramMoved.current && onParam) {
+      const max = paramMax ?? 360
+      const delta = (e.movementY / 200) * max
+      const next = ((trigramStartParam.current - delta) % max + max) % max
+      trigramStartParam.current = next
+      onParam(next)
+    }
     e.stopPropagation()
   }, [onParam, paramMax])
 
   const onTrigramPointerUp = useCallback((e) => {
+    const wasTap = trigramDragging.current && !trigramMoved.current
     trigramDragging.current = false
+    trigramMoved.current = false
+    if (wasTap) onToggle()
     e.stopPropagation()
-  }, [])
+  }, [onToggle])
 
   return (
     <div
@@ -68,7 +83,7 @@ export default function SoundSlot({
               onPointerUp={onTrigramPointerUp}
               onPointerCancel={onTrigramPointerUp}
               onClick={e => e.stopPropagation()}
-              style={{ touchAction: 'none', cursor: onParam ? 'ns-resize' : undefined }}
+              style={{ touchAction: 'none', cursor: active ? (onParam ? 'ns-resize' : undefined) : 'pointer' }}
             >
               <Trigram
                 lines={trigramLines}

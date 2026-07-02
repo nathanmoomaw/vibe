@@ -90,10 +90,14 @@ export const TONES = [
   { id: 'chime', label: 'chime', color: '#ffe8a0', glow: 'rgba(255,232,160,0.4)', periodic: true, rateDefault: 10, rateMin: 3,  rateMax: 40  },
   { id: 'gong',  label: 'gong',  color: '#ff9944', glow: 'rgba(255,153,68,0.4)',  periodic: true, rateDefault: 55, rateMin: 20, rateMax: 120 },
   { id: 'birds', label: 'birds', color: '#88ee88', glow: 'rgba(136,238,136,0.4)', periodic: true, rateDefault: 14, rateMin: 5,  rateMax: 60  },
-  // Elemental sounds — I Ching Fu Xi order: Li (3) → Xun (5) → Kan (6) → Kun (8)
+  // Elemental sounds — I Ching Fu Xi order: Li (3) → Xun (5) → Gen (7) → Kun (8).
+  // Each pairs with its true bitwise-opposite trigram, and together the four
+  // pairs cover all 8 trigrams with no repeats: Li/Kan (fire/water), Xun/Zhen
+  // (wind/thunder), Gen/Dui (mountain/lake — water's morph target, since Kan
+  // is already fire's opposite), Kun/Qian (earth/heaven).
   { id: 'fire',  label: 'fire',  color: '#ff6633', glow: 'rgba(255,102,51,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Li',  pairTrigram: 'Kan'  },
   { id: 'wind',  label: 'wind',  color: '#aaddcc', glow: 'rgba(170,221,204,0.4)', periodic: false, hasType: true, elemental: true, trigram: 'Xun', pairTrigram: 'Zhen' },
-  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kan', pairTrigram: 'Li'   },
+  { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Gen', pairTrigram: 'Dui'  },
   { id: 'earth', label: 'earth', color: '#cc8855', glow: 'rgba(204,136,85,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kun', pairTrigram: 'Qian' },
 ]
 
@@ -128,18 +132,20 @@ export default function App() {
   const [showInput, setShowInput] = useState(false)
   const [inputUrl, setInputUrl] = useState('')
   const [inputStatus, setInputStatus] = useState('idle') // idle | loading | playing | error
+  const [glitch, setGlitch] = useState(null) // null | { variant: 'blue'|'warm', duration }
 
   const canvasRef       = useRef(null)
   const rafRef          = useRef(null)
   const dispDragRef     = useRef(false)
   const dispTotalMoved  = useRef(0)
   const noiseRef        = useRef(noise)
+  const pausedRef       = useRef(null) // snapshot of {noise, tones} taken right before a stop-all, for spacebar resume
   useEffect(() => { noiseRef.current = noise }, [noise])
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeSounds = [
-    ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
-    ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow })),
+    ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow, freq: noise[s.id].freq })),
+    ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow, rateSec: s.periodic ? tones[s.id].rate : undefined })),
   ]
 
   // Decode settings from URL on first load
@@ -168,6 +174,24 @@ export default function App() {
       return n
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Console glitch/shimmer — fires at an irregular interval with a randomly
+  // picked variant/duration so it never reads as a fixed metronome
+  useEffect(() => {
+    let scheduleTimer, clearTimer
+    function scheduleGlitch() {
+      const delay = 12000 + Math.random() * 28000 // 12–40s
+      scheduleTimer = setTimeout(() => {
+        const variant = Math.random() < 0.5 ? 'blue' : 'warm'
+        const duration = 2.2 + Math.random() * 1.4 // 2.2–3.6s
+        setGlitch({ variant, duration })
+        clearTimer = setTimeout(() => setGlitch(null), duration * 1000)
+        scheduleGlitch()
+      }, delay)
+    }
+    scheduleGlitch()
+    return () => { clearTimeout(scheduleTimer); clearTimeout(clearTimer) }
   }, [])
 
   // Radial spectrum visualizer
@@ -514,25 +538,62 @@ export default function App() {
     })
   }, [])
 
+  // ── Stop-all / spacebar resume ──────────────────────────────────────
+  const stopAllSounds = useCallback(() => {
+    pausedRef.current = { noise, tones }
+    NOISE.forEach(s => { if (noise[s.id].on) stopNoise(s.id) })
+    TONES.forEach(s => { if (tones[s.id].on) stopTone(s.id) })
+    stopAllNoisePulses()
+    setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+    setTones(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+  }, [noise, tones])
+
+  const resumeAllSounds = useCallback(() => {
+    const snap = pausedRef.current
+    if (!snap) return
+    NOISE.forEach(s => {
+      const st = snap.noise[s.id]
+      if (st?.on) startNoise(s.id, st.volume, st.freq)
+    })
+    TONES.forEach(s => {
+      const st = snap.tones[s.id]
+      if (st?.on) startTone(s.id, st.volume, s.hasType ? st.typeAngle : (s.periodic ? st.rate : null))
+    })
+    setNoise(snap.noise)
+    setTones(snap.tones)
+    pausedRef.current = null
+  }, [])
+
+  // Spacebar stops everything playing, or resumes exactly what was paused
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.code !== 'Space') return
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
+      e.preventDefault()
+      if (anyOn) stopAllSounds()
+      else resumeAllSounds()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [anyOn, stopAllSounds, resumeAllSounds])
+
   return (
     <>
       {mode === 'party' && <Background anyOn={anyOn} activeSounds={activeSounds} />}
 
       <div className={`shell shell--${mode}`}>
-        <div className={`unit${!anyOn ? ' unit--silent' : ''}`}>
+        <div
+          className={`unit${!anyOn ? ' unit--silent' : ''}${glitch ? ` unit--glitch-${glitch.variant}` : ''}`}
+          style={glitch ? { '--glitch-dur': `${glitch.duration}s` } : undefined}
+        >
 
           {/* Stop-all button — upper right, only visible when sounds are playing */}
           {anyOn && (
             <button
               className="unit__stop-all"
-              onClick={() => {
-                NOISE.forEach(s => { if (noise[s.id].on) stopNoise(s.id) })
-                TONES.forEach(s => { if (tones[s.id].on) stopTone(s.id) })
-                stopAllNoisePulses()
-                setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
-                setTones(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
-              }}
-              title="Stop all sounds"
+              onClick={stopAllSounds}
+              title="Stop all sounds (spacebar)"
             >
               ■
             </button>

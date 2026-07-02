@@ -1,17 +1,18 @@
 import './ModeSwitch.css'
 
-// Monochrome outline of 🎉 — cone + confetti streaks/specks, stroke-only to match the app's line-art style
+// Monochrome outline of 🎉 — cone throwing confetti, dots as zero-length round-capped strokes
 function PartyIcon() {
   return (
-    <svg className="mode-switch__party-icon" width="13" height="13" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5.5 11 3 21l10-2.5" />
-      <path d="M4 3v.01" />
-      <path d="M21 7v.01" />
-      <path d="M14 2v.01" />
-      <path d="M21 19v.01" />
-      <path d="M21 2c-1 .3-2 1-2 2.2 0 1-.8 1.8-1.8 1.8h-.4c-.9 0-1.7.6-1.9 1.5L14.5 9" />
-      <path d="M21 13l-.9-.4c-.9-.3-1.9.2-2.1 1.2-.1.7-.7 1.2-1.4 1.2H16" />
+    <svg className="mode-switch__party-icon" width="14" height="14" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5.8 11.3 2 22l10.7-3.79" />
+      <path d="M4 3h.01" />
+      <path d="M22 8h.01" />
+      <path d="M15 2h.01" />
+      <path d="M22 20h.01" />
+      <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
+      <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" />
+      <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" />
     </svg>
   )
 }

@@ -1,5 +1,15 @@
 # DEVLOG — vibe
 
+## Jul 2 2026 — trigram click-to-enable, hypnotic visual sync, glitch variety, sparkle overlay, full 8-trigram coverage, spacebar
+
+- **Trigram tap-to-toggle**: hovering an inactive trigram now shows a normal pointer (not `ns-resize`) and a real click (press+release under 4px of movement) toggles the sound; a genuine vertical drag still adjusts the inner param and no longer accidentally toggles on release
+- **Party icon v2**: swapped the custom glyph for the well-known "party popper" line-icon shape (cone + confetti flecks/streaks) — more recognizable at a glance
+- **Hypnotic rate/color sync**: Background's aura brightness and ripple spawn cadence now breathe in time with the actual sounds playing — periodic tones (bell/chime/gong) use their real trigger rate, noise channels get their filter frequency octave-divided down into a ~0.08–0.25 Hz "breathing" band (Cousto Cosmic Octave method run in reverse, same principle as using Schumann resonance as an LFO rate rather than an audible tone)
+- **Glitch variety**: console glitch/shimmer converted from a fixed 22s CSS loop to a JS-scheduled one-shot event firing at an irregular 12–40s interval, randomly picking a blue or warm-amber variant and a randomized duration each time
+- **Sparkle overlay**: added a new "selfie filter" style glint effect (tapered 4-point sparkles that pop in, hold, and fade) scattered across the background canvas, denser when a sound is actively playing — distinct from both the console's diagonal shimmer sweep and the starfield's twinkle
+- **Full 8-trigram coverage**: water's trigram pairing changed from Kan/Li (which duplicated fire's Li/Kan pair) to Gen/Dui (Mountain/Lake — the one classical opposite-pair that was unused); all four elemental slots now cover all 8 trigrams with no repeats, and the Fu Xi ordering (Li 3 → Xun 5 → Gen 7 → Kun 8) stays ascending
+- **Spacebar**: stops all playing sounds, or resumes the exact snapshot that was playing before the last stop (works with both the spacebar and the stop-all button, which now share one `stopAllSounds` callback)
+
 ## Jul 2 2026 — trigram outline fix, drag-to-adjust, reading header text, party icon
 
 - **Trigram outline**: removed the always-on bordering rect frame (looked disconnected once bars morphed mid-transition between paired trigrams). Outline now traces the nearest *discrete* trigram's bars (crisp, unmorphed) in a lighter `color-mix` shade of the fill color, while the fill itself keeps the smooth morph
