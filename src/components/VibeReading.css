@@ -63,16 +63,16 @@
 
 .vrd__dateline {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.22em;
-  color: rgba(255, 255, 255, 0.18);
+  font-size: 0.76rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.2);
 }
 
 .vrd__title {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.78rem;
-  letter-spacing: 0.4em;
-  color: rgba(180, 150, 255, 0.65);
+  font-size: 1rem;
+  letter-spacing: 0.36em;
+  color: rgba(180, 150, 255, 0.7);
 }
 
 .vrd__moon {
@@ -82,7 +82,7 @@
 }
 
 .vrd__moon-icon {
-  font-size: 1.5rem;
+  font-size: 1.9rem;
   line-height: 1;
   filter: drop-shadow(0 0 10px rgba(200, 180, 255, 0.5));
 }
@@ -95,23 +95,23 @@
 
 .vrd__moon-label {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
-  color: rgba(200, 180, 255, 0.45);
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  color: rgba(200, 180, 255, 0.5);
 }
 
 .vrd__tidal-label {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.14em;
-  color: rgba(100, 180, 220, 0.35);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: rgba(100, 180, 220, 0.4);
 }
 
 .vrd__intent-label {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.14em;
-  color: rgba(160, 130, 255, 0.4);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: rgba(160, 130, 255, 0.45);
 }
 
 .vrd__lines {
@@ -151,7 +151,7 @@
 
 .vrd__card {
   background: rgba(255, 255, 255, 0.025);
-  border: 1px solid color-mix(in srgb, var(--card-color, #888) 18%, transparent);
+  border: 1px solid color-mix(in oklch, var(--card-color, #888) 18%, transparent);
   border-radius: 8px;
   padding: 10px 12px;
   animation: vrd-card-in 0.35s ease both;

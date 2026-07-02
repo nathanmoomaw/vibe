@@ -81,6 +81,11 @@
   opacity: 0.75;
 }
 
+.slot__trigram-drag {
+  display: flex;
+  flex-shrink: 0;
+}
+
 /* Knob area — slides in when active */
 .slot__knob-wrap {
   overflow: hidden;

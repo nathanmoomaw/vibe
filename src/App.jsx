@@ -79,6 +79,12 @@ function getTrigramLabel(s, angle) {
   return (t < 0.5 ? s.trigram : s.pairTrigram).toLowerCase()
 }
 
+// The discrete (unmorphed) trigram nearest the current angle — used to draw a crisp outline
+function getClosestTrigramLines(s, angle) {
+  const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+  return TRIGRAMS[t < 0.5 ? s.trigram : s.pairTrigram]
+}
+
 export const TONES = [
   { id: 'bell',  label: 'bell',  color: '#ffd166', glow: 'rgba(255,209,102,0.4)', periodic: true, rateDefault: 25, rateMin: 8,  rateMax: 90  },
   { id: 'chime', label: 'chime', color: '#ffe8a0', glow: 'rgba(255,232,160,0.4)', periodic: true, rateDefault: 10, rateMin: 3,  rateMax: 40  },
@@ -619,6 +625,7 @@ export default function App() {
                         innerCircular
                         elemental
                         trigramLines={morphTrigram(TRIGRAMS[s.trigram], TRIGRAMS[s.pairTrigram], tones[s.id].typeAngle)}
+                        trigramOutline={getClosestTrigramLines(s, tones[s.id].typeAngle)}
                         trigramLabel={getTrigramLabel(s, tones[s.id].typeAngle)}
                         onToggle={() => toggleTone(s.id)}
                         onVolume={v => setToneVol(s.id, v)}

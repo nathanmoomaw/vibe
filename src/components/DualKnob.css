@@ -38,7 +38,7 @@
   stroke-linecap: round;
   transform-origin: center;
   transform: rotate(135deg);
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--vk-color) 60%, transparent));
+  filter: drop-shadow(0 0 3px color-mix(in oklch, var(--vk-color) 60%, transparent));
 }
 
 .vk__outer-ring {
@@ -50,7 +50,7 @@
 
 .vk__body[data-zone="outer"] .vk__outer-ring,
 .vk__body[data-zone="inner"] .vk__outer-ring {
-  stroke: color-mix(in srgb, var(--vk-color) 40%, transparent);
+  stroke: color-mix(in oklch, var(--vk-color) 40%, transparent);
 }
 
 .vk__sep {
@@ -61,7 +61,7 @@
   transition: stroke 0.15s;
 }
 
-.vk__body[data-zone="outer"] .vk__sep { stroke: color-mix(in srgb, var(--vk-color) 70%, white); stroke-dasharray: none; }
+.vk__body[data-zone="outer"] .vk__sep { stroke: color-mix(in oklch, var(--vk-color) 70%, white); stroke-dasharray: none; }
 .vk__body[data-zone="inner"] .vk__sep { stroke: rgba(255,255,255,0.4); stroke-dasharray: none; }
 
 .vk__inner {
@@ -84,13 +84,13 @@
 }
 
 .vk__body[data-zone="outer"] .vk__inner {
-  border-color: color-mix(in srgb, var(--vk-color) 50%, transparent);
+  border-color: color-mix(in oklch, var(--vk-color) 50%, transparent);
 }
 
 .vk__inner--single {
   background: radial-gradient(circle at 38% 32%, rgba(50,42,28,0.9), rgba(18,14,8,1) 65%);
-  border-color: color-mix(in srgb, var(--vk-color) 25%, rgba(255,255,255,0.1));
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 8px color-mix(in srgb, var(--vk-color) 12%, transparent),
+  border-color: color-mix(in oklch, var(--vk-color) 25%, rgba(255,255,255,0.1));
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 8px color-mix(in oklch, var(--vk-color) 12%, transparent),
               inset 0 1px 0 rgba(255,255,255,0.07);
 }
 
@@ -107,7 +107,7 @@
   margin-left: -1px;
   border-radius: 2px;
   background: var(--vk-color, #66ccff);
-  box-shadow: 0 0 4px var(--vk-color), 0 0 8px color-mix(in srgb, var(--vk-color) 40%, transparent);
+  box-shadow: 0 0 4px var(--vk-color), 0 0 8px color-mix(in oklch, var(--vk-color) 40%, transparent);
 }
 
 .vk__ghost {

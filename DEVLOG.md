@@ -1,5 +1,13 @@
 # DEVLOG — vibe
 
+## Jul 2 2026 — trigram outline fix, drag-to-adjust, reading header text, party icon
+
+- **Trigram outline**: removed the always-on bordering rect frame (looked disconnected once bars morphed mid-transition between paired trigrams). Outline now traces the nearest *discrete* trigram's bars (crisp, unmorphed) in a lighter `color-mix` shade of the fill color, while the fill itself keeps the smooth morph
+- **Trigram drag**: dragging vertically on an elemental trigram now adjusts that slot's inner (type) param, same math as the DualKnob's circular inner-zone drag
+- **color-mix colorspace**: switched all `color-mix(in srgb, …)` to `color-mix(in oklch, …)` (DualKnob, VibeReading, Trigram) for perceptually uniform blends instead of the muddier sRGB interpolation — per July 1 learn session digest
+- **Reading modal header**: bumped dateline/title/moon/tidal/intent text further (title 0.78→1rem, moon icon 1.5→1.9rem, others ~20%) per follow-up feedback that the first bump wasn't enough for this section
+- **Mode switch**: replaced the "party" text label with a monochrome line-art SVG icon (cone + confetti) matching the app's stroke-based aesthetic; `aria-label`/`title` still say "party"
+
 ## Jul 1 2026 — reading modal text size bump
 
 - All VibeReading modal font sizes increased ~20–25%: reading lines 0.82→1.02rem, title 0.62→0.78rem, moon label 0.5→0.65rem, tidal/intent 0.42→0.55rem, card reason 0.68→0.84rem, card name 0.54→0.68rem, reveal button 0.55→0.68rem, apply button 0.6→0.72rem

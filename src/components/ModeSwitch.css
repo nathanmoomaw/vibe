@@ -18,6 +18,12 @@
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
   transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mode-switch__party-icon {
+  display: block;
 }
 
 .mode-switch__btn--on {
