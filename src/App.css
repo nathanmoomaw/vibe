@@ -228,6 +228,7 @@
   border-radius: 3px;
   overflow: hidden;
   animation: stop-outline-shift 16s ease-in-out infinite;
+  transition: color 0.2s, filter 0.2s;
 }
 /* Outline-only square (□, not the filled ■) whose color slowly cycles through
    the same warm-gold/blue/amber palette as the console border, instead of a
@@ -240,6 +241,7 @@
 .unit__stop-all:hover {
   animation-play-state: paused;
   color: rgba(230, 210, 160, 0.9);
+  filter: drop-shadow(0 0 4px rgba(230, 210, 160, 0.5));
 }
 
 /* ─── Circular speaker/display — Heathkit-style meter inset ─────── */

@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Jul 2 2026 — trigram tooltips, stop button hover polish
+
+- **Trigram label tooltip**: hovering an elemental slot's Chinese trigram name (li, kan, xun, etc.) now shows a native tooltip with the English gloss (fire, water, wind, thunder, lake, mountain, heaven, earth)
+- **Stop button hover**: added a smooth `color`/`filter` transition and a warm drop-shadow glow on hover, matching the fade-and-glow treatment already used by the other console icon buttons (joker/qr/mode-switch) instead of an instant color jump
+
 ## Jul 2 2026 — decan/Tarot pip, stop button restyle, party icon v3, idle glints
 
 - **Decan reading**: Vibe Reading now shows the current 10°-decan (e.g. "cancer II"), its Chaldean-order ruling planet, and its Golden Dawn Tarot pip card (e.g. "3 of cups") — pure Sun-ecliptic-longitude math (Meeus low-precision formula), no new API. Validated against the July 1 learn digest's independently-sourced fact ("Cancer I = Venus = 2 of Cups")

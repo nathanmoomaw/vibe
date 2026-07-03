@@ -3,6 +3,12 @@ import { DualKnob } from './DualKnob.jsx'
 import { Trigram } from './Trigram.jsx'
 import './SoundSlot.css'
 
+// English gloss for each trigram's lowercase name, shown as a hover tooltip
+const TRIGRAM_ENGLISH = {
+  li: 'fire', kan: 'water', xun: 'wind', zhen: 'thunder',
+  dui: 'lake', gen: 'mountain', qian: 'heaven', kun: 'earth',
+}
+
 function fmtParam(v, label) {
   if (label === 'freq') return v >= 1000 ? `${(v/1000).toFixed(1)}k` : `${Math.round(v)}`
   if (label === 'rate') return `${Math.round(v)}s`
@@ -97,7 +103,8 @@ export default function SoundSlot({
               />
             </div>
             <span className={`slot__trigram-lbl ${active ? 'slot__trigram-lbl--on' : ''}`}
-              style={active ? { '--color': color } : {}}>
+              style={active ? { '--color': color } : {}}
+              title={TRIGRAM_ENGLISH[trigramLabel]}>
               {trigramLabel}
             </span>
           </>
