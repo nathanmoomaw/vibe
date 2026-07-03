@@ -599,7 +599,7 @@ export default function App() {
               onClick={stopAllSounds}
               title="Stop all sounds (spacebar)"
             >
-              ■
+              □
             </button>
           )}
 
@@ -643,6 +643,7 @@ export default function App() {
                         paramLabel="freq"
                         paramMin={s.filterMin}
                         paramMax={s.filterMax}
+                        idle={!anyOn}
                         onToggle={() => toggleNoise(s.id)}
                         onVolume={v => setNoiseVol(s.id, v)}
                         onParam={hz => setNoiseFreqCb(s.id, hz)}
@@ -665,6 +666,7 @@ export default function App() {
                         paramLabel={s.periodic ? 'rate' : undefined}
                         paramMin={s.periodic ? s.rateMin : undefined}
                         paramMax={s.periodic ? s.rateMax : undefined}
+                        idle={!anyOn}
                         onToggle={() => toggleTone(s.id)}
                         onVolume={v => setToneVol(s.id, v)}
                         onParam={s.periodic ? (r => setToneRate(s.id, r)) : undefined}
@@ -692,6 +694,7 @@ export default function App() {
                         trigramLines={morphTrigram(TRIGRAMS[s.trigram], TRIGRAMS[s.pairTrigram], tones[s.id].typeAngle)}
                         trigramOutline={getClosestTrigramLines(s, tones[s.id].typeAngle)}
                         trigramLabel={getTrigramLabel(s, tones[s.id].typeAngle)}
+                        idle={!anyOn}
                         onToggle={() => toggleTone(s.id)}
                         onVolume={v => setToneVol(s.id, v)}
                         onParam={a => setToneTypeCb(s.id, a)}

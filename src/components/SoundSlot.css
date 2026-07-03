@@ -1,4 +1,5 @@
 .slot {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,6 +13,27 @@
   user-select: none;
   -webkit-user-select: none;
   outline: none;
+}
+
+/* Occasional radial glint while the whole console is idle — a quiet "try me"
+   flicker, staggered per-card via a random negative animation-delay so they
+   never all flash in sync */
+.slot--idle-glint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, var(--color, #fff) 0%, transparent 65%);
+  opacity: 0;
+  animation: slot-idle-glint 28s ease-in-out infinite;
+  animation-delay: var(--glint-delay, 0s);
+}
+
+@keyframes slot-idle-glint {
+  0%, 92%, 100% { opacity: 0; }
+  95%           { opacity: 0.3; }
+  98%           { opacity: 0; }
 }
 
 .slot:focus-visible {

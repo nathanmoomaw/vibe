@@ -87,6 +87,9 @@ export function VibeReading({ onClose, onApply, onRevealSound, NOISE, TONES }) {
                 <span className="vrd__moon-label">{MOON_LABEL[reading.moonState]}</span>
                 <span className="vrd__tidal-label">{reading.tidal.label}</span>
                 <span className="vrd__intent-label">∿ {reading.intentLabel}</span>
+                <span className="vrd__decan-label">
+                  {reading.decan.decanLabel} · {reading.decan.ruler} · {reading.decan.cardName}
+                </span>
               </div>
             </div>
 

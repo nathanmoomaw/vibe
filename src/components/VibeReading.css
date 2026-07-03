@@ -114,6 +114,14 @@
   color: rgba(160, 130, 255, 0.45);
 }
 
+.vrd__decan-label {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  color: rgba(255, 209, 102, 0.4);
+}
+
 .vrd__lines {
   display: flex;
   flex-direction: column;

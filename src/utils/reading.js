@@ -24,6 +24,59 @@ export const MOON_LABEL = {
   lastQuarter: 'last quarter', waningCrescent: 'waning crescent',
 }
 
+// ── Decan / cosmic Tarot pip ─────────────────────────────────────────────────
+// Sun's ecliptic longitude via the Meeus low-precision solar position formula
+// (accurate to ~0.01°, more than enough to place a 10°-wide decan). No API —
+// pure date math, per the July 1 learn-session digest.
+function sunEclipticLongitude(date = new Date()) {
+  const jd = date.getTime() / 86400000 + 2440587.5
+  const T = (jd - 2451545.0) / 36525
+  const L0 = (280.46646 + 36000.76983 * T + 0.0003032 * T * T) % 360
+  const M  = (357.52911 + 35999.05029 * T - 0.0001537 * T * T) % 360
+  const Mr = M * Math.PI / 180
+  const C = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(Mr)
+          + (0.019993 - 0.000101 * T) * Math.sin(2 * Mr)
+          + 0.000289 * Math.sin(3 * Mr)
+  const trueLong = (L0 + C) % 360
+  const omega = 125.04 - 1934.136 * T
+  const appLong = trueLong - 0.00569 - 0.00478 * Math.sin(omega * Math.PI / 180)
+  return (appLong + 360) % 360
+}
+
+const ZODIAC = ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces']
+const DECAN_NUM = ['I', 'II', 'III']
+const ELEMENT_SUIT = {
+  aries: 'wands', leo: 'wands', sagittarius: 'wands',
+  cancer: 'cups', scorpio: 'cups', pisces: 'cups',
+  gemini: 'swords', libra: 'swords', aquarius: 'swords',
+  taurus: 'pentacles', virgo: 'pentacles', capricorn: 'pentacles',
+}
+// Cardinal signs → pips 2/3/4, fixed → 5/6/7, mutable → 8/9/10 (Golden Dawn)
+const MODALITY_BASE_PIP = {
+  aries: 2, cancer: 2, libra: 2, capricorn: 2,
+  taurus: 5, leo: 5, scorpio: 5, aquarius: 5,
+  gemini: 8, virgo: 8, sagittarius: 8, pisces: 8,
+}
+// Chaldean decan rulers, continuous cycle of 7 starting at Aries decan I = Mars
+// (each sign's own ruler governs its first decan; the Chaldean order carries on from there)
+const CHALDEAN_FROM_MARS = ['mars', 'sun', 'venus', 'mercury', 'moon', 'saturn', 'jupiter']
+
+export function currentDecan(date = new Date()) {
+  const lon = sunEclipticLongitude(date)
+  const signIdx = Math.floor(lon / 30) % 12
+  const sign = ZODIAC[signIdx]
+  const degInSign = lon - signIdx * 30
+  const decanIdx = Math.min(2, Math.floor(degInSign / 10)) // 0, 1, 2
+  const globalDecanIdx = signIdx * 3 + decanIdx // 0..35, continuous from Aries I
+  const ruler = CHALDEAN_FROM_MARS[globalDecanIdx % 7]
+  const pip = MODALITY_BASE_PIP[sign] + decanIdx
+  const suit = ELEMENT_SUIT[sign]
+  return {
+    sign, decanIndex: decanIdx, decanLabel: `${sign} ${DECAN_NUM[decanIdx]}`,
+    ruler, pip, suit, cardName: `${pip} of ${suit}`,
+  }
+}
+
 // ── Time of day ───────────────────────────────────────────────────────────────
 function timePeriod(h) {
   if (h >= 4  && h < 7)  return 'dawn'
@@ -366,6 +419,7 @@ export function buildReading(phase, weather) {
     tidal: { spring, height, label: tidalLabel(spring, height) },
     pulseHz: PULSE_HZ[moon] ?? 7.83,
     intentLabel: INTENT_LABEL[moon] ?? 'meditating · ♁ 7.83 Hz',
+    decan: currentDecan(),
     lines: [moonLine, timeLine, presLine],
     soundCards, noise, tones,
   }

@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { DualKnob } from './DualKnob.jsx'
 import { Trigram } from './Trigram.jsx'
 import './SoundSlot.css'
@@ -14,9 +14,13 @@ export default function SoundSlot({
   active, volume, param, paramLabel, paramMin, paramMax,
   onToggle, onVolume, onParam, innerCircular = false,
   elemental = false, trigramLines = null, trigramOutline = null, trigramLabel = null,
+  idle = false,
 }) {
   const handleVolume = useCallback((v) => onVolume(Math.round(v * 100) / 100), [onVolume])
   const handleParam  = useCallback((v) => onParam?.(v), [onParam])
+
+  // Stable per-instance random offset so idle glints don't all fire in sync
+  const [glintDelay] = useState(() => -(Math.random() * 28))
 
   // Dragging the trigram vertically adjusts the same param as the slot's inner knob.
   // A press+release with minimal movement is a tap instead — toggles the sound —
@@ -62,8 +66,8 @@ export default function SoundSlot({
 
   return (
     <div
-      className={`slot ${active ? 'slot--on' : ''}`}
-      style={{ '--glow': glow, '--color': color }}
+      className={`slot ${active ? 'slot--on' : ''}${idle ? ' slot--idle-glint' : ''}`}
+      style={{ '--glow': glow, '--color': color, '--glint-delay': `${glintDelay}s` }}
       role="button"
       tabIndex={0}
       aria-pressed={active}

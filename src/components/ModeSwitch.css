@@ -30,6 +30,14 @@
   color: #ccc;
 }
 
+.mode-switch__btn:hover {
+  color: #999;
+}
+
+.mode-switch__btn--on:hover {
+  color: #fff;
+}
+
 .mode-switch__sep {
   color: #333;
 }

@@ -1,5 +1,13 @@
 # DEVLOG — vibe
 
+## Jul 2 2026 — decan/Tarot pip, stop button restyle, party icon v3, idle glints
+
+- **Decan reading**: Vibe Reading now shows the current 10°-decan (e.g. "cancer II"), its Chaldean-order ruling planet, and its Golden Dawn Tarot pip card (e.g. "3 of cups") — pure Sun-ecliptic-longitude math (Meeus low-precision formula), no new API. Validated against the July 1 learn digest's independently-sourced fact ("Cancer I = Venus = 2 of Cups")
+- **Stop button restyle**: swapped the filled ■ (static red) for an outline □ whose color slowly cycles through the console's own gold/blue/amber palette instead of a fixed red fill
+- **Party icon v3**: simplified from 8 thin-stroke paths (including near-invisible zero-length-line dots) down to 4 bold filled shapes — a solid cone plus 3 chunky confetti flecks — for clarity at the tiny footer-button size
+- **Mode switch hover**: added `:hover` color-brighten states to the party/lo buttons, matching the other footer icons (qr/joker/input) which already brighten on hover
+- **Idle radial glints**: while the whole console is silent, each sound-slot card and the central circle visualizer now occasionally flash a brief radial glint from their center — staggered per-card via a random negative animation-delay so they never sync up
+
 ## Jul 2 2026 — trigram pairs rematched to non-elemental "relatives"
 
 - Each elemental card keeps its own literal primary trigram (fire=Li, wind=Xun, water=Kan, earth=Kun) but now morphs into a thematically related *non-elemental* trigram instead of another sibling element's name: fire↔Zhen (thunder — lightning is fire from the sky), wind↔Dui (lake — wind rippling water), water↔Gen (mountain — springs rise from mountains), earth↔Qian (heaven — the primal Heaven/Earth duality)

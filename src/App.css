@@ -180,6 +180,27 @@
 .unit__display-ring--silent {
   transition: box-shadow 0.4s ease;
 }
+
+/* Occasional radial glint while idle — same quiet "try me" flicker as the
+   sound-slot cards, contained by the ring's own overflow:hidden */
+.unit__display-ring--silent::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(200, 170, 255, 0.6) 0%, transparent 60%);
+  opacity: 0;
+  animation: ring-idle-glint 34s ease-in-out infinite;
+  animation-delay: -11s;
+}
+
+@keyframes ring-idle-glint {
+  0%, 90%, 100% { opacity: 0; }
+  94%           { opacity: 0.4; }
+  97%           { opacity: 0; }
+}
+
 .unit__display-ring--silent:hover {
   box-shadow:
     0 0 0 5px rgba(20, 14, 6, 0.9),
@@ -199,7 +220,6 @@
   right: 0.9rem;
   background: none;
   border: none;
-  color: rgba(255, 80, 60, 0.3);
   font-size: 0.7rem;
   line-height: 1;
   cursor: pointer;
@@ -207,26 +227,19 @@
   z-index: 10;
   border-radius: 3px;
   overflow: hidden;
-  transition: color 0.25s;
+  animation: stop-outline-shift 16s ease-in-out infinite;
 }
-.unit__stop-all::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 60% 40%,
-    rgba(180, 40, 20, 0.0) 0%,
-    rgba(160, 30, 15, 0.0) 100%
-  );
-  animation: stop-pulse 5s ease-in-out infinite;
-  border-radius: 3px;
-  pointer-events: none;
-}
-@keyframes stop-pulse {
-  0%, 100% { background: radial-gradient(ellipse at 60% 40%, rgba(180, 40, 20, 0.0) 0%, rgba(120, 20, 10, 0.0) 100%) }
-  50%       { background: radial-gradient(ellipse at 40% 60%, rgba(180, 40, 20, 0.10) 0%, rgba(120, 20, 10, 0.08) 100%) }
+/* Outline-only square (□, not the filled ■) whose color slowly cycles through
+   the same warm-gold/blue/amber palette as the console border, instead of a
+   static red fill */
+@keyframes stop-outline-shift {
+  0%, 100% { color: rgba(200, 160, 70, 0.35); }
+  33%      { color: rgba(120, 160, 255, 0.35); }
+  66%      { color: rgba(255, 190, 110, 0.4); }
 }
 .unit__stop-all:hover {
-  color: rgba(255, 80, 60, 0.85);
+  animation-play-state: paused;
+  color: rgba(230, 210, 160, 0.9);
 }
 
 /* ─── Circular speaker/display — Heathkit-style meter inset ─────── */

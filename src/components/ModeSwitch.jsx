@@ -1,18 +1,15 @@
 import './ModeSwitch.css'
 
-// Monochrome outline of 🎉 — cone throwing confetti, dots as zero-length round-capped strokes
+// Monochrome outline of 🎉 — a solid cone + a few chunky confetti flecks.
+// Kept to a handful of bold filled shapes (no thin strokes or hairline dots)
+// so it still reads clearly at the tiny footer-button size.
 function PartyIcon() {
   return (
-    <svg className="mode-switch__party-icon" width="14" height="14" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5.8 11.3 2 22l10.7-3.79" />
-      <path d="M4 3h.01" />
-      <path d="M22 8h.01" />
-      <path d="M15 2h.01" />
-      <path d="M22 20h.01" />
-      <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
-      <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" />
-      <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" />
+    <svg className="mode-switch__party-icon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M4 21 9 8 20 14Z" />
+      <rect x="14.2" y="2.3" width="2.6" height="6.2" rx="1.3" transform="rotate(20 15.5 5.4)" />
+      <rect x="19.2" y="6.6" width="2.6" height="6.2" rx="1.3" transform="rotate(55 20.5 9.7)" />
+      <circle cx="21" cy="3.2" r="1.4" />
     </svg>
   )
 }
