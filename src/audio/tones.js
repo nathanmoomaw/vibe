@@ -467,23 +467,21 @@ export function startTone(id, volume = 0.5, rateSec = null) {
     const defaults = { bell: 25, chime: 10, gong: 55, birds: 14 }
     const interval = (rateSec ?? defaults[id]) * 1000
 
-    fn(ctx, reverb, volume)
+    const state = { volume, fn, interval, reverb, timer: null }
+    activeIntervals[id] = state
 
-    const timerId = setInterval(() => {
-      fn(ctx, reverb, volume)
-    }, interval * (0.7 + Math.random() * 0.6))
-
-    const jitterUpdate = () => {
-      clearInterval(activeIntervals[id]?.timer)
-      if (!activeIntervals[id]) return
-      const t = setInterval(() => {
-        fn(ctx, reverb, volume)
-        jitterUpdate()
-      }, interval * (0.7 + Math.random() * 0.6))
-      activeIntervals[id].timer = t
+    // Re-randomize the wait on every firing (not just once) so the period
+    // never settles into a metronome — each gap is its own random draw.
+    const scheduleNext = () => {
+      const delay = interval * (0.5 + Math.random() * 1.1)
+      state.timer = setTimeout(() => {
+        fn(ctx, reverb, state.volume)
+        scheduleNext()
+      }, delay)
     }
 
-    activeIntervals[id] = { timer: timerId, volume, fn, interval, reverb }
+    fn(ctx, reverb, volume)
+    scheduleNext()
     return
   }
 
@@ -502,7 +500,7 @@ export function setToneParam(id, value) {
 
 export function stopTone(id) {
   if (activeIntervals[id]) {
-    clearInterval(activeIntervals[id].timer)
+    clearTimeout(activeIntervals[id].timer)
     delete activeIntervals[id]
   }
   if (activeContinuous[id]) {

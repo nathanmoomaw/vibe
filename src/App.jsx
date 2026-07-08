@@ -10,6 +10,7 @@ import ModeSwitch from './components/ModeSwitch.jsx'
 import { VibeQR } from './components/VibeQR.jsx'
 import { VibePhilosophy } from './components/VibePhilosophy.jsx'
 import { VibeReading } from './components/VibeReading.jsx'
+import { VibePresets } from './components/VibePresets.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
 import './App.css'
 
@@ -25,6 +26,19 @@ const PLANETS = [
   { name: 'Uranus',  symbol: '♅', freq: 207.36 },
   { name: 'Neptune', symbol: '♆', freq: 211.44 },
 ]
+
+// Energetic-quality blurbs for the hover tooltip on each planetary glyph
+const PLANET_QUALITY = {
+  Sun:     'vitality and identity — the core pulse. resonant near 126.22 Hz.',
+  Moon:    'receptivity and tide — the emotional body. resonant near 210.42 Hz.',
+  Mercury: 'quick and communicative — shimmer and motion. resonant near 141.27 Hz.',
+  Venus:   'harmony and pleasure — softens the edges of the sound. resonant near 221.23 Hz.',
+  Mars:    'drive and heat — sharpens toward intensity. resonant near 144.72 Hz.',
+  Jupiter: 'expansion and ease — widens the sound outward. resonant near 183.58 Hz.',
+  Saturn:  'structure and depth — slows the sound toward gravity. resonant near 147.85 Hz.',
+  Uranus:  'sudden shift and spark — an unpredictable charge. resonant near 207.36 Hz.',
+  Neptune: 'dissolve and dream — blurs the sound toward the unconscious. resonant near 211.44 Hz.',
+}
 
 // Mean ecliptic longitude from J2000.0 (Jan 1.5, 2000) using mean motion
 const J2000_ORBITS = {
@@ -124,6 +138,19 @@ function initState(slots, extra) {
   return Object.fromEntries(slots.map(s => [s.id, { on: false, volume: 0.5, ...extra(s) }]))
 }
 
+// Monochrome outline of 💊 — a capsule rotated diagonal with a center divider,
+// the classic two-tone pill silhouette rendered as pure strokes.
+function PillIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <g transform="rotate(-40 12 12)">
+        <rect x="4" y="8.5" width="16" height="7" rx="3.5" />
+        <line x1="12" y1="8.5" x2="12" y2="15.5" />
+      </g>
+    </svg>
+  )
+}
+
 export default function App() {
   const [mode, setMode] = useState('party')
   const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
@@ -133,18 +160,23 @@ export default function App() {
   const [showQR, setShowQR] = useState(false)
   const [showPhilosophy, setShowPhilosophy] = useState(false)
   const [showReading, setShowReading] = useState(false)
+  const [showPresets, setShowPresets] = useState(false)
   const [showInput, setShowInput] = useState(false)
   const [inputUrl, setInputUrl] = useState('')
   const [inputStatus, setInputStatus] = useState('idle') // idle | loading | playing | error
   const [glitch, setGlitch] = useState(null) // null | { variant: 'blue'|'warm', duration }
 
   const canvasRef       = useRef(null)
-  const rafRef          = useRef(null)
-  const dispDragRef     = useRef(false)
-  const dispTotalMoved  = useRef(0)
-  const noiseRef        = useRef(noise)
-  const pausedRef       = useRef(null) // snapshot of {noise, tones} taken right before a stop-all, for spacebar resume
+  const rafRef           = useRef(null)
+  const dispDragRef      = useRef(false)
+  const dispTotalMoved   = useRef(0)
+  const noiseRef         = useRef(noise)
+  const pausedRef        = useRef(null) // snapshot of {noise, tones} taken right before a stop-all, for spacebar resume
+  const planetPosRef     = useRef([])   // latest on-screen planet glyph positions, for hover hit-testing
+  const hoveredPlanetRef = useRef(null)
+  const [hoveredPlanet, setHoveredPlanet] = useState(null) // { name, x, y } | null — drives the hover tooltip
   useEffect(() => { noiseRef.current = noise }, [noise])
+  useEffect(() => { hoveredPlanetRef.current = hoveredPlanet?.name ?? null }, [hoveredPlanet])
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeSounds = [
@@ -247,6 +279,7 @@ export default function App() {
         .filter(s => noiseRef.current[s.id]?.on)
         .map(s => noiseRef.current[s.id].freq)
 
+      const positions = []
       if (activeFreqs.length > 0) {
         for (const p of PLANETS) {
           const fade = Math.max(...activeFreqs.map(f => planetFade(f, p.freq)))
@@ -256,12 +289,16 @@ export default function App() {
           const pr = maxR + 9
           const px = cx + Math.cos(angle) * pr
           const py = cy + Math.sin(angle) * pr
+          positions.push({ name: p.name, px, py })
+
+          const hovered = hoveredPlanetRef.current === p.name
+          const baseSize = 12 + Math.round(fade * 6)
 
           ctx.save()
-          ctx.globalAlpha = fade * 0.9
+          ctx.globalAlpha = hovered ? Math.max(0.95, fade) : fade * 0.9
           ctx.shadowColor = 'rgba(255,200,80,0.9)'
-          ctx.shadowBlur = 5
-          ctx.font = `bold ${9 + Math.round(fade * 4)}px serif`
+          ctx.shadowBlur = hovered ? 11 : 5
+          ctx.font = `bold ${hovered ? Math.round(baseSize * 1.55) : baseSize}px serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillStyle = '#ffd080'
@@ -269,6 +306,7 @@ export default function App() {
           ctx.restore()
         }
       }
+      planetPosRef.current = positions
     }
     draw()
     return () => cancelAnimationFrame(rafRef.current)
@@ -347,8 +385,8 @@ export default function App() {
     setTimeout(() => setDispFlashing(false), 700)
   }, [])
 
-  // ── Apply a reading preset ────────────────────────────────────────
-  const applyReading = useCallback((readingNoise, readingTones, pulseHz) => {
+  // ── Apply a reading or preset sound state ──────────────────────────
+  const applySoundState = useCallback((readingNoise, readingTones, pulseHz, onDone) => {
     stopAllNoisePulses()
     setNoise(prev => {
       const next = { ...prev }
@@ -387,10 +425,18 @@ export default function App() {
     })
     // Fade master back up after applying reading sounds
     fadeMaster(0.85, 600)
-    setShowReading(false)
+    onDone?.()
     setDispFlashing(true)
     setTimeout(() => setDispFlashing(false), 700)
   }, [])
+
+  const applyReading = useCallback((readingNoise, readingTones, pulseHz) => {
+    applySoundState(readingNoise, readingTones, pulseHz, () => setShowReading(false))
+  }, [applySoundState])
+
+  const applyPreset = useCallback((preset) => {
+    applySoundState(preset.noise, preset.tones, preset.pulseHz, () => setShowPresets(false))
+  }, [applySoundState])
 
   // ── Reveal one reading sound (called as each card is tapped) ────────
   const revealReadingSound = useCallback((id, type, cfg) => {
@@ -435,10 +481,32 @@ export default function App() {
     dispDragRef.current = true
     dispTotalMoved.current = 0
     setDispDragging(anyOn)
+    setHoveredPlanet(null)
     e.currentTarget.setPointerCapture(e.pointerId)
   }, [anyOn])
 
+  // Hover-hit-test the last-drawn planet glyph positions — drives the magnify
+  // effect in the draw loop and the info tooltip below, independent of drag.
+  const onDisplayHover = useCallback((e) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const lx = (e.clientX - rect.left) * scaleX
+    const ly = (e.clientY - rect.top) * scaleY
+    let hit = null
+    for (const p of planetPosRef.current) {
+      if (Math.hypot(lx - p.px, ly - p.py) < 14) { hit = p; break }
+    }
+    const hitName = hit ? hit.name : null
+    if (hitName !== hoveredPlanetRef.current) {
+      setHoveredPlanet(hit ? { name: hit.name, x: hit.px / scaleX, y: hit.py / scaleY } : null)
+    }
+  }, [])
+
   const onDisplayMove = useCallback((e) => {
+    if (!dispDragRef.current) onDisplayHover(e)
     dispTotalMoved.current += Math.abs(e.movementX) + Math.abs(e.movementY)
     // Only start adjusting after crossing tap-vs-drag threshold
     if (!dispDragRef.current || !anyOn || dispTotalMoved.current < 6) return
@@ -476,7 +544,7 @@ export default function App() {
       }
       return next
     })
-  }, [anyOn])
+  }, [anyOn, onDisplayHover])
 
   const onDisplayUp = useCallback(() => {
     const wasTap = dispTotalMoved.current < 6
@@ -610,10 +678,19 @@ export default function App() {
             onPointerMove={onDisplayMove}
             onPointerUp={onDisplayUp}
             onPointerCancel={onDisplayUp}
+            onPointerLeave={() => setHoveredPlanet(null)}
             style={{ touchAction: 'none', cursor: anyOn ? (dispDragging ? 'grabbing' : 'crosshair') : 'default' }}
           >
-            <canvas ref={canvasRef} className="unit__viz" width={200} height={200} />
-            {!anyOn && <div className="unit__display-idle">vibe</div>}
+            <div className="unit__display-clip">
+              <canvas ref={canvasRef} className="unit__viz" width={200} height={200} />
+              {!anyOn && <div className="unit__display-idle">vibe</div>}
+            </div>
+            {hoveredPlanet && (
+              <div className="unit__planet-tip" style={{ left: `${hoveredPlanet.x}px`, top: `${hoveredPlanet.y}px` }}>
+                <span className="unit__planet-tip-name">{hoveredPlanet.name}</span>
+                {PLANET_QUALITY[hoveredPlanet.name]}
+              </div>
+            )}
           </div>
 
           {/* Drag hint — shown below display */}
@@ -755,6 +832,9 @@ export default function App() {
             }} title="Your vibe reading">
               🃏
             </button>
+            <button className="unit__presets-btn" onClick={() => setShowPresets(true)} title="Presets">
+              <PillIcon />
+            </button>
             <ModeSwitch mode={mode} onChange={setMode} />
             <button
               className={`unit__input-btn${inputStatus === 'playing' ? ' unit__input-btn--active' : ''}`}
@@ -781,6 +861,13 @@ export default function App() {
           onRevealSound={revealReadingSound}
           NOISE={NOISE}
           TONES={TONES}
+        />
+      )}
+
+      {showPresets && (
+        <VibePresets
+          onClose={() => setShowPresets(false)}
+          onApply={applyPreset}
         />
       )}
 

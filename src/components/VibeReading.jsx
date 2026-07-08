@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
-import { moonPhase, fetchWeather, buildReading, MOON_LABEL } from '../utils/reading.js'
+import {
+  moonPhase, fetchWeather, buildReading, MOON_LABEL,
+  MOON_QUALITY, tidalQualityText, intentQualityText, decanQualityText,
+} from '../utils/reading.js'
 import './VibeReading.css'
 
 const MOON_SYMBOL = {
@@ -84,10 +87,16 @@ export function VibeReading({ onClose, onApply, onRevealSound, NOISE, TONES }) {
             <div className="vrd__moon">
               <span className="vrd__moon-icon">{MOON_SYMBOL[reading.moonState]}</span>
               <div className="vrd__moon-meta">
-                <span className="vrd__moon-label">{MOON_LABEL[reading.moonState]}</span>
-                <span className="vrd__tidal-label">{reading.tidal.label}</span>
-                <span className="vrd__intent-label">∿ {reading.intentLabel}</span>
-                <span className="vrd__decan-label">
+                <span className="vrd__moon-label info-tip" data-tip={MOON_QUALITY[reading.moonState]}>
+                  {MOON_LABEL[reading.moonState]}
+                </span>
+                <span className="vrd__tidal-label info-tip" data-tip={tidalQualityText(reading.tidal)}>
+                  {reading.tidal.label}
+                </span>
+                <span className="vrd__intent-label info-tip" data-tip={intentQualityText(reading.intentLabel)}>
+                  ∿ {reading.intentLabel}
+                </span>
+                <span className="vrd__decan-label info-tip" data-tip={decanQualityText(reading.decan)}>
                   {reading.decan.decanLabel} · {reading.decan.ruler} · {reading.decan.cardName}
                 </span>
               </div>

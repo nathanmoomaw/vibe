@@ -228,6 +228,59 @@ const INTENT_LABEL = {
   waningCrescent: 'dreaming · θ 4 Hz',
 }
 
+// ── Energetic-quality blurbs for hover tooltips (how each factor shapes the sound) ──
+export const MOON_QUALITY = {
+  new:            'the void phase — binaural pulse sits at 2.5 Hz (δ, deep floating). sound is sparse: a single chime over an OM-anchored drone, mirroring the dark of the cycle.',
+  waxingCrescent: 'first light returning — 7 Hz (θ) pulse for a relaxed, gathering state. a soft chime rides a Wood-toned drone as the cycle starts to build.',
+  firstQuarter:   'the decision point — 12 Hz (α+) sharpens focus. wind carries a Wood-toned edge, matching the turn from gathering into motion.',
+  waxingGibbous:  'pressure building toward full — 9 Hz (α) keeps the charge calm. water rises against a Metal-toned drone as the tide of the cycle builds.',
+  full:           'peak of the cycle — 7.83 Hz, the Schumann resonance, for full-body meditation. every frequency opens at once: birds, water and a Fire-toned noise floor.',
+  waningGibbous:  'the exhale begins — 7 Hz (θ) eases the release. a gong dissolves over grounding earth as the Metal tone softens.',
+  lastQuarter:    'clearing what no longer fits — 9 Hz (α) keeps it steady. earth alone, tuned low, holding ground through the release.',
+  waningCrescent: 'the final threshold — 4 Hz (θ/δ) eases toward dreaming. a distant bell over an OM-anchored drone, quiet as the cycle closes.',
+}
+
+export function tidalQualityText(tidal) {
+  const { spring, height } = tidal
+  const heightStr = height > 0.65 ? 'high' : height < 0.35 ? 'low' : 'mid'
+  const springStr = spring > 0.75 ? 'spring (max range)' : spring < 0.3 ? 'neap (min range)' : 'moderate range'
+  const freqPct = Math.round((height - 0.5) * 16)
+  return `${heightStr} tide, ${springStr}. tide height shifts every active frequency ${freqPct >= 0 ? '+' : ''}${freqPct}% right now; spring/neap range scales tone volume between 92–108%.`
+}
+
+const BAND_QUALITY = {
+  'δ':  'delta — the slowest brainwave band, linked to deep sleep and full-body release. used here to pull you toward floating.',
+  'θ':  'theta — the dreaming and light-meditation band, the bridge between waking and sleep. used here for relaxing or dreaming states.',
+  'α':  'alpha — a relaxed-but-awake band, the state of calm focus. used here for calming or focusing states.',
+  'α+': 'alpha (upper) — the sharper end of relaxed focus, closer to active attention. used here to sharpen focus without tipping into stress.',
+  '♁':  "the Schumann resonance — Earth's own electromagnetic pulse (7.83 Hz), used here as a grounding anchor for deep meditation.",
+}
+export function intentQualityText(intentLabel) {
+  const band = intentLabel.match(/[δθα♁]\+?/)?.[0]
+  return BAND_QUALITY[band] ?? 'a binaural pulse tuned to the present lunar phase.'
+}
+
+const ELEMENT_QUALITY = {
+  wands:     'a Fire sign — active, quick-burning energy. in this reading it leans the sound toward warmth and transformation.',
+  cups:      'a Water sign — emotional, tide-responsive energy. in this reading it leans the sound toward flow and release.',
+  swords:    'an Air sign — quick, mental, wind-driven energy. in this reading it leans the sound toward clarity and movement.',
+  pentacles: 'an Earth sign — slow, grounded, body-based energy. in this reading it leans the sound toward stillness and root.',
+}
+
+const RULER_QUALITY = {
+  sun:     'ruled by the Sun — vitality and clarity, brightening whatever it touches.',
+  moon:    'ruled by the Moon — receptivity and tide, pulling the sound toward the emotional body.',
+  mercury: 'ruled by Mercury — quick and communicative, adding shimmer and motion.',
+  venus:   'ruled by Venus — harmony and pleasure, softening the edges of the sound.',
+  mars:    'ruled by Mars — drive and heat, sharpening the sound toward intensity.',
+  jupiter: 'ruled by Jupiter — expansion and ease, widening the sound outward.',
+  saturn:  'ruled by Saturn — structure and depth, slowing the sound toward gravity.',
+}
+
+export function decanQualityText(decan) {
+  return `${ELEMENT_QUALITY[decan.suit]} ${RULER_QUALITY[decan.ruler]} the ${decan.cardName} pip carries this decan's tarot correspondence.`
+}
+
 // ── Sound config builder ──────────────────────────────────────────────────────
 function pick(arr, seed) {
   return arr[Math.floor(seed * arr.length) % arr.length]

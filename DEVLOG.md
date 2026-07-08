@@ -1,5 +1,15 @@
 # DEVLOG — vibe
 
+## Jul 8 2026 — presets grid, info tooltips, vertical row labels, party icon v4
+
+- **Random tone periods**: periodic tones (bell/chime/gong/birds) previously computed one randomized interval at start and then repeated it forever via `setInterval` (a dead `jitterUpdate` closure was defined but never called). Rewrote as a self-rescheduling `setTimeout` chain that draws a fresh random wait — `interval × (0.5–1.6)` — on every single firing, so the cadence never settles into a metronome
+- **Party icon v4**: rebuilt as pure strokes (cone outline + 4 separated confetti marks) instead of thin filled slivers, which were smearing into an unreadable blob at the 15px footer size
+- **Vertical row labels**: "noise"/"tone"/"element" section labels now sit in a narrow vertical column to the left of each row (`writing-mode: vertical-rl`) instead of stacked above it, reclaiming vertical space and cutting scroll
+- **Elemental knob hover fix**: hovering an elemental slot's inner knob showed the same type-name text ("stone") already printed below the dial. Now shows the raw angle (e.g. "132°") instead — new information, not a repeat
+- **Circle-viz planet glyphs**: bumped base size, added a hover magnify (font size ×1.55, brighter glow) with hit-testing against the last-drawn glyph positions, plus a hover tooltip describing each planet's energetic quality and Cousto frequency. Moved the canvas's circular clip to a dedicated inner wrapper so the tooltip can escape the ring's `overflow:hidden` instead of being cut off at the rim
+- **Info tooltips**: added a reusable `.info-tip` CSS utility (hover popover, dotted underline) and wired it to the Vibe Reading modal's moon/tidal/intent/decan labels — e.g. hovering "cancer II" now explains how that decan's element + ruling planet shape the reading's sound choice
+- **Presets grid**: new pill-emoji footer button (monochrome capsule outline) opens a 6-card grid — one hand-tuned preset per core state (calming, relaxing, focussing, meditating, dreaming, floating), each with its own emoji, a hover blurb, and a one-tap apply. Shares the apply/fade logic with Vibe Reading via a common `applySoundState` helper
+
 ## Jul 2 2026 — trigram tooltips, stop button hover polish
 
 - **Trigram label tooltip**: hovering an elemental slot's Chinese trigram name (li, kan, xun, etc.) now shows a native tooltip with the English gloss (fire, water, wind, thunder, lake, mountain, heaven, earth)

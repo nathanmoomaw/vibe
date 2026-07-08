@@ -25,6 +25,11 @@ export default function SoundSlot({
   const handleVolume = useCallback((v) => onVolume(Math.round(v * 100) / 100), [onVolume])
   const handleParam  = useCallback((v) => onParam?.(v), [onParam])
 
+  // Elemental cards already show the type name (eg "stone") below the dial —
+  // the center hover tip should read the underlying rate/position instead
+  // of repeating that same word.
+  const innerTipText = elemental && param !== undefined ? `${Math.round(param)}°` : (paramLabel ?? 'param')
+
   // Stable per-instance random offset so idle glints don't all fire in sync
   const [glintDelay] = useState(() => -(Math.random() * 28))
 
@@ -131,7 +136,7 @@ export default function SoundSlot({
           minParam={paramMin ?? 0}
           maxParam={paramMax ?? 1}
           outerTip="vol"
-          innerTip={paramLabel ?? 'param'}
+          innerTip={innerTipText}
           innerCircular={innerCircular}
         />
       </div>
