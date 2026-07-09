@@ -9,6 +9,8 @@
 - [ ] Mic input for environment-reactive soundscape
 
 ## Completed
+- [x] Favicon: circle-viz spectrum ring + flower rosette around the Qian (Heaven) trigram
+- [x] Console fully transparent: background gradient + backdrop-filter blur removed entirely
 - [x] Presets grid: 💊 footer button → 6 hand-tuned one-tap presets (calming, relaxing, focussing, meditating, dreaming, floating), each with hover blurb
 - [x] Info tooltips: reusable hover-popover pattern explaining the energetic quality behind moon phase, tide, binaural intent, decan, and circle-viz planet glyphs
 - [x] Acoustomancy integration: Wǔ Yīn 五音 note frequencies in reading presets, 136.1 Hz OM anchor, LFO ombak pulse at binaural beat targets, Schumann resonance (7.83 Hz) for full moon meditation

@@ -41,42 +41,42 @@ export const PRESETS = [
   preset('calming', '🕊️', 'calming', 9.0,
     'a Metal-toned drone under a soft stream and a slow, distant bell.',
     (noise, tones) => {
-      noise.pink  = { on: true, volume: 0.13, freq: WU_YIN_HZ.metal }
-      tones.water = { on: true, volume: 0.40, typeAngle: 0 }   // stream
+      noise.pink  = { on: true, volume: 0.06, freq: WU_YIN_HZ.metal }
+      tones.water = { on: true, volume: 0.24, typeAngle: 0 }   // stream
       tones.bell  = { on: true, volume: 0.22, rate: 32, typeAngle: 0 }
     }),
   preset('relaxing', '🍵', 'relaxing', 7.0,
     'a Wood-toned drone, a light breeze, and a loose chime shimmer.',
     (noise, tones) => {
-      noise.pink  = { on: true, volume: 0.13, freq: WU_YIN_HZ.wood }
-      tones.wind  = { on: true, volume: 0.42, typeAngle: 0 }   // breeze
+      noise.pink  = { on: true, volume: 0.06, freq: WU_YIN_HZ.wood }
+      tones.wind  = { on: true, volume: 0.25, typeAngle: 0 }   // breeze
       tones.chime = { on: true, volume: 0.26, rate: 14, typeAngle: 0 }
     }),
   preset('focussing', '🎯', 'focussing', 12.0,
     'a crisp highpass edge and a moving wind, tuned for alert clarity.',
     (noise, tones) => {
-      noise.blue = { on: true, volume: 0.14, freq: WU_YIN_HZ.wood * 2 }
-      tones.wind = { on: true, volume: 0.40, typeAngle: 60 }   // squall edge
+      noise.blue = { on: true, volume: 0.07, freq: WU_YIN_HZ.wood * 2 }
+      tones.wind = { on: true, volume: 0.24, typeAngle: 60 }   // squall edge
     }),
   preset('meditating', '🧘', 'meditating', 7.83,
     'an OM-anchored drone with a slow gong and crystalline earth tone — 7.83 Hz, the Schumann resonance.',
     (noise, tones) => {
-      noise.pink  = { on: true, volume: 0.13, freq: OM_HZ }
+      noise.pink  = { on: true, volume: 0.06, freq: OM_HZ }
       tones.gong  = { on: true, volume: 0.30, rate: 70, typeAngle: 0 }
-      tones.earth = { on: true, volume: 0.35, typeAngle: 90 }  // crystalline
+      tones.earth = { on: true, volume: 0.20, typeAngle: 90 }  // crystalline
     }),
   preset('dreaming', '💭', 'dreaming', 4.0,
     'an OM-anchored drone, a distant bell, and soft rain.',
     (noise, tones) => {
-      noise.pink  = { on: true, volume: 0.12, freq: OM_HZ }
+      noise.pink  = { on: true, volume: 0.05, freq: OM_HZ }
       tones.bell  = { on: true, volume: 0.20, rate: 34, typeAngle: 0 }
-      tones.water = { on: true, volume: 0.28, typeAngle: 180 } // rain
+      tones.water = { on: true, volume: 0.16, typeAngle: 180 } // rain
     }),
   preset('floating', '🪶', 'floating', 2.5,
     'the quietest drone, a rare chime, and a low ocean swell.',
     (noise, tones) => {
-      noise.pink  = { on: true, volume: 0.10, freq: OM_HZ }
+      noise.pink  = { on: true, volume: 0.04, freq: OM_HZ }
       tones.chime = { on: true, volume: 0.18, rate: 40, typeAngle: 0 }
-      tones.water = { on: true, volume: 0.30, typeAngle: 270 } // ocean
+      tones.water = { on: true, volume: 0.16, typeAngle: 270 } // ocean
     }),
 ]

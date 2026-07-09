@@ -145,7 +145,7 @@ function PillIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <g transform="rotate(-40 12 12)">
         <rect x="4" y="8.5" width="16" height="7" rx="3.5" />
-        <line x1="12" y1="8.5" x2="12" y2="15.5" />
+        <path d="M12 8.5 H7.5 A3.5 3.5 0 0 0 7.5 15.5 H12 Z" fill="currentColor" stroke="none" />
       </g>
     </svg>
   )
@@ -435,7 +435,15 @@ export default function App() {
   }, [applySoundState])
 
   const applyPreset = useCallback((preset) => {
-    applySoundState(preset.noise, preset.tones, preset.pulseHz, () => setShowPresets(false))
+    // Duck the master briefly before the new sounds start (each sound's own
+    // gain jumps straight to its target when it starts), then let
+    // applySoundState's own fadeMaster(0.85, …) ramp back up — the master
+    // ramp is what makes the whole preset bloom in smoothly instead of
+    // snapping to full volume the instant it's selected.
+    fadeMaster(0.03, 200)
+    setTimeout(() => {
+      applySoundState(preset.noise, preset.tones, preset.pulseHz, () => setShowPresets(false))
+    }, 220)
   }, [applySoundState])
 
   // ── Reveal one reading sound (called as each card is tapped) ────────
@@ -460,9 +468,18 @@ export default function App() {
 
   // ── Audio input ───────────────────────────────────────────────────
   const playInputUrl = useCallback((url) => {
+    // white's own synthesis filter is 'allpass' (shapes nothing — white noise
+    // stays broadband regardless of its freq knob), but reusing that here made
+    // the input audibly unfiltered whenever white was the only active channel.
+    // Use a wide bandpass for white instead so "filter the input through the
+    // active channels" is true for every channel, not just pink/blue.
     const filterConfigs = NOISE
       .filter(s => noise[s.id].on)
-      .map(s => ({ type: s.id === 'blue' ? 'highpass' : s.id === 'white' ? 'allpass' : 'bandpass', freq: noise[s.id].freq }))
+      .map(s => ({
+        type: s.id === 'blue' ? 'highpass' : s.id === 'pink' ? 'lowpass' : 'bandpass',
+        freq: noise[s.id].freq,
+        q: s.id === 'white' ? 0.6 : 1.5,
+      }))
     setInputStatus('loading')
     setAudioInput(url, filterConfigs)
       .then(() => setInputStatus('playing'))
@@ -663,9 +680,10 @@ export default function App() {
           {/* Stop-all button — upper right, only visible when sounds are playing */}
           {anyOn && (
             <button
-              className="unit__stop-all"
+              className="unit__stop-all info-tip info-tip--below"
               onClick={stopAllSounds}
-              title="Stop all sounds (spacebar)"
+              aria-label="Stop all sounds"
+              data-tip="Stop all sounds (spacebar)"
             >
               □
             </button>

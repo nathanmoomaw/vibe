@@ -49,8 +49,8 @@ export function getMasterGain() {
   return masterGain.gain.value
 }
 
-// filterConfigs: [{ type, freq }] from active noise settings
-// Passes audio through a parallel bandpass bank matching active noise filters.
+// filterConfigs: [{ type, freq, q }] from active noise settings
+// Passes audio through a parallel filter bank matching active noise filters.
 export function setAudioInput(url, filterConfigs) {
   stopAudioInput()
   const ctx = getContext()
@@ -70,13 +70,13 @@ export function setAudioInput(url, filterConfigs) {
   if (filterConfigs.length === 0) {
     inputSource.connect(out)
   } else {
-    // Parallel bank: one bandpass per active noise channel
+    // Parallel bank: one filter per active noise channel
     out.gain.value = 0.75 / filterConfigs.length
-    for (const { type, freq } of filterConfigs) {
+    for (const { type, freq, q } of filterConfigs) {
       const f = ctx.createBiquadFilter()
-      f.type = type === 'highpass' ? 'highpass' : type === 'allpass' ? 'allpass' : 'bandpass'
+      f.type = type === 'highpass' ? 'highpass' : type === 'lowpass' ? 'lowpass' : type === 'allpass' ? 'allpass' : 'bandpass'
       f.frequency.value = freq
-      f.Q.value = 1.5
+      f.Q.value = q ?? 1.5
       inputSource.connect(f)
       f.connect(out)
       inputNodes.push(f)

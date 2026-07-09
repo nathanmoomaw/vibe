@@ -21,15 +21,6 @@
   width: 100%;
   max-width: 580px;
   position: relative;
-  background:
-    linear-gradient(
-      170deg,
-      rgba(38, 30, 18, 0.02) 0%,
-      rgba(24, 18, 10, 0.03) 45%,
-      rgba(34, 26, 14, 0.02) 100%
-    );
-  backdrop-filter: blur(18px) saturate(120%);
-  -webkit-backdrop-filter: blur(18px) saturate(120%);
   border: 1px solid rgba(200, 160, 70, 0.07);
   border-top-color: rgba(220, 180, 90, 0.10);
   border-bottom-color: rgba(80, 60, 20, 0.10);
@@ -226,7 +217,6 @@
   padding: 4px 5px;
   z-index: 10;
   border-radius: 3px;
-  overflow: hidden;
   animation: stop-outline-shift 16s ease-in-out infinite;
   transition: color 0.2s, filter 0.2s;
 }
@@ -238,10 +228,17 @@
   33%      { color: rgba(120, 160, 255, 0.35); }
   66%      { color: rgba(255, 190, 110, 0.4); }
 }
+.unit__stop-all.info-tip {
+  cursor: pointer;
+}
+/* `color` is driven by the keyframe animation above, so a plain `color`
+   override here would be silently ignored even while paused (the running
+   animation always wins the cascade for that property). Use `filter:
+   brightness()` instead — it multiplies whatever color the cycle is
+   currently on, so hover reads clearly no matter where it's paused. */
 .unit__stop-all:hover {
   animation-play-state: paused;
-  color: rgba(230, 210, 160, 0.9);
-  filter: drop-shadow(0 0 4px rgba(230, 210, 160, 0.5));
+  filter: brightness(2.1) drop-shadow(0 0 4px rgba(230, 210, 160, 0.5));
 }
 
 /* ─── Circular speaker/display — Heathkit-style meter inset ─────── */
@@ -401,8 +398,6 @@
 .unit__body {
   margin-top: 1rem;
   padding: 1.1rem 1.25rem 1rem;
-  /* Slightly lighter metal panel feel */
-  background: rgba(255, 255, 255, 0.008);
   border-top: 1px solid rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
   display: flex;
