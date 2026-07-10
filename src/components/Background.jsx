@@ -389,9 +389,9 @@ export default function Background({ anyOn, activeSounds }) {
 
         // Now that the console has no background of its own, these shapes'
         // crisp edges read as distracting right where they spawn, directly
-        // behind the controls. Blur heavily near the origin, tapering to
-        // fully sharp by the time the shape has moved ~90px outward.
-        const originBlur = Math.max(0, 1 - r / 90) * 18
+        // behind the controls. Blur heavily near the origin, tapering off as
+        // a gradual gradient out to a ~220px radius before going fully sharp.
+        const originBlur = Math.max(0, 1 - r / 220) * 22
 
         ctx.save()
         if (originBlur > 0.3) ctx.filter = `blur(${originBlur.toFixed(1)}px)`
