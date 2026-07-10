@@ -288,10 +288,12 @@
   pointer-events: none;
 }
 
-/* Planetary-glyph hover tooltip on the circular display */
+/* Planetary-glyph hover tooltip on the circular display — offset to
+   whichever side of the glyph has the most room (set via modifier class),
+   rather than centered on it, which used to overlap the exact spot being
+   read. */
 .unit__planet-tip {
   position: absolute;
-  transform: translate(-50%, -50%);
   width: max-content;
   max-width: 150px;
   background: rgba(3, 3, 10, 0.97);
@@ -307,12 +309,17 @@
   pointer-events: none;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   z-index: 30;
-  animation: planet-tip-in 0.12s ease;
+  opacity: 0;
+  animation: planet-tip-in 0.12s ease forwards;
 }
 
+.unit__planet-tip--bottom { transform: translate(-50%, 14px); }
+.unit__planet-tip--left   { transform: translate(calc(-100% - 14px), -50%); }
+.unit__planet-tip--right  { transform: translate(14px, -50%); }
+
 @keyframes planet-tip-in {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .unit__planet-tip-name {

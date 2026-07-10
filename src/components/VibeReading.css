@@ -122,6 +122,45 @@
   color: rgba(255, 209, 102, 0.4);
 }
 
+/* Hover popover for the moon/tidal/intent/decan labels — a styled box
+   (not the native title tooltip). Keeps the help cursor as the "hover for
+   info" affordance, but deliberately no underline decoration. */
+.vrd__info {
+  position: relative;
+  cursor: help;
+}
+
+.vrd__info::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  max-width: 220px;
+  background: rgba(3, 3, 10, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-family: 'Jura', sans-serif;
+  font-size: 0.7rem;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.78);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  z-index: 10;
+}
+
+.vrd__info:hover::after,
+.vrd__info:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .vrd__lines {
   display: flex;
   flex-direction: column;

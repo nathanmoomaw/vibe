@@ -508,7 +508,15 @@ export default function App() {
     }
     const hitName = hit ? hit.name : null
     if (hitName !== hoveredPlanetRef.current) {
-      setHoveredPlanet(hit ? { name: hit.name, x: hit.px / scaleX, y: hit.py / scaleY } : null)
+      if (!hit) { setHoveredPlanet(null); return }
+      // Offset the tooltip to whichever side of the glyph has the most room,
+      // instead of centering it on the glyph — centered made it overlap the
+      // exact spot the cursor is trying to read. The ring sits near the top
+      // of the console, with far more room below it than above, so vertical
+      // placement always goes down rather than picking top/bottom evenly.
+      const dx = hit.px - canvas.width / 2, dy = hit.py - canvas.height / 2
+      const placement = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : 'bottom'
+      setHoveredPlanet({ name: hit.name, x: hit.px / scaleX, y: hit.py / scaleY, placement })
     }
   }, [])
 
@@ -693,7 +701,10 @@ export default function App() {
               {!anyOn && <div className="unit__display-idle">vibe</div>}
             </div>
             {hoveredPlanet && (
-              <div className="unit__planet-tip" style={{ left: `${hoveredPlanet.x}px`, top: `${hoveredPlanet.y}px` }}>
+              <div
+                className={`unit__planet-tip unit__planet-tip--${hoveredPlanet.placement}`}
+                style={{ left: `${hoveredPlanet.x}px`, top: `${hoveredPlanet.y}px` }}
+              >
                 <span className="unit__planet-tip-name">{hoveredPlanet.name}</span>
                 {PLANET_QUALITY[hoveredPlanet.name]}
               </div>

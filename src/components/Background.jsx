@@ -212,6 +212,44 @@ export default function Background({ anyOn, activeSounds }) {
     resize()
     window.addEventListener('resize', resize)
 
+    // ── Center-origin blur vignette ─────────────────────────────────────
+    // The console has no background of its own, so whatever's drawn right
+    // behind it (aura wash, ripples, stars) needs to read as soft and
+    // unobtrusive rather than competing with the controls — but everything
+    // outside the console's footprint should stay sharp. Each frame, the
+    // region around screen-center gets copied out, blurred, and faded back
+    // in through a radial mask (full strength through most of the radius,
+    // gradually sharpening at the outer edge) instead of blurring the whole
+    // canvas or hand-tuning blur per shape.
+    const VIGNETTE_R = 290 // ≈ half the console's own max-width (580px)
+    const vSrc = document.createElement('canvas')
+    const vDst = document.createElement('canvas')
+    vSrc.width = vSrc.height = vDst.width = vDst.height = VIGNETTE_R * 2
+    const vSrcCtx = vSrc.getContext('2d')
+    const vDstCtx = vDst.getContext('2d')
+    const vMask = vDstCtx.createRadialGradient(VIGNETTE_R, VIGNETTE_R, 0, VIGNETTE_R, VIGNETTE_R, VIGNETTE_R)
+    vMask.addColorStop(0,    'rgba(255,255,255,1)')
+    vMask.addColorStop(0.6,  'rgba(255,255,255,0.95)')
+    vMask.addColorStop(0.85, 'rgba(255,255,255,0.55)')
+    vMask.addColorStop(1,    'rgba(255,255,255,0)')
+
+    function drawVignette(cx, cy) {
+      const sx = cx - VIGNETTE_R, sy = cy - VIGNETTE_R
+      vSrcCtx.clearRect(0, 0, VIGNETTE_R * 2, VIGNETTE_R * 2)
+      vSrcCtx.drawImage(canvas, sx, sy, VIGNETTE_R * 2, VIGNETTE_R * 2, 0, 0, VIGNETTE_R * 2, VIGNETTE_R * 2)
+
+      vDstCtx.clearRect(0, 0, VIGNETTE_R * 2, VIGNETTE_R * 2)
+      vDstCtx.filter = 'blur(32px)'
+      vDstCtx.drawImage(vSrc, 0, 0)
+      vDstCtx.filter = 'none'
+      vDstCtx.globalCompositeOperation = 'destination-in'
+      vDstCtx.fillStyle = vMask
+      vDstCtx.fillRect(0, 0, VIGNETTE_R * 2, VIGNETTE_R * 2)
+      vDstCtx.globalCompositeOperation = 'source-over'
+
+      ctx.drawImage(vDst, sx, sy)
+    }
+
     function draw(t) {
       raf = requestAnimationFrame(draw)
       const { width, height } = canvas
@@ -387,14 +425,7 @@ export default function Background({ anyOn, activeSounds }) {
         const alpha = (1 - age) * (0.55 + energy * 0.3)
         const rot   = rip.rotation + rip.rotSpeed * age * Math.PI
 
-        // Now that the console has no background of its own, these shapes'
-        // crisp edges read as distracting right where they spawn, directly
-        // behind the controls. Blur heavily near the origin, tapering off as
-        // a gradual gradient out to a ~220px radius before going fully sharp.
-        const originBlur = Math.max(0, 1 - r / 220) * 22
-
         ctx.save()
-        if (originBlur > 0.3) ctx.filter = `blur(${originBlur.toFixed(1)}px)`
         if (rip.shape === 'halo') {
           drawHalo(ctx, cx, cy, r, alpha, rip.glow, age)
         } else if (rip.shape === 'flower') {
@@ -430,6 +461,8 @@ export default function Background({ anyOn, activeSounds }) {
         const scale = age < 0.25 ? age / 0.25 : age > 0.7 ? Math.max(0, 1 - (age - 0.7) / 0.3) : 1
         drawSparkle(ctx, sp.x, sp.y, sp.r * scale, scale * 0.85, sp.color)
       }
+
+      drawVignette(cx, cy)
     }
 
     raf = requestAnimationFrame(draw)

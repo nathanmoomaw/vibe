@@ -57,6 +57,7 @@
 .vps__title {
   display: flex;
   color: rgba(255, 209, 102, 0.6);
+  filter: drop-shadow(0 0 18px rgba(0, 0, 0, 0.6));
 }
 
 .vps__grid {
@@ -101,12 +102,21 @@
   color: rgba(255, 209, 102, 0.85);
 }
 
+/* Single shared description area under the title — populated on hover of
+   whichever preset card the pointer is over, empty otherwise. min-height
+   reserves the space up front so the modal never resizes as it fills in. */
 .vps__blurb {
-  margin: 2px 0 0;
+  margin: -10px 0 0;
+  min-height: 2.3em;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  padding: 0 8px;
   font-family: 'Jura', sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   line-height: 1.5;
   letter-spacing: 0.01em;
-  color: rgba(255, 255, 255, 0.32);
+  color: rgba(255, 255, 255, 0.42);
   text-align: center;
 }
