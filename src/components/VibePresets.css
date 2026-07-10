@@ -22,12 +22,12 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-top-color: rgba(255, 209, 102, 0.14);
   border-radius: 18px;
-  padding: 34px 28px 28px;
-  width: min(360px, 92vw);
+  padding: 34px 30px 30px;
+  width: min(460px, 92vw);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 22px;
   box-shadow:
     0 0 100px rgba(200, 150, 60, 0.1),
     0 0 0 1px rgba(255, 255, 255, 0.03),
@@ -55,17 +55,14 @@
 .vps__close:hover { color: rgba(255, 255, 255, 0.65); }
 
 .vps__title {
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.36em;
+  display: flex;
   color: rgba(255, 209, 102, 0.6);
-  text-transform: lowercase;
 }
 
 .vps__grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 4px;
   width: 100%;
 }
 
@@ -73,30 +70,43 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 14px 6px;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 12px 8px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
-}
-.vps__card:hover {
-  background: rgba(255, 209, 102, 0.06);
-  border-color: rgba(255, 209, 102, 0.25);
-  transform: translateY(-2px);
 }
 
 .vps__emoji {
-  font-size: 1.7rem;
+  font-size: 1.9rem;
   line-height: 1;
-  filter: grayscale(0.15);
+  filter: grayscale(0.9);
+  opacity: 0.55;
+  transition: filter 0.2s, opacity 0.2s;
+}
+.vps__card:hover .vps__emoji {
+  filter: grayscale(0) drop-shadow(0 0 8px rgba(255, 209, 102, 0.35));
+  opacity: 1;
 }
 
 .vps__label {
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   letter-spacing: 0.1em;
   text-transform: lowercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s;
+}
+.vps__card:hover .vps__label {
+  color: rgba(255, 209, 102, 0.85);
+}
+
+.vps__blurb {
+  margin: 2px 0 0;
+  font-family: 'Jura', sans-serif;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.32);
+  text-align: center;
 }

@@ -387,7 +387,14 @@ export default function Background({ anyOn, activeSounds }) {
         const alpha = (1 - age) * (0.55 + energy * 0.3)
         const rot   = rip.rotation + rip.rotSpeed * age * Math.PI
 
+        // Now that the console has no background of its own, these shapes'
+        // crisp edges read as distracting right where they spawn, directly
+        // behind the controls. Blur heavily near the origin, tapering to
+        // fully sharp by the time the shape has moved ~90px outward.
+        const originBlur = Math.max(0, 1 - r / 90) * 18
+
         ctx.save()
+        if (originBlur > 0.3) ctx.filter = `blur(${originBlur.toFixed(1)}px)`
         if (rip.shape === 'halo') {
           drawHalo(ctx, cx, cy, r, alpha, rip.glow, age)
         } else if (rip.shape === 'flower') {

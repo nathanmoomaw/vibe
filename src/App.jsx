@@ -11,6 +11,7 @@ import { VibeQR } from './components/VibeQR.jsx'
 import { VibePhilosophy } from './components/VibePhilosophy.jsx'
 import { VibeReading } from './components/VibeReading.jsx'
 import { VibePresets } from './components/VibePresets.jsx'
+import { PillIcon } from './components/PillIcon.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
 import './App.css'
 
@@ -140,17 +141,6 @@ function initState(slots, extra) {
 
 // Monochrome outline of 💊 — a capsule rotated diagonal with a center divider,
 // the classic two-tone pill silhouette rendered as pure strokes.
-function PillIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <g transform="rotate(-40 12 12)">
-        <rect x="4" y="8.5" width="16" height="7" rx="3.5" />
-        <path d="M12 8.5 H7.5 A3.5 3.5 0 0 0 7.5 15.5 H12 Z" fill="currentColor" stroke="none" />
-      </g>
-    </svg>
-  )
-}
-
 export default function App() {
   const [mode, setMode] = useState('party')
   const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
@@ -680,10 +670,9 @@ export default function App() {
           {/* Stop-all button — upper right, only visible when sounds are playing */}
           {anyOn && (
             <button
-              className="unit__stop-all info-tip info-tip--below"
+              className="unit__stop-all"
               onClick={stopAllSounds}
-              aria-label="Stop all sounds"
-              data-tip="Stop all sounds (spacebar)"
+              title="Stop all sounds (spacebar)"
             >
               □
             </button>
@@ -747,8 +736,6 @@ export default function App() {
                   </div>
                 </section>
 
-                <div className="unit__divider" />
-
                 <section className="unit__section">
                   <div className="unit__section-label">tone</div>
                   <div className="unit__grid unit__grid--4">
@@ -769,8 +756,6 @@ export default function App() {
                     ))}
                   </div>
                 </section>
-
-                <div className="unit__divider" />
 
                 <section className="unit__section">
                   <div className="unit__section-label">element</div>

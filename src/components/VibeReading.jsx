@@ -87,16 +87,16 @@ export function VibeReading({ onClose, onApply, onRevealSound, NOISE, TONES }) {
             <div className="vrd__moon">
               <span className="vrd__moon-icon">{MOON_SYMBOL[reading.moonState]}</span>
               <div className="vrd__moon-meta">
-                <span className="vrd__moon-label info-tip" data-tip={MOON_QUALITY[reading.moonState]}>
+                <span className="vrd__moon-label" title={MOON_QUALITY[reading.moonState]}>
                   {MOON_LABEL[reading.moonState]}
                 </span>
-                <span className="vrd__tidal-label info-tip" data-tip={tidalQualityText(reading.tidal)}>
+                <span className="vrd__tidal-label" title={tidalQualityText(reading.tidal)}>
                   {reading.tidal.label}
                 </span>
-                <span className="vrd__intent-label info-tip" data-tip={intentQualityText(reading.intentLabel)}>
+                <span className="vrd__intent-label" title={intentQualityText(reading.intentLabel)}>
                   ∿ {reading.intentLabel}
                 </span>
-                <span className="vrd__decan-label info-tip" data-tip={decanQualityText(reading.decan)}>
+                <span className="vrd__decan-label" title={decanQualityText(reading.decan)}>
                   {reading.decan.decanLabel} · {reading.decan.ruler} · {reading.decan.cardName}
                 </span>
               </div>

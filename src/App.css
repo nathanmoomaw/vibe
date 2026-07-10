@@ -228,9 +228,6 @@
   33%      { color: rgba(120, 160, 255, 0.35); }
   66%      { color: rgba(255, 190, 110, 0.4); }
 }
-.unit__stop-all.info-tip {
-  cursor: pointer;
-}
 /* `color` is driven by the keyframe animation above, so a plain `color`
    override here would be silently ignored even while paused (the running
    animation always wins the cascade for that property). Use `filter:
@@ -425,11 +422,6 @@
   text-transform: uppercase;
   color: rgba(200, 160, 70, 0.3);
   font-weight: 400;
-}
-
-.unit__divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(200,160,70,0.08), transparent);
 }
 
 .unit__grid {
