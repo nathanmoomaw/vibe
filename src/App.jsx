@@ -6,7 +6,6 @@ import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.
 import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
-import ModeSwitch from './components/ModeSwitch.jsx'
 import { VibeQR } from './components/VibeQR.jsx'
 import { VibePhilosophy } from './components/VibePhilosophy.jsx'
 import { VibeReading } from './components/VibeReading.jsx'
@@ -119,6 +118,21 @@ export const TONES = [
   { id: 'water', label: 'water', color: '#44aaff', glow: 'rgba(68,170,255,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kan', pairTrigram: 'Gen'  },
   { id: 'earth', label: 'earth', color: '#cc8855', glow: 'rgba(204,136,85,0.4)',  periodic: false, hasType: true, elemental: true, trigram: 'Kun', pairTrigram: 'Qian' },
 ]
+
+// Representative center frequency (+ filter shape) for each tone's synthesis —
+// mirrors the NOISE freq/type pairing so the audio-input filter bank can be
+// built from whichever tones are active, not just the noise channels. Values
+// pulled from each tone's own oscillator/filter setup in audio/tones.js.
+const TONE_FILTER = {
+  bell:  { type: 'bandpass', freq: 440,  q: 2.2 },
+  chime: { type: 'bandpass', freq: 750,  q: 1.6 },
+  gong:  { type: 'bandpass', freq: 70,   q: 1.8 },
+  birds: { type: 'bandpass', freq: 3000, q: 1.0 },
+  wind:  { type: 'bandpass', freq: 600,  q: 1.2 },
+  water: { type: 'bandpass', freq: 1300, q: 1.1 },
+  fire:  { type: 'bandpass', freq: 1500, q: 0.9 },
+  earth: { type: 'lowpass',  freq: 130,  q: 1.2 },
+}
 
 const WATER_TYPES = ['stream', 'rain', 'ocean']
 const FIRE_TYPES  = ['candle', 'campfire', 'bonfire']
@@ -463,18 +477,26 @@ export default function App() {
     // the input audibly unfiltered whenever white was the only active channel.
     // Use a wide bandpass for white instead so "filter the input through the
     // active channels" is true for every channel, not just pink/blue.
-    const filterConfigs = NOISE
+    const noiseFilters = NOISE
       .filter(s => noise[s.id].on)
       .map(s => ({
         type: s.id === 'blue' ? 'highpass' : s.id === 'pink' ? 'lowpass' : 'bandpass',
         freq: noise[s.id].freq,
         q: s.id === 'white' ? 0.6 : 1.5,
       }))
+    // Tones (bell, gong, wind, water, ...) have their own characteristic
+    // bands (see TONE_FILTER) — include them too, so the input is still
+    // shaped when only elemental/periodic tones are active and no noise
+    // channel is on.
+    const toneFilters = TONES
+      .filter(t => tones[t.id].on)
+      .map(t => TONE_FILTER[t.id])
+    const filterConfigs = [...noiseFilters, ...toneFilters]
     setInputStatus('loading')
     setAudioInput(url, filterConfigs)
       .then(() => setInputStatus('playing'))
       .catch(() => setInputStatus('error'))
-  }, [noise])
+  }, [noise, tones])
 
   const stopInput = useCallback(() => {
     stopAudioInput()
@@ -849,7 +871,6 @@ export default function App() {
             <button className="unit__presets-btn" onClick={() => setShowPresets(true)} title="Presets">
               <PillIcon />
             </button>
-            <ModeSwitch mode={mode} onChange={setMode} />
             <button
               className={`unit__input-btn${inputStatus === 'playing' ? ' unit__input-btn--active' : ''}`}
               onClick={() => { if (inputStatus === 'playing') stopInput(); else setShowInput(v => !v) }}

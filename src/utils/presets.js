@@ -59,7 +59,7 @@ export const PRESETS = [
       tones.wind = { on: true, volume: 0.24, typeAngle: 60 }   // squall edge
     }),
   preset('meditating', '🧘', 'meditating', 7.83,
-    'an OM-anchored drone with a slow gong and crystalline earth tone — 7.83 Hz, the Schumann resonance.',
+    'an OM-anchored drone, a slow gong, and a crystalline earth tone at 7.83 Hz.',
     (noise, tones) => {
       noise.pink  = { on: true, volume: 0.06, freq: OM_HZ }
       tones.gong  = { on: true, volume: 0.30, rate: 70, typeAngle: 0 }

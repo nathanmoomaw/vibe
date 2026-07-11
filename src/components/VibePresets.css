@@ -86,7 +86,7 @@
   transition: filter 0.2s, opacity 0.2s;
 }
 .vps__card:hover .vps__emoji {
-  filter: grayscale(0) drop-shadow(0 0 8px rgba(255, 209, 102, 0.35));
+  filter: grayscale(0.5) drop-shadow(0 0 8px rgba(255, 209, 102, 0.35));
   opacity: 1;
 }
 
@@ -107,7 +107,7 @@
    reserves the space up front so the modal never resizes as it fills in. */
 .vps__blurb {
   margin: -10px 0 0;
-  min-height: 2.3em;
+  min-height: 3em;
   display: flex;
   align-items: flex-start;
   justify-content: center;

@@ -1,19 +1,19 @@
 import './ModeSwitch.css'
 
-// Monochrome outline of 🎉 — a stroked cone with a few well-spaced confetti
-// marks. Pure strokes (no thin filled slivers) so it stays crisp and doesn't
-// smear into a blob at the tiny footer-button size.
+// Monochrome outline of 🎉 — a stroked horn with a bevelled tip (so it
+// reads as a cone, not a blob) and a fanned confetti burst spraying out
+// of its open end.
 function PartyIcon() {
   return (
     <svg
       className="mode-switch__party-icon" width="16" height="16" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+      fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"
     >
-      <path d="M3.5 21 10 8 18.5 13Z" />
-      <path d="M14.5 3.2 16 6.6" />
-      <path d="M19.5 4.8 18.3 8" />
-      <path d="M21 10.5 17.8 11.6" />
-      <circle cx="20.6" cy="15.4" r="1" fill="currentColor" stroke="none" />
+      <path d="M4 21 12 5 Q15.5 6 19 9Z" strokeLinejoin="bevel" />
+      <path d="M15.5 2.5 17 0.5" />
+      <path d="M22 5.5 23.5 4.3" />
+      <path d="M21 12 23.5 11.5" />
+      <circle cx="22.5" cy="8" r="0.9" fill="currentColor" stroke="none" />
     </svg>
   )
 }

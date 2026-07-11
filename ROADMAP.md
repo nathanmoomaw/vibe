@@ -7,6 +7,7 @@
 ## Backlog
 - [ ] Visual pulsing / animated interface (deeper)
 - [ ] Mic input for environment-reactive soundscape
+- [ ] Re-expose party/lo mode switch (footer toggle hidden Jul 10 2026, `mode` stays hardcoded to `'party'`; `LoView`/`ModeSwitch` components untouched, just not rendered)
 
 ## Completed
 - [x] Favicon: circle-viz spectrum ring + flower rosette around the Qian (Heaven) trigram
@@ -15,7 +16,7 @@
 - [x] Info tooltips: reusable hover-popover pattern explaining the energetic quality behind moon phase, tide, binaural intent, decan, and circle-viz planet glyphs
 - [x] Acoustomancy integration: Wǔ Yīn 五音 note frequencies in reading presets, 136.1 Hz OM anchor, LFO ombak pulse at binaural beat targets, Schumann resonance (7.83 Hz) for full moon meditation
 - [x] Vibe Reading: 🃏 opens modal with moon phase + time + weather → poetic reading + sound preset, apply button loads sounds
-- [x] Audio input: ⊃ footer button → paste audio URL, filtered through active noise BiquadFilters via MediaElementSourceNode
+- [x] Audio input: ⊃ footer button → paste audio URL, filtered through active noise AND tone BiquadFilters via MediaElementSourceNode
 - [x] Anti-Gimmick philosophy modal: 🃏 joker footer button → VibePhilosophy overlay with 6 UX principles
 - [x] Nearly transparent console + shimmer glitch animation (22s cycle, diagonal sweep + outward pulse)
 - [x] QR share modal: iridescent QR with active sound colors, nameable presets, URL encode/decode
