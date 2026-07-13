@@ -72,6 +72,8 @@ const DRIFT_DEPTH_PCT = 0.035
 const DRIFT_RATE_MIN = 0.015
 const DRIFT_RATE_RANGE = 0.035
 
+const FADE_IN_SEC = 0.5
+
 function driftDepthFor(id, freq) {
   const pctDepth = freq * DRIFT_DEPTH_PCT
   const headroom = Math.min(freq - FILTER_MIN[id], FILTER_MAX[id] - freq)
@@ -102,7 +104,8 @@ export function startNoise(id, volume = 0.5, freq = null) {
   drift.start()
 
   const gain = ctx.createGain()
-  gain.gain.value = volume
+  gain.gain.setValueAtTime(0, ctx.currentTime)
+  gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + FADE_IN_SEC)
 
   source.connect(filter)
   filter.connect(gain)

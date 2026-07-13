@@ -514,33 +514,46 @@ export default function App() {
     e.currentTarget.setPointerCapture(e.pointerId)
   }, [anyOn])
 
-  // Hover-hit-test the last-drawn planet glyph positions — drives the magnify
-  // effect in the draw loop and the info tooltip below, independent of drag.
-  const onDisplayHover = useCallback((e) => {
+  // Hit-test a pointer event's screen position against the last-drawn planet
+  // glyph positions. Shared by hover (desktop mouse) and tap (touch, which
+  // never fires a pointermove before pointerup) so astro signs are always
+  // reachable regardless of input type.
+  const hitTestPlanet = useCallback((e) => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) return null
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
     const lx = (e.clientX - rect.left) * scaleX
     const ly = (e.clientY - rect.top) * scaleY
-    let hit = null
     for (const p of planetPosRef.current) {
-      if (Math.hypot(lx - p.px, ly - p.py) < 14) { hit = p; break }
+      if (Math.hypot(lx - p.px, ly - p.py) < 14) return { ...p, scaleX, scaleY }
     }
+    return null
+  }, [])
+
+  // Offset the tooltip to whichever side of the glyph has the most room,
+  // instead of centering it on the glyph — centered made it overlap the
+  // exact spot the cursor is trying to read. The ring sits near the top
+  // of the console, with far more room below it than above, so vertical
+  // placement always goes down rather than picking top/bottom evenly.
+  const showPlanetTip = useCallback((hit) => {
+    const canvas = canvasRef.current
+    const dx = hit.px - canvas.width / 2, dy = hit.py - canvas.height / 2
+    const placement = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : 'bottom'
+    setHoveredPlanet({ name: hit.name, x: hit.px / hit.scaleX, y: hit.py / hit.scaleY, placement })
+  }, [])
+
+  // Hover-hit-test — drives the magnify effect in the draw loop and the info
+  // tooltip below, independent of drag.
+  const onDisplayHover = useCallback((e) => {
+    const hit = hitTestPlanet(e)
     const hitName = hit ? hit.name : null
     if (hitName !== hoveredPlanetRef.current) {
       if (!hit) { setHoveredPlanet(null); return }
-      // Offset the tooltip to whichever side of the glyph has the most room,
-      // instead of centering it on the glyph — centered made it overlap the
-      // exact spot the cursor is trying to read. The ring sits near the top
-      // of the console, with far more room below it than above, so vertical
-      // placement always goes down rather than picking top/bottom evenly.
-      const dx = hit.px - canvas.width / 2, dy = hit.py - canvas.height / 2
-      const placement = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : 'bottom'
-      setHoveredPlanet({ name: hit.name, x: hit.px / scaleX, y: hit.py / scaleY, placement })
+      showPlanetTip(hit)
     }
-  }, [])
+  }, [hitTestPlanet, showPlanetTip])
 
   const onDisplayMove = useCallback((e) => {
     if (!dispDragRef.current) onDisplayHover(e)
@@ -583,18 +596,24 @@ export default function App() {
     })
   }, [anyOn, onDisplayHover])
 
-  const onDisplayUp = useCallback(() => {
+  const onDisplayUp = useCallback((e) => {
     const wasTap = dispTotalMoved.current < 6
     dispDragRef.current = false
     setDispDragging(false)
-    if (wasTap && anyOn) {
+    // Touch devices never fire a pointermove hover before the tap, so a tap
+    // landing on an astro sign wouldn't otherwise reveal its tooltip — hit-test
+    // the tap itself and show the tooltip instead of randomizing in that case.
+    const planetHit = wasTap && e ? hitTestPlanet(e) : null
+    if (planetHit) {
+      showPlanetTip(planetHit)
+    } else if (wasTap && anyOn) {
       randomizeActive()
       setDispFlashing(true)
       setTimeout(() => setDispFlashing(false), 700)
     } else if (wasTap && !anyOn) {
       randomizeFirst()
     }
-  }, [anyOn, randomizeActive, randomizeFirst])
+  }, [anyOn, randomizeActive, randomizeFirst, hitTestPlanet, showPlanetTip])
 
   // ── Noise handlers ────────────────────────────────────────────────
   const toggleNoise = useCallback((id) => {

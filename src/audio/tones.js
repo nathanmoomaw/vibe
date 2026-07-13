@@ -448,6 +448,12 @@ function makeEarth(ctx, initialAngle = 0) {
 
 // --- Public API ---
 
+// Held continuous tones (wind/water/fire/earth) fade in over this long when
+// turned on, instead of snapping straight to volume — periodic ones (bell,
+// chime, gong, birds) already have their own fast per-strike attack envelope
+// and shouldn't be slowed down, so this only applies to CONTINUOUS_FN below.
+const FADE_IN_SEC = 0.5
+
 const TRIGGER_FN = { bell: triggerBell, chime: triggerChime, gong: triggerGong, birds: triggerBirds }
 const CONTINUOUS_FN = { wind: makeWind, water: makeWater, fire: makeFire, earth: makeEarth }
 
@@ -493,7 +499,8 @@ export function startTone(id, volume = 0.5, rateSec = null) {
   if (CONTINUOUS_FN[id]) {
     // rateSec doubles as initialAngle for typed sounds (water, fire)
     const src = CONTINUOUS_FN[id](ctx, rateSec ?? 0)
-    src.gain.gain.value = volume
+    src.gain.gain.setValueAtTime(0, ctx.currentTime)
+    src.gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + FADE_IN_SEC)
     src.gain.connect(getMaster())
     activeContinuous[id] = src
   }
