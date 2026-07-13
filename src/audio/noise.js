@@ -52,6 +52,15 @@ const FILTER_DEFAULT = { white: 2000, pink: 800, blue: 3000 }
 
 const active = {}
 
+// Organic drift — a slow sine LFO summed onto the filter's base frequency
+// (AudioParams sum connected signals with their own .value) so a held noise
+// channel never sits at a perfectly static pitch. Rate is randomized per
+// channel so multiple channels don't wobble in lockstep, depth is a fixed
+// percentage of the current freq so it stays subtle across the knob's range.
+const DRIFT_DEPTH_PCT = 0.035
+const DRIFT_RATE_MIN = 0.015
+const DRIFT_RATE_RANGE = 0.035
+
 export function startNoise(id, volume = 0.5, freq = null) {
   stopNoise(id)
   const ctx = getContext()
@@ -60,10 +69,20 @@ export function startNoise(id, volume = 0.5, freq = null) {
   source.buffer = BUFFERS[id](ctx)
   source.loop = true
 
+  const baseFreq = freq ?? FILTER_DEFAULT[id]
   const filter = ctx.createBiquadFilter()
   filter.type = FILTER_TYPE[id]
-  filter.frequency.value = freq ?? FILTER_DEFAULT[id]
+  filter.frequency.value = baseFreq
   filter.Q.value = 0.7
+
+  const drift = ctx.createOscillator()
+  const driftGain = ctx.createGain()
+  drift.type = 'sine'
+  drift.frequency.value = DRIFT_RATE_MIN + Math.random() * DRIFT_RATE_RANGE
+  driftGain.gain.value = baseFreq * DRIFT_DEPTH_PCT
+  drift.connect(driftGain)
+  driftGain.connect(filter.frequency)
+  drift.start()
 
   const gain = ctx.createGain()
   gain.gain.value = volume
@@ -73,13 +92,15 @@ export function startNoise(id, volume = 0.5, freq = null) {
   gain.connect(getMaster())
   source.start()
 
-  active[id] = { source, filter, gain }
+  active[id] = { source, filter, gain, drift, driftGain }
 }
 
 export function stopNoise(id) {
   const s = active[id]
   if (!s) return
   try { s.source.stop() } catch (_) {}
+  try { s.drift.stop() } catch (_) {}
+  try { s.driftGain.disconnect() } catch (_) {}
   s.gain.disconnect()
   delete active[id]
 }
@@ -89,7 +110,10 @@ export function setNoiseVolume(id, v) {
 }
 
 export function setNoiseFreq(id, hz) {
-  if (active[id]) active[id].filter.frequency.value = hz
+  const s = active[id]
+  if (!s) return
+  s.filter.frequency.value = hz
+  s.driftGain.gain.value = hz * DRIFT_DEPTH_PCT
 }
 
 // ── LFO ombak pulse (amplitude modulation at binaural beat target Hz) ──────

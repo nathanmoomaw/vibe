@@ -8,6 +8,7 @@
 - [ ] Visual pulsing / animated interface (deeper)
 - [ ] Mic input for environment-reactive soundscape
 - [ ] Re-expose party/lo mode switch (footer toggle hidden Jul 10 2026, `mode` stays hardcoded to `'party'`; `LoView`/`ModeSwitch` components untouched, just not rendered)
+- [ ] Adjustable organic drift amount — a user-facing control for the depth/rate of the frequency drift added Jul 12 2026 (currently a fixed subtle default, not exposed as a setting)
 
 ## Completed
 - [x] Favicon: circle-viz spectrum ring + flower rosette around the Qian (Heaven) trigram
@@ -35,3 +36,4 @@
 - [x] Physical unit aesthetic: frosted glass floating panel + hardware silhouette
 - [x] Fullscreen color ripples from center (audio-energy-driven)
 - [x] Party/Lo mode switch (party = visual + animated, lo = ASCII monospace)
+- [x] Organic default drift: noise-channel filter frequencies wobble via a slow randomized-rate LFO, bell tone gets subtle per-strike pitch variation

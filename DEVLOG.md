@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Jul 12 2026 — organic default drift for noise + bell
+
+- **Default organic drift**: sound generation was previously perfectly static once a channel was on — a held noise filter frequency never moved, and the bell tone struck the exact same 440Hz every time (unlike chime/gong, which already randomize per note). Added a slow sine LFO (randomized rate per channel, ~0.015–0.05 Hz, so channels don't wobble in sync) summed onto each active noise channel's filter frequency via `noise.js`'s `startNoise`/`setNoiseFreq`, at a fixed ±3.5% depth of the current freq. Gave `triggerBell` in `tones.js` a ±1.5% random pitch deviation per strike when no explicit freq is passed (chime still passes its own randomized freq and is unaffected). Elemental tones (wind/water/fire/earth) already had internal breathing LFOs on their filters, so left those as-is. Depth/rate are hardcoded for now — added to ROADMAP backlog as a future adjustable setting
+
 ## Jul 10 2026 — audio-input tone filtering, presets modal jump fix, party icon v5, hid mode switch
 
 - **Party/lo mode switch hidden**: removed the `<ModeSwitch>` footer button per request to hide the feature for now. `mode` state stays hardcoded to `'party'` (its existing default); `ModeSwitch`/`LoView` components and the `mode === 'party'` conditionals in `App.jsx` are untouched, just no longer reachable from the UI. See ROADMAP backlog to re-expose later

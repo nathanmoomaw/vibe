@@ -16,7 +16,12 @@ function makeReverb(ctx, sec = 2.5, decay = 2) {
 
 // --- Periodic triggers (bell, chime, gong, birds) ---
 
-function triggerBell(ctx, out, vol, freq = 440) {
+// freq defaults to a slightly-detuned 440 each strike (±1.5%) rather than a
+// fixed value — a bare "bell" tone repeats the same pitch every time
+// otherwise, which reads as mechanical next to chime/gong's per-note
+// randomization. Callers that want an exact pitch (chime) pass freq explicitly.
+function triggerBell(ctx, out, vol, freq = null) {
+  const f = freq ?? 440 * (0.985 + Math.random() * 0.03)
   const now = ctx.currentTime
   const carrier = ctx.createOscillator()
   const mod = ctx.createOscillator()
@@ -24,10 +29,10 @@ function triggerBell(ctx, out, vol, freq = 440) {
   const env = ctx.createGain()
 
   carrier.type = 'sine'
-  carrier.frequency.value = freq
+  carrier.frequency.value = f
   mod.type = 'sine'
-  mod.frequency.value = freq * 2.756
-  modGain.gain.value = freq * 3
+  mod.frequency.value = f * 2.756
+  modGain.gain.value = f * 3
 
   env.gain.setValueAtTime(0.001, now)
   env.gain.linearRampToValueAtTime(vol * 0.8, now + 0.008)
