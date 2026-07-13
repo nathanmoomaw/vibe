@@ -50,16 +50,33 @@ const BUFFERS = { white: whiteBuffer, pink: pinkBuffer, blue: blueBuffer }
 const FILTER_TYPE = { white: 'allpass', pink: 'lowpass', blue: 'highpass' }
 const FILTER_DEFAULT = { white: 2000, pink: 800, blue: 3000 }
 
+// Mirrors NOISE's filterMin/filterMax in App.jsx — the hand-tuned "enjoyable"
+// range each channel's knob is allowed to reach. Drift must never push a
+// channel's effective frequency outside this range, so it's duplicated here
+// purely for clamping (see driftDepthFor below).
+const FILTER_MIN = { white: 200, pink: 100, blue: 500 }
+const FILTER_MAX = { white: 8000, pink: 5000, blue: 10000 }
+
 const active = {}
 
 // Organic drift — a slow sine LFO summed onto the filter's base frequency
 // (AudioParams sum connected signals with their own .value) so a held noise
 // channel never sits at a perfectly static pitch. Rate is randomized per
-// channel so multiple channels don't wobble in lockstep, depth is a fixed
-// percentage of the current freq so it stays subtle across the knob's range.
+// channel so multiple channels don't wobble in lockstep. It's a bounded,
+// periodic oscillation (not a random walk), so it can't wander further over
+// a long session — the only thing to guard is the *depth* at extreme knob
+// settings, where a flat percentage could push the peak past filterMin/Max
+// and out of the vetted "enjoyable" range. driftDepthFor clamps the depth to
+// whatever headroom is actually available on the tighter side.
 const DRIFT_DEPTH_PCT = 0.035
 const DRIFT_RATE_MIN = 0.015
 const DRIFT_RATE_RANGE = 0.035
+
+function driftDepthFor(id, freq) {
+  const pctDepth = freq * DRIFT_DEPTH_PCT
+  const headroom = Math.min(freq - FILTER_MIN[id], FILTER_MAX[id] - freq)
+  return Math.max(0, Math.min(pctDepth, headroom))
+}
 
 export function startNoise(id, volume = 0.5, freq = null) {
   stopNoise(id)
@@ -79,7 +96,7 @@ export function startNoise(id, volume = 0.5, freq = null) {
   const driftGain = ctx.createGain()
   drift.type = 'sine'
   drift.frequency.value = DRIFT_RATE_MIN + Math.random() * DRIFT_RATE_RANGE
-  driftGain.gain.value = baseFreq * DRIFT_DEPTH_PCT
+  driftGain.gain.value = driftDepthFor(id, baseFreq)
   drift.connect(driftGain)
   driftGain.connect(filter.frequency)
   drift.start()
@@ -113,7 +130,7 @@ export function setNoiseFreq(id, hz) {
   const s = active[id]
   if (!s) return
   s.filter.frequency.value = hz
-  s.driftGain.gain.value = hz * DRIFT_DEPTH_PCT
+  s.driftGain.gain.value = driftDepthFor(id, hz)
 }
 
 // ── LFO ombak pulse (amplitude modulation at binaural beat target Hz) ──────
