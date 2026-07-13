@@ -11,9 +11,9 @@ const OM_HZ = 136.1
 
 function baseNoise() {
   return {
-    white: { on: false, volume: 0.14, freq: 2000 },
-    pink:  { on: false, volume: 0.14, freq: 900 },
-    blue:  { on: false, volume: 0.14, freq: 3500 },
+    white: { on: false, volume: 0.14, freq: 2000, typeAngle: 0 },
+    pink:  { on: false, volume: 0.14, freq: 900,  typeAngle: 0 },
+    blue:  { on: false, volume: 0.14, freq: 3500, typeAngle: 0 },
   }
 }
 

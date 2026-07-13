@@ -13,7 +13,7 @@ function b64dec(str) {
 export function encodeSettings(noise, tones, NOISE, TONES) {
   const n = NOISE.map(s => {
     const v = noise[s.id]
-    return [v.on ? 1 : 0, Math.round(v.volume * 100), Math.round(v.freq)]
+    return [v.on ? 1 : 0, Math.round(v.volume * 100), Math.round(v.freq), Math.round(v.typeAngle ?? 0)]
   })
   const t = TONES.map(s => {
     const v = tones[s.id]
@@ -35,8 +35,8 @@ export function decodeSettings(encoded, noise, tones, NOISE, TONES) {
 
     NOISE.forEach((s, i) => {
       if (!n[i]) return
-      const [on, vol, freq] = n[i]
-      nextNoise[s.id] = { ...noise[s.id], on: !!on, volume: vol / 100, freq }
+      const [on, vol, freq, typeAngle] = n[i]
+      nextNoise[s.id] = { ...noise[s.id], on: !!on, volume: vol / 100, freq, typeAngle: typeAngle ?? 0 }
     })
 
     TONES.forEach((s, i) => {

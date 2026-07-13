@@ -46,98 +46,195 @@ function blueBuffer(ctx, sec = 6) {
   return buf
 }
 
-const BUFFERS = { white: whiteBuffer, pink: pinkBuffer, blue: blueBuffer }
-const FILTER_TYPE = { white: 'allpass', pink: 'lowpass', blue: 'highpass' }
-const FILTER_DEFAULT = { white: 2000, pink: 800, blue: 3000 }
+// Brown/red — leaky-integrated (random-walk) white noise, -6dB/octave. The
+// deep, rumbling counterpart to pink.
+function brownBuffer(ctx, sec = 6) {
+  const len = Math.floor(ctx.sampleRate * sec)
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    let last = 0
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1
+      last = (last + 0.02 * w) / 1.02
+      d[i] = last * 3.5
+    }
+  }
+  return buf
+}
 
-// Mirrors NOISE's filterMin/filterMax in App.jsx — the hand-tuned "enjoyable"
-// range each channel's knob is allowed to reach. Drift must never push a
-// channel's effective frequency outside this range, so it's duplicated here
-// purely for clamping (see driftDepthFor below).
+// Violet/purple — double-differenced white noise, +6dB/octave. Sharper and
+// brighter than blue (single difference) — the hiss counterpart to white.
+function violetBuffer(ctx, sec = 6) {
+  const len = Math.floor(ctx.sampleRate * sec)
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    let p1 = 0, p2 = 0
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1
+      const d1 = w - p1; p1 = w
+      const d2 = d1 - p2; p2 = d1
+      d[i] = d2 * 0.22
+    }
+  }
+  return buf
+}
+
+// Grey — same broadband source as white; its perceptually-flat character
+// comes from the downstream peaking cut in FILTER_TYPE/FILTER_GAIN below
+// (ears are most sensitive ~2-5kHz, so that band gets pulled down).
+const greyBuffer = whiteBuffer
+
+const BUFFERS = { white: whiteBuffer, pink: pinkBuffer, blue: blueBuffer, brown: brownBuffer, violet: violetBuffer, grey: greyBuffer }
+const FILTER_TYPE = { white: 'allpass', pink: 'lowpass', blue: 'highpass', brown: 'lowpass', violet: 'highpass', grey: 'peaking' }
+const FILTER_GAIN = { grey: -7 } // dB — only 'peaking' reads this
+
+// Each primary slot (white/pink/blue) continuously morphs into a paired
+// color as its knob turns — see startNoise/setNoiseType.
+export const NOISE_PAIR = { white: 'violet', pink: 'brown', blue: 'grey' }
+
+// Base corner frequency per color. Primary three match App.jsx's original
+// per-channel defaults (kept identical so existing presets/readings that
+// target these Hz values sound the same as before); paired colors get their
+// own sensible defaults for their register.
+export const FILTER_DEFAULT = { white: 2000, pink: 900, blue: 3500, violet: 4500, brown: 300, grey: 3000 }
+
+// Primary channels' original free-adjustment range, from when the knob
+// itself set frequency directly. The knob now morphs color instead, but the
+// Wǔ Yīn/OM tuning system (reading.js, presets.js) still targets specific
+// Hz values across this full span — e.g. OM at 136.1Hz on pink, which sits
+// nowhere near pink's 900Hz default. A percentage-of-default clamp collapses
+// every note to the same boundary value; only an absolute range spanning
+// each color's original register keeps the notes distinct.
 const FILTER_MIN = { white: 200, pink: 100, blue: 500 }
 const FILTER_MAX = { white: 8000, pink: 5000, blue: 10000 }
 
 const active = {}
 
-// Organic drift — a slow sine LFO summed onto the filter's base frequency
-// (AudioParams sum connected signals with their own .value) so a held noise
+// Organic drift — a slow sine LFO summed onto each color's filter frequency
+// (AudioParams sum connected signals with their own .value), so a held
 // channel never sits at a perfectly static pitch. Rate is randomized per
-// channel so multiple channels don't wobble in lockstep. It's a bounded,
-// periodic oscillation (not a random walk), so it can't wander further over
-// a long session — the only thing to guard is the *depth* at extreme knob
-// settings, where a flat percentage could push the peak past filterMin/Max
-// and out of the vetted "enjoyable" range. driftDepthFor clamps the depth to
-// whatever headroom is actually available on the tighter side.
+// chain so they don't wobble in lockstep. Bounded periodic oscillation, not
+// a random walk, so there's no accumulation risk over a long session.
 const DRIFT_DEPTH_PCT = 0.035
 const DRIFT_RATE_MIN = 0.015
 const DRIFT_RATE_RANGE = 0.035
 
 const FADE_IN_SEC = 0.5
 
-function driftDepthFor(id, freq) {
-  const pctDepth = freq * DRIFT_DEPTH_PCT
-  const headroom = Math.min(freq - FILTER_MIN[id], FILTER_MAX[id] - freq)
-  return Math.max(0, Math.min(pctDepth, headroom))
+// Frequency is no longer a free knob (the knob now morphs color) — but the
+// reading/preset system still targets specific Wǔ Yīn/OM Hz values on the
+// *primary* color only (readings only ever spoke of "pink"/"white"/"blue",
+// never brown/violet/grey). setNoiseFreq clamps that target to the primary
+// color's original range and leaves the paired color at its own default —
+// "coarse" in that it's no longer a live-draggable knob, not in range.
+function primaryFreq(id, tuneHz) {
+  if (tuneHz == null) return FILTER_DEFAULT[id]
+  return Math.max(FILTER_MIN[id], Math.min(FILTER_MAX[id], tuneHz))
 }
 
-export function startNoise(id, volume = 0.5, freq = null) {
-  stopNoise(id)
-  const ctx = getContext()
+// Continuous 2-way crossfade weights — same cosine formula used for the
+// elemental trigram morph, so "turn the knob" reads consistently across
+// noise and element cards.
+function weights(angle) {
+  const rad = ((angle % 360) + 360) % 360 * Math.PI / 180
+  const t = 0.5 - 0.5 * Math.cos(rad)
+  return [1 - t, t] // [primary weight, paired weight]
+}
 
+function buildColorChain(ctx, colorId, freq) {
   const source = ctx.createBufferSource()
-  source.buffer = BUFFERS[id](ctx)
+  source.buffer = BUFFERS[colorId](ctx)
   source.loop = true
 
-  const baseFreq = freq ?? FILTER_DEFAULT[id]
   const filter = ctx.createBiquadFilter()
-  filter.type = FILTER_TYPE[id]
-  filter.frequency.value = baseFreq
+  filter.type = FILTER_TYPE[colorId]
+  filter.frequency.value = freq
   filter.Q.value = 0.7
+  if (FILTER_TYPE[colorId] === 'peaking') filter.gain.value = FILTER_GAIN[colorId] ?? 0
 
   const drift = ctx.createOscillator()
   const driftGain = ctx.createGain()
   drift.type = 'sine'
   drift.frequency.value = DRIFT_RATE_MIN + Math.random() * DRIFT_RATE_RANGE
-  driftGain.gain.value = driftDepthFor(id, baseFreq)
+  driftGain.gain.value = freq * DRIFT_DEPTH_PCT
   drift.connect(driftGain)
   driftGain.connect(filter.frequency)
   drift.start()
 
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(0, ctx.currentTime)
-  gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + FADE_IN_SEC)
-
+  const gain = ctx.createGain() // this color's blend-weight within the pair
   source.connect(filter)
   filter.connect(gain)
-  gain.connect(getMaster())
   source.start()
 
-  active[id] = { source, filter, gain, drift, driftGain }
+  return { colorId, source, filter, drift, driftGain, gain }
+}
+
+function stopColorChain(c) {
+  try { c.source.stop() } catch (_) {}
+  try { c.drift.stop() } catch (_) {}
+  try { c.driftGain.disconnect() } catch (_) {}
+  try { c.gain.disconnect() } catch (_) {}
+}
+
+export function startNoise(id, volume = 0.5, typeAngle = 0, tuneHz = null) {
+  stopNoise(id)
+  const ctx = getContext()
+  const pairedId = NOISE_PAIR[id]
+
+  const primary = buildColorChain(ctx, id, primaryFreq(id, tuneHz))
+  const paired  = buildColorChain(ctx, pairedId, FILTER_DEFAULT[pairedId])
+
+  const [wp, ws] = weights(typeAngle)
+  primary.gain.gain.value = wp
+  paired.gain.gain.value = ws
+
+  const master = ctx.createGain()
+  master.gain.setValueAtTime(0, ctx.currentTime)
+  master.gain.linearRampToValueAtTime(volume, ctx.currentTime + FADE_IN_SEC)
+  primary.gain.connect(master)
+  paired.gain.connect(master)
+  master.connect(getMaster())
+
+  active[id] = { primary, paired, master }
 }
 
 export function stopNoise(id) {
   const s = active[id]
   if (!s) return
-  try { s.source.stop() } catch (_) {}
-  try { s.drift.stop() } catch (_) {}
-  try { s.driftGain.disconnect() } catch (_) {}
-  s.gain.disconnect()
+  stopColorChain(s.primary)
+  stopColorChain(s.paired)
+  try { s.master.disconnect() } catch (_) {}
   delete active[id]
 }
 
 export function setNoiseVolume(id, v) {
-  if (active[id]) active[id].gain.gain.value = v
+  if (active[id]) active[id].master.gain.value = v
 }
 
+// Crossfades between the slot's primary and paired color as the knob turns.
+export function setNoiseType(id, angle) {
+  const s = active[id]
+  if (!s) return
+  const [wp, ws] = weights(angle)
+  const now = getContext().currentTime
+  s.primary.gain.gain.setTargetAtTime(wp, now, 0.06)
+  s.paired.gain.gain.setTargetAtTime(ws, now, 0.06)
+}
+
+// Wǔ Yīn/OM tuning target — targets the primary color only (see primaryFreq
+// above); the paired color stays at its own default.
 export function setNoiseFreq(id, hz) {
   const s = active[id]
   if (!s) return
-  s.filter.frequency.value = hz
-  s.driftGain.gain.value = driftDepthFor(id, hz)
+  const freq = primaryFreq(id, hz)
+  s.primary.filter.frequency.value = freq
+  s.primary.driftGain.gain.value = freq * DRIFT_DEPTH_PCT
 }
 
 // ── LFO ombak pulse (amplitude modulation at binaural beat target Hz) ──────
-// Connects a sine oscillator to the noise channel's gain AudioParam,
+// Connects a sine oscillator to the noise channel's master gain AudioParam,
 // creating a slow amplitude pulse at the given Hz (theta/alpha/delta range).
 const lfoNodes = {}
 
@@ -152,7 +249,7 @@ export function setNoisePulse(id, beatHz) {
   lfo.frequency.value = beatHz
   lfoGain.gain.value = 0.08  // ±8% amplitude modulation depth
   lfo.connect(lfoGain)
-  lfoGain.connect(s.gain.gain)
+  lfoGain.connect(s.master.gain)
   lfo.start()
   lfoNodes[id] = { lfo, lfoGain }
 }

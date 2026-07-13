@@ -40,8 +40,8 @@ function LoRow({ id, label, on, volume, param, paramLabel, onToggle, onVolume, o
               <span className="lo-row__slider-lbl">{paramLabel}</span>
               <input
                 type="range" className="lo-row__slider"
-                min={paramLabel === 'hz' ? 100 : 3}
-                max={paramLabel === 'hz' ? 10000 : 120}
+                min={paramLabel === 'deg' ? 0 : 3}
+                max={paramLabel === 'deg' ? 360 : 120}
                 step="1"
                 value={param}
                 onChange={e => onParam(parseFloat(e.target.value))}
@@ -71,8 +71,8 @@ export default function LoView({
             label={s.id}
             on={noise[s.id].on}
             volume={noise[s.id].volume}
-            param={noise[s.id].freq}
-            paramLabel="hz"
+            param={noise[s.id].typeAngle}
+            paramLabel="deg"
             onToggle={() => onToggleNoise(s.id)}
             onVolume={v => onNoiseVol(s.id, v)}
             onParam={v => onNoiseParam?.(s.id, v)}

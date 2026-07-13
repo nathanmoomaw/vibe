@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { getAnalyser, setAudioInput, stopAudioInput, fadeMaster } from './audio/engine.js'
 import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
-import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq } from './audio/noise.js'
+import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq, setNoiseType } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
 import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
@@ -61,14 +61,24 @@ function planetFade(noiseFreq, planetFreq) {
   return Math.max(0, 1 - centsDev / 280)
 }
 
+// Each channel continuously morphs into a paired color as its knob turns
+// (mirrors NOISE_PAIR in audio/noise.js — keep in sync): white↔violet
+// (both a high hiss), pink↔brown (both a soft body-close hum vs a deep
+// rumble), blue↔grey (both edge/clarity colors). filterDefault is also each
+// primary's "no offset" tuning target for the Wǔ Yīn coarse-nudge system —
+// see setNoiseFreq in audio/noise.js.
 export const NOISE = [
   { id: 'white', label: 'white', color: '#d4d4d4', glow: 'rgba(212,212,212,0.35)',
-    filterDefault: 2000, filterMin: 200, filterMax: 8000 },
+    filterDefault: 2000, pairId: 'violet', pairLabel: 'violet' },
   { id: 'pink',  label: 'pink',  color: '#ff7eb3', glow: 'rgba(255,126,179,0.4)',
-    filterDefault: 900,  filterMin: 100, filterMax: 5000 },
+    filterDefault: 900,  pairId: 'brown', pairLabel: 'brown' },
   { id: 'blue',  label: 'blue',  color: '#66ccff', glow: 'rgba(102,204,255,0.4)',
-    filterDefault: 3500, filterMin: 500, filterMax: 10000 },
+    filterDefault: 3500, pairId: 'grey', pairLabel: 'grey' },
 ]
+
+// Mirrors COARSE_OFFSET_PCT in audio/noise.js — how far a Wǔ Yīn tune nudge
+// is allowed to shift a channel's default frequency.
+const COARSE_TUNE_PCT = 0.25
 
 // I Ching trigrams: [top, middle, bottom] 1=yang(solid), 0=yin(broken)
 const TRIGRAMS = {
@@ -139,6 +149,13 @@ const FIRE_TYPES  = ['candle', 'campfire', 'bonfire']
 const WIND_TYPES  = ['breeze', 'gale', 'squall']
 const EARTH_TYPES = ['loam', 'stone', 'crystal']
 
+// Which of a noise slot's two paired colors is closest to the current knob
+// angle — same continuous 2-way crossfade threshold used in audio/noise.js.
+function getNoiseLabel(s, angle) {
+  const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+  return t < 0.5 ? s.label : s.pairLabel
+}
+
 function getTypeName(id, angle) {
   const a = ((angle % 360) + 360) % 360
   const idx = a < 60 || a >= 300 ? 0 : a < 180 ? 1 : 2
@@ -157,7 +174,7 @@ function initState(slots, extra) {
 // the classic two-tone pill silhouette rendered as pure strokes.
 export default function App() {
   const [mode, setMode] = useState('party')
-  const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault })))
+  const [noise, setNoise] = useState(() => initState(NOISE, s => ({ freq: s.filterDefault, typeAngle: 0 })))
   const [tones, setTones] = useState(() => initState(TONES, s => ({ rate: s.rateDefault ?? 20, typeAngle: 0 })))
   const [dispDragging, setDispDragging] = useState(false)
   const [dispFlashing, setDispFlashing] = useState(false)
@@ -199,7 +216,7 @@ export default function App() {
         if (!decoded) return t
         // Start any sounds that are on in the decoded state
         NOISE.forEach(s => {
-          if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].freq)
+          if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].typeAngle, decoded.noise[s.id].freq)
         })
         TONES.forEach(s => {
           const ds = decoded.tones[s.id]
@@ -324,9 +341,11 @@ export default function App() {
         if (!prev[s.id].on) continue
         const newVol = Math.max(0.1, Math.min(1,
           prev[s.id].volume + (Math.random() - 0.5) * 0.5))
-        const freqRange = s.filterMax - s.filterMin
-        const newFreq = Math.max(s.filterMin, Math.min(s.filterMax,
-          prev[s.id].freq + (Math.random() - 0.5) * freqRange * 0.5))
+        // Coarse Wǔ Yīn-style tune nudge, ±25% of the channel's default —
+        // typeAngle (which color is dominant) is left alone here, same as
+        // elemental tones leave their typeAngle untouched on randomize and
+        // only jitter rate.
+        const newFreq = s.filterDefault * (1 + (Math.random() - 0.5) * COARSE_TUNE_PCT)
         setNoiseVolume(s.id, newVol)
         setNoiseFreq(s.id, newFreq)
         next[s.id] = { ...prev[s.id], volume: newVol, freq: newFreq }
@@ -367,7 +386,7 @@ export default function App() {
     setNoise(prev => {
       const next = { ...prev }
       for (const { id, v, f } of preset.n) {
-        startNoise(id, v, f)
+        startNoise(id, v, prev[id].typeAngle, f)
         next[id] = { ...prev[id], on: true, volume: v, freq: f }
       }
       return next
@@ -397,7 +416,7 @@ export default function App() {
       for (const s of NOISE) {
         const cfg = readingNoise[s.id]
         if (cfg.on) {
-          if (!prev[s.id].on) startNoise(s.id, cfg.volume, cfg.freq)
+          if (!prev[s.id].on) startNoise(s.id, cfg.volume, prev[s.id].typeAngle, cfg.freq)
           else { setNoiseVolume(s.id, cfg.volume); setNoiseFreq(s.id, cfg.freq) }
           // Apply LFO ombak pulse at binaural beat target frequency
           if (pulseHz) setTimeout(() => setNoisePulse(s.id, pulseHz), 50)
@@ -454,7 +473,7 @@ export default function App() {
   const revealReadingSound = useCallback((id, type, cfg) => {
     if (type === 'noise') {
       setNoise(prev => {
-        startNoise(id, cfg.volume, cfg.freq)
+        startNoise(id, cfg.volume, prev[id].typeAngle, cfg.freq)
         return { ...prev, [id]: { ...prev[id], on: true, volume: cfg.volume, freq: cfg.freq } }
       })
     } else {
@@ -568,12 +587,10 @@ export default function App() {
       for (const s of NOISE) {
         if (!prev[s.id].on) continue
         const newVol = Math.max(0, Math.min(1, prev[s.id].volume - dy / 400))
-        const freqRange = s.filterMax - s.filterMin
-        const newFreq = Math.max(s.filterMin, Math.min(s.filterMax,
-          prev[s.id].freq + dx / 500 * freqRange))
+        const newAngle = (((prev[s.id].typeAngle + dx / 500 * 360) % 360) + 360) % 360
         setNoiseVolume(s.id, newVol)
-        setNoiseFreq(s.id, newFreq)
-        next[s.id] = { ...prev[s.id], volume: newVol, freq: newFreq }
+        setNoiseType(s.id, newAngle)
+        next[s.id] = { ...prev[s.id], volume: newVol, typeAngle: newAngle }
       }
       return next
     })
@@ -619,7 +636,7 @@ export default function App() {
   const toggleNoise = useCallback((id) => {
     setNoise(prev => {
       const s = prev[id]
-      s.on ? stopNoise(id) : startNoise(id, s.volume, s.freq)
+      s.on ? stopNoise(id) : startNoise(id, s.volume, s.typeAngle, s.freq)
       return { ...prev, [id]: { ...s, on: !s.on } }
     })
   }, [])
@@ -628,8 +645,8 @@ export default function App() {
     setNoise(prev => { setNoiseVolume(id, v); return { ...prev, [id]: { ...prev[id], volume: v } } })
   }, [])
 
-  const setNoiseFreqCb = useCallback((id, hz) => {
-    setNoise(prev => { setNoiseFreq(id, hz); return { ...prev, [id]: { ...prev[id], freq: hz } } })
+  const setNoiseTypeCb = useCallback((id, angle) => {
+    setNoise(prev => { setNoiseType(id, angle); return { ...prev, [id]: { ...prev[id], typeAngle: angle } } })
   }, [])
 
   // ── Tone handlers ─────────────────────────────────────────────────
@@ -681,7 +698,7 @@ export default function App() {
     if (!snap) return
     NOISE.forEach(s => {
       const st = snap.noise[s.id]
-      if (st?.on) startNoise(s.id, st.volume, st.freq)
+      if (st?.on) startNoise(s.id, st.volume, st.typeAngle, st.freq)
     })
     TONES.forEach(s => {
       const st = snap.tones[s.id]
@@ -775,14 +792,15 @@ export default function App() {
                         key={s.id} {...s}
                         active={noise[s.id].on}
                         volume={noise[s.id].volume}
-                        param={noise[s.id].freq}
-                        paramLabel="freq"
-                        paramMin={s.filterMin}
-                        paramMax={s.filterMax}
+                        param={noise[s.id].typeAngle}
+                        paramLabel={getNoiseLabel(s, noise[s.id].typeAngle)}
+                        paramMin={0}
+                        paramMax={360}
+                        innerCircular
                         idle={!anyOn}
                         onToggle={() => toggleNoise(s.id)}
                         onVolume={v => setNoiseVol(s.id, v)}
-                        onParam={hz => setNoiseFreqCb(s.id, hz)}
+                        onParam={a => setNoiseTypeCb(s.id, a)}
                       />
                     ))}
                   </div>
@@ -843,7 +861,7 @@ export default function App() {
                 onToggleTone={toggleTone}
                 onNoiseVol={setNoiseVol}
                 onToneVol={setToneVol}
-                onNoiseParam={setNoiseFreqCb}
+                onNoiseParam={setNoiseTypeCb}
               />
             )}
           </div>

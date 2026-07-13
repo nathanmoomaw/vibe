@@ -9,6 +9,7 @@
 - [ ] Mic input for environment-reactive soundscape
 - [ ] Re-expose party/lo mode switch (footer toggle hidden Jul 10 2026, `mode` stays hardcoded to `'party'`; `LoView`/`ModeSwitch` components untouched, just not rendered)
 - [ ] Adjustable organic drift amount — a user-facing control for the depth/rate of the frequency drift added Jul 12 2026 (currently a fixed subtle default, not exposed as a setting)
+- [ ] Restore a way to manually find planet glyphs on noise channels — the display-drag/knob used to adjust noise frequency (and the glyph-fade logic tracks noise frequency), but as of the Jul 13 2026 color-pairing change the knob morphs color instead and frequency is only set by readings/presets, so that exploratory "search by ear" interaction is gone for noise channels specifically
 
 ## Completed
 - [x] Favicon: circle-viz spectrum ring + flower rosette around the Qian (Heaven) trigram
@@ -37,3 +38,4 @@
 - [x] Fullscreen color ripples from center (audio-energy-driven)
 - [x] Party/Lo mode switch (party = visual + animated, lo = ASCII monospace)
 - [x] Organic default drift: noise-channel filter frequencies wobble via a slow randomized-rate LFO, bell tone gets subtle per-strike pitch variation
+- [x] Brown, violet, and grey noise, paired with pink/white/blue respectively — knob morphs continuously between each pair
