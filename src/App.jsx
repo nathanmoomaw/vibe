@@ -69,12 +69,33 @@ function planetFade(noiseFreq, planetFreq) {
 // see setNoiseFreq in audio/noise.js.
 export const NOISE = [
   { id: 'white', label: 'white', color: '#d4d4d4', glow: 'rgba(212,212,212,0.35)',
-    filterDefault: 2000, pairId: 'violet', pairLabel: 'violet' },
+    filterDefault: 2000, pairId: 'violet', pairLabel: 'violet', pairColor: '#c266ff' },
   { id: 'pink',  label: 'pink',  color: '#ff7eb3', glow: 'rgba(255,126,179,0.4)',
-    filterDefault: 900,  pairId: 'brown', pairLabel: 'brown' },
+    filterDefault: 900,  pairId: 'brown', pairLabel: 'brown', pairColor: '#a0522d' },
   { id: 'blue',  label: 'blue',  color: '#66ccff', glow: 'rgba(102,204,255,0.4)',
-    filterDefault: 3500, pairId: 'grey', pairLabel: 'grey' },
+    filterDefault: 3500, pairId: 'grey', pairLabel: 'grey', pairColor: '#9aa5b1' },
 ]
+
+// Interpolates a noise slot's own color toward its paired color's, at the
+// same continuous morph weight as the audible crossfade (getNoiseLabel /
+// audio/noise.js's weights()) — so the knob's glow visibly tracks which
+// color is dominant, not just its text label.
+function lerpHex(hexA, hexB, t) {
+  const a = parseInt(hexA.slice(1), 16), b = parseInt(hexB.slice(1), 16)
+  const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255
+  const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255
+  return {
+    r: Math.round(ar + (br - ar) * t),
+    g: Math.round(ag + (bg - ag) * t),
+    b: Math.round(ab + (bb - ab) * t),
+  }
+}
+
+function noiseColorAt(s, angle) {
+  const t = 0.5 - 0.5 * Math.cos(((angle % 360) + 360) % 360 * Math.PI / 180)
+  const { r, g, b } = lerpHex(s.color, s.pairColor, t)
+  return { color: `rgb(${r},${g},${b})`, glow: `rgba(${r},${g},${b},0.4)` }
+}
 
 // Mirrors COARSE_OFFSET_PCT in audio/noise.js — how far a Wǔ Yīn tune nudge
 // is allowed to shift a channel's default frequency.
@@ -787,22 +808,27 @@ export default function App() {
                 <section className="unit__section">
                   <div className="unit__section-label">noise</div>
                   <div className="unit__grid unit__grid--3">
-                    {NOISE.map(s => (
-                      <SoundSlot
-                        key={s.id} {...s}
-                        active={noise[s.id].on}
-                        volume={noise[s.id].volume}
-                        param={noise[s.id].typeAngle}
-                        paramLabel={getNoiseLabel(s, noise[s.id].typeAngle)}
-                        paramMin={0}
-                        paramMax={360}
-                        innerCircular
-                        idle={!anyOn}
-                        onToggle={() => toggleNoise(s.id)}
-                        onVolume={v => setNoiseVol(s.id, v)}
-                        onParam={a => setNoiseTypeCb(s.id, a)}
-                      />
-                    ))}
+                    {NOISE.map(s => {
+                      const { color, glow } = noiseColorAt(s, noise[s.id].typeAngle)
+                      return (
+                        <SoundSlot
+                          key={s.id} {...s}
+                          color={color}
+                          glow={glow}
+                          active={noise[s.id].on}
+                          volume={noise[s.id].volume}
+                          param={noise[s.id].typeAngle}
+                          paramLabel={getNoiseLabel(s, noise[s.id].typeAngle)}
+                          paramMin={0}
+                          paramMax={360}
+                          innerCircular
+                          idle={!anyOn}
+                          onToggle={() => toggleNoise(s.id)}
+                          onVolume={v => setNoiseVol(s.id, v)}
+                          onParam={a => setNoiseTypeCb(s.id, a)}
+                        />
+                      )
+                    })}
                   </div>
                 </section>
 

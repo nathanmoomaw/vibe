@@ -178,33 +178,47 @@ function stopColorChain(c) {
   try { c.gain.disconnect() } catch (_) {}
 }
 
+// Most channels never have their color knob touched — building the paired
+// chain (buffer source + filter + drift oscillator + 2 gains) unconditionally
+// silently doubled the always-on audio-graph node count for zero audible
+// benefit in that common case. Only build it once the blend weight actually
+// crosses this threshold, and leave it running for the rest of the session
+// once built (avoids start/stop thrashing right around the threshold).
+const PAIRED_WEIGHT_THRESHOLD = 0.02
+
+function ensurePaired(id, initialWeight) {
+  const s = active[id]
+  if (!s || s.paired) return
+  const ctx = getContext()
+  s.paired = buildColorChain(ctx, s.pairedId, FILTER_DEFAULT[s.pairedId])
+  s.paired.gain.gain.value = initialWeight
+  s.paired.gain.connect(s.master)
+}
+
 export function startNoise(id, volume = 0.5, typeAngle = 0, tuneHz = null) {
   stopNoise(id)
   const ctx = getContext()
   const pairedId = NOISE_PAIR[id]
 
   const primary = buildColorChain(ctx, id, primaryFreq(id, tuneHz))
-  const paired  = buildColorChain(ctx, pairedId, FILTER_DEFAULT[pairedId])
-
   const [wp, ws] = weights(typeAngle)
   primary.gain.gain.value = wp
-  paired.gain.gain.value = ws
 
   const master = ctx.createGain()
   master.gain.setValueAtTime(0, ctx.currentTime)
   master.gain.linearRampToValueAtTime(volume, ctx.currentTime + FADE_IN_SEC)
   primary.gain.connect(master)
-  paired.gain.connect(master)
   master.connect(getMaster())
 
-  active[id] = { primary, paired, master }
+  active[id] = { primary, paired: null, master, pairedId }
+  if (ws > PAIRED_WEIGHT_THRESHOLD) ensurePaired(id, ws)
 }
 
 export function stopNoise(id) {
   const s = active[id]
   if (!s) return
   stopColorChain(s.primary)
-  stopColorChain(s.paired)
+  if (s.paired) stopColorChain(s.paired)
   try { s.master.disconnect() } catch (_) {}
   delete active[id]
 }
@@ -220,7 +234,8 @@ export function setNoiseType(id, angle) {
   const [wp, ws] = weights(angle)
   const now = getContext().currentTime
   s.primary.gain.gain.setTargetAtTime(wp, now, 0.06)
-  s.paired.gain.gain.setTargetAtTime(ws, now, 0.06)
+  if (!s.paired && ws > PAIRED_WEIGHT_THRESHOLD) ensurePaired(id, 0)
+  if (s.paired) s.paired.gain.gain.setTargetAtTime(ws, now, 0.06)
 }
 
 // Wǔ Yīn/OM tuning target — targets the primary color only (see primaryFreq

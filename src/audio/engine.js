@@ -20,6 +20,16 @@ export function getContext() {
 
     masterGain.connect(analyser)
     analyser.connect(ctx.destination)
+
+    // Mobile browsers (iOS Safari in particular) can suspend the
+    // AudioContext while the tab/app is backgrounded. Without this, it only
+    // gets resumed the next time some unrelated interaction happens to call
+    // getContext() again, which can read as a jarring "catch up" skip on
+    // return from background. Resume proactively the moment the page is
+    // visible again instead of waiting for that.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && ctx.state === 'suspended') ctx.resume()
+    })
   }
   if (ctx.state === 'suspended') ctx.resume()
   return ctx
