@@ -217,6 +217,32 @@ function initState(slots, extra) {
   return Object.fromEntries(slots.map(s => [s.id, { on: false, volume: 0.5, ...extra(s) }]))
 }
 
+// Keeps a value's last non-null content mounted through a fade-out instead of
+// yanking it from the DOM the instant it goes null — used by the circle viz's
+// hover tooltips so they ease out, not just in. Returns [displayValue, visible];
+// render while displayValue is truthy, toggle opacity via the visible flag.
+function useFadeVisible(value, exitMs = 180) {
+  const [display, setDisplay] = useState(value)
+  const [visible, setVisible] = useState(!!value)
+  const hideTimer = useRef(null)
+  const showFrame = useRef(null)
+
+  useEffect(() => {
+    clearTimeout(hideTimer.current)
+    cancelAnimationFrame(showFrame.current)
+    if (value) {
+      setDisplay(value)
+      showFrame.current = requestAnimationFrame(() => setVisible(true))
+    } else {
+      setVisible(false)
+      hideTimer.current = setTimeout(() => setDisplay(null), exitMs)
+    }
+    return () => { clearTimeout(hideTimer.current); cancelAnimationFrame(showFrame.current) }
+  }, [value])
+
+  return [display, visible]
+}
+
 // Monochrome outline of 💊 — a capsule rotated diagonal with a center divider,
 // the classic two-tone pill silhouette rendered as pure strokes.
 export default function App() {
@@ -246,6 +272,12 @@ export default function App() {
   const [ringHover, setRingHover] = useState(false) // hovering the display ring generally (not a planet glyph) — drives the function-tip below
   useEffect(() => { noiseRef.current = noise }, [noise])
   useEffect(() => { hoveredPlanetRef.current = hoveredPlanet?.name ?? null }, [hoveredPlanet])
+
+  // Ease both circle-viz tooltips out on hover-end instead of yanking them
+  // off instantly — they already faded in, this makes the exit match.
+  const [planetTipDisplay, planetTipVisible] = useFadeVisible(hoveredPlanet)
+  const showRingTip = ringHover && !hoveredPlanet && !dispDragging
+  const [ringTipDisplay, ringTipVisible] = useFadeVisible(showRingTip ? true : null)
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
   const activeSounds = [
@@ -801,17 +833,17 @@ export default function App() {
               <canvas ref={canvasRef} className="unit__viz" width={200} height={200} />
               {!anyOn && <div className="unit__display-idle">vibe</div>}
             </div>
-            {hoveredPlanet && (
+            {planetTipDisplay && (
               <div
-                className={`unit__planet-tip unit__planet-tip--${hoveredPlanet.placement}`}
-                style={{ left: `${hoveredPlanet.x}px`, top: `${hoveredPlanet.y}px` }}
+                className={`unit__planet-tip unit__planet-tip--${planetTipDisplay.placement}${planetTipVisible ? ' unit__planet-tip--visible' : ''}`}
+                style={{ left: `${planetTipDisplay.x}px`, top: `${planetTipDisplay.y}px` }}
               >
-                <span className="unit__planet-tip-name">{hoveredPlanet.name}</span>
-                {PLANET_QUALITY[hoveredPlanet.name]}
+                <span className="unit__planet-tip-name">{planetTipDisplay.name}</span>
+                {PLANET_QUALITY[planetTipDisplay.name]}
               </div>
             )}
-            {ringHover && !hoveredPlanet && !dispDragging && (
-              <div className="unit__ring-tip">
+            {ringTipDisplay && (
+              <div className={`unit__ring-tip${ringTipVisible ? ' unit__ring-tip--visible' : ''}`}>
                 <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#9679;</span>tap — randomize</div>
                 <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8597;</span>up / down — volume</div>
                 <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8596;</span>left / right — rate</div>

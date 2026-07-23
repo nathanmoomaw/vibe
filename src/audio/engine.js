@@ -73,12 +73,15 @@ export function setAudioInput(url, filterConfigs) {
   inputSource = ctx.createMediaElementSource(inputAudio)
 
   const out = ctx.createGain()
-  out.gain.value = 0.75
   out.connect(getMaster())
   inputNodes = [out]
 
   if (filterConfigs.length === 0) {
-    inputSource.connect(out)
+    // Nothing to filter the input through — stay silent rather than passing
+    // it straight to the master unfiltered. The whole point of this feature
+    // is playing the input *through* whichever channels are active; with
+    // none active there is nothing to process it through.
+    out.gain.value = 0
   } else {
     // Parallel bank: one filter per active noise channel
     out.gain.value = 0.75 / filterConfigs.length
@@ -110,8 +113,9 @@ export function updateAudioInputFilters(filterConfigs) {
   inputNodes = [out]
 
   if (filterConfigs.length === 0) {
-    out.gain.value = 0.75
-    inputSource.connect(out)
+    // Same rule as setAudioInput: no active channel to filter through means
+    // silence, not an unfiltered passthrough.
+    out.gain.value = 0
   } else {
     out.gain.value = 0.75 / filterConfigs.length
     for (const { type, freq, q } of filterConfigs) {

@@ -310,17 +310,13 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   z-index: 30;
   opacity: 0;
-  animation: planet-tip-in 0.12s ease forwards;
+  transition: opacity 0.18s ease;
 }
+.unit__planet-tip--visible { opacity: 1; }
 
 .unit__planet-tip--bottom { transform: translate(-50%, 14px); }
 .unit__planet-tip--left   { transform: translate(calc(-100% - 14px), -50%); }
 .unit__planet-tip--right  { transform: translate(14px, -50%); }
-
-@keyframes planet-tip-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
 
 .unit__planet-tip-name {
   display: block;
@@ -353,8 +349,9 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   z-index: 25;
   opacity: 0;
-  animation: planet-tip-in 0.12s ease forwards;
+  transition: opacity 0.18s ease;
 }
+.unit__ring-tip--visible { opacity: 1; }
 
 .unit__ring-tip-row {
   display: flex;
