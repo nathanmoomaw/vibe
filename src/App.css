@@ -331,6 +331,46 @@
   margin-bottom: 3px;
 }
 
+/* General "how do I use this" tooltip — shown on hovering the ring away
+   from any planet glyph (mutually exclusive with .unit__planet-tip, and
+   suppressed mid-drag). Sits below the ring, same visual language as the
+   planet tooltip, so the two custom popovers read as one system. */
+.unit__ring-tip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: max-content;
+  background: rgba(3, 3, 10, 0.97);
+  border: 1px solid rgba(255, 209, 102, 0.18);
+  border-radius: 7px;
+  padding: 8px 11px;
+  font-family: 'Jura', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  z-index: 25;
+  opacity: 0;
+  animation: planet-tip-in 0.12s ease forwards;
+}
+
+.unit__ring-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.unit__ring-tip-row + .unit__ring-tip-row { margin-top: 4px; }
+
+.unit__ring-tip-icon {
+  display: inline-flex;
+  width: 1.1em;
+  justify-content: center;
+  color: rgba(255, 209, 102, 0.65);
+}
+
 /* Tap-to-randomize flash */
 .unit__display-ring--flash {
   animation: display-flash 0.7s ease-out forwards;
@@ -418,6 +458,7 @@
 
 .unit__section-label {
   flex-shrink: 0;
+  cursor: default;
   width: 0.85rem;
   display: flex;
   align-items: center;

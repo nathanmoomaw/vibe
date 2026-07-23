@@ -243,6 +243,7 @@ export default function App() {
   const planetPosRef     = useRef([])   // latest on-screen planet glyph positions, for hover hit-testing
   const hoveredPlanetRef = useRef(null)
   const [hoveredPlanet, setHoveredPlanet] = useState(null) // { name, x, y } | null — drives the hover tooltip
+  const [ringHover, setRingHover] = useState(false) // hovering the display ring generally (not a planet glyph) — drives the function-tip below
   useEffect(() => { noiseRef.current = noise }, [noise])
   useEffect(() => { hoveredPlanetRef.current = hoveredPlanet?.name ?? null }, [hoveredPlanet])
 
@@ -320,7 +321,11 @@ export default function App() {
 
       const bars = 72
       const step = Math.floor(data.length * 0.5 / bars)
-      const maxR = cx * 0.88
+      // Kept back from the circular clip edge (canvas radius === clip radius,
+      // since the canvas fills its clipped wrapper 1:1) so the planet glyphs
+      // anchored just beyond maxR have headroom for their own width/height —
+      // otherwise their outer half gets clipped, worse on hover magnification.
+      const maxR = cx * 0.8
       const minR = cx * 0.3
 
       for (let i = 0; i < bars; i++) {
@@ -354,7 +359,7 @@ export default function App() {
           if (fade < 0.02) continue
 
           const angle = (eclipticLon(p.name) * Math.PI / 180) - Math.PI / 2
-          const pr = maxR + 9
+          const pr = maxR + 6
           const px = cx + Math.cos(angle) * pr
           const py = cy + Math.sin(angle) * pr
           positions.push({ name: p.name, px, py })
@@ -365,8 +370,8 @@ export default function App() {
           ctx.save()
           ctx.globalAlpha = hovered ? Math.max(0.95, fade) : fade * 0.9
           ctx.shadowColor = 'rgba(255,200,80,0.9)'
-          ctx.shadowBlur = hovered ? 11 : 5
-          ctx.font = `bold ${hovered ? Math.round(baseSize * 1.55) : baseSize}px serif`
+          ctx.shadowBlur = hovered ? 7 : 5
+          ctx.font = `bold ${hovered ? Math.round(baseSize * 1.3) : baseSize}px serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillStyle = '#ffd080'
@@ -566,6 +571,7 @@ export default function App() {
     dispTotalMoved.current = 0
     setDispDragging(anyOn)
     setHoveredPlanet(null)
+    setRingHover(false)
     e.currentTarget.setPointerCapture(e.pointerId)
   }, [anyOn])
 
@@ -787,7 +793,8 @@ export default function App() {
             onPointerMove={onDisplayMove}
             onPointerUp={onDisplayUp}
             onPointerCancel={onDisplayUp}
-            onPointerLeave={() => setHoveredPlanet(null)}
+            onPointerEnter={() => setRingHover(true)}
+            onPointerLeave={() => { setHoveredPlanet(null); setRingHover(false) }}
             style={{ touchAction: 'none', cursor: anyOn ? (dispDragging ? 'grabbing' : 'crosshair') : 'default' }}
           >
             <div className="unit__display-clip">
@@ -801,6 +808,13 @@ export default function App() {
               >
                 <span className="unit__planet-tip-name">{hoveredPlanet.name}</span>
                 {PLANET_QUALITY[hoveredPlanet.name]}
+              </div>
+            )}
+            {ringHover && !hoveredPlanet && !dispDragging && (
+              <div className="unit__ring-tip">
+                <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#9679;</span>tap — randomize</div>
+                <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8597;</span>up / down — volume</div>
+                <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8596;</span>left / right — rate</div>
               </div>
             )}
           </div>
