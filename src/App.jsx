@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { getAnalyser, setAudioInput, stopAudioInput, fadeMaster } from './audio/engine.js'
+import { getAnalyser, setAudioInput, stopAudioInput, updateAudioInputFilters, isAudioInputActive, fadeMaster } from './audio/engine.js'
 import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq, setNoiseType } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
@@ -163,6 +163,32 @@ const TONE_FILTER = {
   water: { type: 'bandpass', freq: 1300, q: 1.1 },
   fire:  { type: 'bandpass', freq: 1500, q: 0.9 },
   earth: { type: 'lowpass',  freq: 130,  q: 1.2 },
+}
+
+// Derives the audio-input filter bank from whichever noise/tone channels are
+// presently active — shared by the initial submit and the live-tracking
+// effect that keeps the bank in sync as the user adjusts knobs afterward.
+function buildInputFilterConfigs(noise, tones) {
+  // white's own synthesis filter is 'allpass' (shapes nothing — white noise
+  // stays broadband regardless of its freq knob), but reusing that here made
+  // the input audibly unfiltered whenever white was the only active channel.
+  // Use a wide bandpass for white instead so "filter the input through the
+  // active channels" is true for every channel, not just pink/blue.
+  const noiseFilters = NOISE
+    .filter(s => noise[s.id].on)
+    .map(s => ({
+      type: s.id === 'blue' ? 'highpass' : s.id === 'pink' ? 'lowpass' : 'bandpass',
+      freq: noise[s.id].freq,
+      q: s.id === 'white' ? 0.6 : 1.5,
+    }))
+  // Tones (bell, gong, wind, water, ...) have their own characteristic
+  // bands (see TONE_FILTER) — include them too, so the input is still
+  // shaped when only elemental/periodic tones are active and no noise
+  // channel is on.
+  const toneFilters = TONES
+    .filter(t => tones[t.id].on)
+    .map(t => TONE_FILTER[t.id])
+  return [...noiseFilters, ...toneFilters]
 }
 
 const WATER_TYPES = ['stream', 'rain', 'ocean']
@@ -512,28 +538,8 @@ export default function App() {
 
   // ── Audio input ───────────────────────────────────────────────────
   const playInputUrl = useCallback((url) => {
-    // white's own synthesis filter is 'allpass' (shapes nothing — white noise
-    // stays broadband regardless of its freq knob), but reusing that here made
-    // the input audibly unfiltered whenever white was the only active channel.
-    // Use a wide bandpass for white instead so "filter the input through the
-    // active channels" is true for every channel, not just pink/blue.
-    const noiseFilters = NOISE
-      .filter(s => noise[s.id].on)
-      .map(s => ({
-        type: s.id === 'blue' ? 'highpass' : s.id === 'pink' ? 'lowpass' : 'bandpass',
-        freq: noise[s.id].freq,
-        q: s.id === 'white' ? 0.6 : 1.5,
-      }))
-    // Tones (bell, gong, wind, water, ...) have their own characteristic
-    // bands (see TONE_FILTER) — include them too, so the input is still
-    // shaped when only elemental/periodic tones are active and no noise
-    // channel is on.
-    const toneFilters = TONES
-      .filter(t => tones[t.id].on)
-      .map(t => TONE_FILTER[t.id])
-    const filterConfigs = [...noiseFilters, ...toneFilters]
     setInputStatus('loading')
-    setAudioInput(url, filterConfigs)
+    setAudioInput(url, buildInputFilterConfigs(noise, tones))
       .then(() => setInputStatus('playing'))
       .catch(() => setInputStatus('error'))
   }, [noise, tones])
@@ -544,6 +550,15 @@ export default function App() {
     setInputUrl('')
     setShowInput(false)
   }, [])
+
+  // Keep the input filter bank tracking live knob/tone changes — without
+  // this it stayed frozen at whatever was active the moment the URL was
+  // submitted, so adjusting controls afterward had no audible effect.
+  useEffect(() => {
+    if (inputStatus === 'playing' && isAudioInputActive()) {
+      updateAudioInputFilters(buildInputFilterConfigs(noise, tones))
+    }
+  }, [noise, tones, inputStatus])
 
   // ── Circular display drag + tap ───────────────────────────────────
   const onDisplayDown = useCallback((e) => {

@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Jul 23 2026 — audio-input filters now track live, per-preset hover colors
+
+- **Explained + fixed** (priority item): audio input "not being processed through the enabled frequencies" — the filter bank itself was real (source only reached destination through a BiquadFilterNode per active noise/tone channel), but `playInputUrl` only ever built it once, at the moment the URL was submitted. Turning a knob or toggling a tone afterward had no effect because nothing rebuilt the bank. Factored the filter-config derivation out into `buildInputFilterConfigs()` in `App.jsx`, added `updateAudioInputFilters()` to `engine.js` (rebuilds the parallel filter bank in place — reuses the existing `MediaElementAudioSourceNode` and doesn't restart playback), and wired a `useEffect` keyed on `[noise, tones, inputStatus]` to call it live whenever input is playing
+- **Per-preset hover colors**: all 6 presets shared one hardcoded amber hover tint (`rgba(255, 209, 102, …)`) on both the emoji glow and label. Added a muted `hue` value per preset in `presets.js` (calming 195, relaxing 135, focussing 25, meditating 268, dreaming 232, floating 172), threaded through as a `--vps-hue` CSS custom property, and switched `VibePresets.css` to `hsla(var(--vps-hue), 32%, 62%, 0.3)` / `hsla(var(--vps-hue), 30%, 68%, 0.85)` — lower saturation than the old amber so each preset reads as its own muted color rather than one vivid shared tint
+
 ## Jul 14 2026 — noise knob color morph, mobile CPU fix
 
 - **Noise knob color now morphs with the color blend**: the slot's `--color`/`--glow` now interpolate (RGB lerp) between the primary and paired color at the same continuous weight driving the audible crossfade, instead of staying fixed on the primary color. `App.jsx` gained `pairColor` per NOISE entry (violet `#c266ff`, brown `#a0522d`, grey `#9aa5b1`) and a `noiseColorAt()` helper; verified the knob's `--color` goes from white's exact rgb to a value approaching violet's as it's dragged

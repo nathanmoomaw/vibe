@@ -17,6 +17,7 @@ export function VibePresets({ onClose, onApply }) {
             <button
               key={p.id}
               className="vps__card"
+              style={{ '--vps-hue': p.hue }}
               onClick={() => onApply(p)}
               onMouseEnter={() => setHovered(p)}
               onMouseLeave={() => setHovered(h => (h === p ? null : h))}

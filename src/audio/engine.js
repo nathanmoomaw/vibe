@@ -96,6 +96,36 @@ export function setAudioInput(url, filterConfigs) {
   return inputAudio.play()
 }
 
+// Rebuilds the filter bank in place (source & playback keep running) so the
+// input keeps tracking whichever noise/tone channels are presently active,
+// instead of freezing at whatever was on when the URL was first submitted.
+export function updateAudioInputFilters(filterConfigs) {
+  if (!inputSource) return
+  const out = inputNodes[0]
+
+  try { inputSource.disconnect() } catch (_) {}
+  for (const n of inputNodes.slice(1)) {
+    try { n.disconnect() } catch (_) {}
+  }
+  inputNodes = [out]
+
+  if (filterConfigs.length === 0) {
+    out.gain.value = 0.75
+    inputSource.connect(out)
+  } else {
+    out.gain.value = 0.75 / filterConfigs.length
+    for (const { type, freq, q } of filterConfigs) {
+      const f = ctx.createBiquadFilter()
+      f.type = type === 'highpass' ? 'highpass' : type === 'lowpass' ? 'lowpass' : type === 'allpass' ? 'allpass' : 'bandpass'
+      f.frequency.value = freq
+      f.Q.value = q ?? 1.5
+      inputSource.connect(f)
+      f.connect(out)
+      inputNodes.push(f)
+    }
+  }
+}
+
 export function stopAudioInput() {
   if (inputAudio) {
     inputAudio.pause()

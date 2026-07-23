@@ -86,7 +86,7 @@
   transition: filter 0.2s, opacity 0.2s;
 }
 .vps__card:hover .vps__emoji {
-  filter: grayscale(0.5) drop-shadow(0 0 8px rgba(255, 209, 102, 0.35));
+  filter: grayscale(0.5) drop-shadow(0 0 8px hsla(var(--vps-hue), 32%, 62%, 0.3));
   opacity: 1;
 }
 
@@ -99,7 +99,7 @@
   transition: color 0.2s;
 }
 .vps__card:hover .vps__label {
-  color: rgba(255, 209, 102, 0.85);
+  color: hsla(var(--vps-hue), 30%, 68%, 0.85);
 }
 
 /* Single shared description area under the title — populated on hover of
