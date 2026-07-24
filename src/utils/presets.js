@@ -59,10 +59,16 @@ export const PRESETS = [
       tones.chime = { on: true, volume: 0.20, rate: 22, typeAngle: 0 }
     }),
   preset('focussing', '🧲', 'focussing', 12.0, 25,
-    'a crisp highpass edge and a moving wind, tuned for alert clarity.',
+    'a thin high-tuned drone, a steady breeze, and a crisp chime for clarity.',
     (noise, tones) => {
-      noise.blue = { on: true, volume: 0.07, freq: WU_YIN_HZ.wood * 2 }
-      tones.wind = { on: true, volume: 0.20, typeAngle: 60 }   // squall edge
+      // Previous combo (blue at 1280Hz + a gusty 60°/"gale" wind) read as
+      // harsh — "a spurty garden hose." Pushed blue's highpass corner up an
+      // octave (thinner, less midband hiss) and dropped its volume, swapped
+      // the gusty wind for a steady 0° breeze, and added a small crisp
+      // chime accent for the "alert clarity" the blurb promises.
+      noise.blue  = { on: true, volume: 0.045, freq: WU_YIN_HZ.wood * 3 }
+      tones.wind  = { on: true, volume: 0.14, typeAngle: 0 }   // breeze, not squall
+      tones.chime = { on: true, volume: 0.16, rate: 20, typeAngle: 0 }
     }),
   preset('meditating', '🪬', 'meditating', 7.83, 268,
     'an OM-anchored drone, a slow gong, and a crystalline earth tone at 7.83 Hz.',
@@ -74,17 +80,18 @@ export const PRESETS = [
       tones.earth = { on: true, volume: 0.16, typeAngle: 90 }  // crystalline
     }, true), // emojiFlip — hamsa rendered facing downward
   preset('dreaming', '🪽', 'dreaming', 4.0, 232,
-    'an OM-anchored drone, a distant bell, and soft rain.',
+    'an OM-anchored drone, a distant bell, and a soft ocean swell.',
     (noise, tones) => {
       noise.pink  = { on: true, volume: 0.05, freq: OM_HZ }
       tones.bell  = { on: true, volume: 0.17, rate: 34, typeAngle: 0 }
-      tones.water = { on: true, volume: 0.14, typeAngle: 180 } // rain
+      tones.water = { on: true, volume: 0.08, typeAngle: 240 } // ocean
     }),
   preset('floating', '🫧', 'floating', 2.5, 172,
-    'the quietest drone, a rare chime, and a low ocean swell.',
+    'a soft drone under scattered chimes, distant birdsong, and a light breeze.',
     (noise, tones) => {
-      noise.pink  = { on: true, volume: 0.04, freq: OM_HZ }
-      tones.chime = { on: true, volume: 0.15, rate: 40, typeAngle: 0 }
-      tones.water = { on: true, volume: 0.14, typeAngle: 270 } // ocean
+      noise.pink  = { on: true, volume: 0.09, freq: OM_HZ }
+      tones.chime = { on: true, volume: 0.38, rate: 40, typeAngle: 0 }
+      tones.birds = { on: true, volume: 0.26, rate: 55, typeAngle: 0 }
+      tones.wind  = { on: true, volume: 0.09, typeAngle: 0 }   // breeze
     }),
 ]

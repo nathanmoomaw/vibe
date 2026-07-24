@@ -221,7 +221,7 @@ function initState(slots, extra) {
 // yanking it from the DOM the instant it goes null — used by the circle viz's
 // hover tooltips so they ease out, not just in. Returns [displayValue, visible];
 // render while displayValue is truthy, toggle opacity via the visible flag.
-function useFadeVisible(value, exitMs = 450) {
+function useFadeVisible(value, exitMs = 900) {
   const [display, setDisplay] = useState(value)
   const [visible, setVisible] = useState(!!value)
   const hideTimer = useRef(null)

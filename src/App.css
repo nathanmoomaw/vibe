@@ -229,13 +229,17 @@
   66%      { color: rgba(255, 190, 110, 0.4); }
 }
 /* `color` is driven by the keyframe animation above, so a plain `color`
-   override here would be silently ignored even while paused (the running
-   animation always wins the cascade for that property). Use `filter:
-   brightness()` instead — it multiplies whatever color the cycle is
-   currently on, so hover reads clearly no matter where it's paused. */
+   override here is silently ignored even while paused — a running/paused
+   CSS animation's value outranks a normal author declaration at any
+   specificity. `!important` is the one thing that outranks the animation
+   origin itself, which is what it takes to pin hover to an actual red
+   (brightness() alone just brightens whichever of gold/blue/amber the
+   cycle happens to be paused on, which read as "not clearly a stop
+   button" per feedback). */
 .unit__stop-all:hover {
   animation-play-state: paused;
-  filter: brightness(2.1) drop-shadow(0 0 4px rgba(230, 210, 160, 0.5));
+  color: rgba(255, 90, 70, 0.9) !important;
+  filter: brightness(1.3) drop-shadow(0 0 5px rgba(255, 90, 70, 0.55));
 }
 
 /* ─── Circular speaker/display — Heathkit-style meter inset ─────── */
@@ -310,7 +314,7 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   z-index: 30;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.9s ease;
 }
 .unit__planet-tip--visible { opacity: 1; }
 
@@ -349,7 +353,7 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   z-index: 25;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.9s ease;
 }
 .unit__ring-tip--visible { opacity: 1; }
 
