@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Jul 24 2026 — slower tooltip fade, preset emoji refresh
+
+- **Tooltip fade was still too fast**: yesterday's fade-out fix used a 180ms transition/unmount delay, apparently still read as an abrupt flick rather than an ease. Bumped both to 450ms (`useFadeVisible`'s default `exitMs` in `App.jsx`, and the matching `transition: opacity` duration on `.unit__planet-tip`/`.unit__ring-tip` in `App.css` — kept in sync since the JS timeout controls how long the element stays mounted and must not cut the CSS transition off early). Verified by sampling computed opacity at 100ms intervals through a full hover-in/hover-out cycle: opacity now ramps smoothly across ~450-500ms in both directions instead of snapping
+- **Preset emoji refresh**: calming 🕊️→🌙, relaxing 🍵→🕯️, focussing 🎯→🧲, meditating 🧘→🪬, dreaming 💭→🪽, floating 🪶→🫧. The hamsa (🪬) needed to read as facing downward, which Unicode has no separate codepoint for — `preset()` in `presets.js` gained an `emojiFlip` flag (only meditating sets it), and `VibePresets.jsx` applies `transform: rotate(180deg)` to that card's emoji span when set. Verified all six glyphs render (not tofu boxes) and the hamsa's computed transform matrix confirms the flip
+
 ## Jul 23 2026 (3) — tooltip fade-out, audio input silent with no active channel
 
 - **Circle viz tooltips only faded in, not out**: both the planet-glyph tooltip and the new ring function tooltip used a one-shot `animation: ... forwards` that ran on mount and vanished instantly on unmount (React removed the DOM node the moment `hoveredPlanet`/`ringHover` went false — no time for a fade). Added a small `useFadeVisible(value, exitMs)` hook in `App.jsx`: it keeps the last non-null content mounted for `exitMs` (180ms) after the value goes null, toggling a `--visible` class that now drives opacity via a plain CSS `transition` instead of a keyframe. Both tooltips route through it; verified via computed-style sampling that opacity ramps 0→1 on entry and the element stays mounted (opacity easing down) for ~180ms after the pointer leaves before actually unmounting

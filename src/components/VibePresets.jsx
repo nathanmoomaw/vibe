@@ -24,7 +24,7 @@ export function VibePresets({ onClose, onApply }) {
               onFocus={() => setHovered(p)}
               onBlur={() => setHovered(h => (h === p ? null : h))}
             >
-              <span className="vps__emoji">{p.emoji}</span>
+              <span className="vps__emoji" style={p.emojiFlip ? { transform: 'rotate(180deg)' } : undefined}>{p.emoji}</span>
               <span className="vps__label">{p.label}</span>
             </button>
           ))}

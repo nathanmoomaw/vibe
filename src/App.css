@@ -310,7 +310,7 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   z-index: 30;
   opacity: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity 0.45s ease;
 }
 .unit__planet-tip--visible { opacity: 1; }
 
@@ -349,7 +349,7 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   z-index: 25;
   opacity: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity 0.45s ease;
 }
 .unit__ring-tip--visible { opacity: 1; }
 
