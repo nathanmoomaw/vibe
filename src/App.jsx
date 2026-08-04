@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { getAnalyser, setAudioInput, stopAudioInput, updateAudioInputFilters, isAudioInputActive, fadeMaster } from './audio/engine.js'
+import { getAnalyser, setAudioInput, stopAudioInput, updateAudioInputFilters, isAudioInputActive, fadeMaster, setPlaybackActive, registerMediaSessionStop } from './audio/engine.js'
 import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq, setNoiseType } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
@@ -12,6 +12,7 @@ import { VibeReading } from './components/VibeReading.jsx'
 import { VibePresets } from './components/VibePresets.jsx'
 import { PillIcon } from './components/PillIcon.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
+import { moonPhase, tidalSpring, tidalHeight, fetchWeather, weatherElement, currentDecan } from './utils/reading.js'
 import './App.css'
 
 // ── Planetary Cousto frequencies (Cosmic Octave, orbital period → Hz via 2ⁿ) ──
@@ -273,6 +274,12 @@ export default function App() {
   useEffect(() => { noiseRef.current = noise }, [noise])
   useEffect(() => { hoveredPlanetRef.current = hoveredPlanet?.name ?? null }, [hoveredPlanet])
 
+  // Cached once on load (not re-fetched per tap) so randomize gestures can
+  // lean toward present natural conditions without a network round-trip
+  // every time — see randomizeActive/randomizeFirst below.
+  const weatherRef = useRef(null)
+  useEffect(() => { fetchWeather().then(w => { weatherRef.current = w }) }, [])
+
   // Ease both circle-viz tooltips out on hover-end instead of yanking them
   // off instantly — they already faded in, this makes the exit match.
   const [planetTipDisplay, planetTipVisible] = useFadeVisible(hoveredPlanet)
@@ -418,18 +425,33 @@ export default function App() {
   }, [anyOn])
 
   // ── Randomize all active sounds' parameters ───────────────────────
+  // Jitters lean with present conditions rather than pure noise — the same
+  // tide bias buildReading() applies to its own frequencies/volumes (see
+  // utils/reading.js), plus a boost for whichever elemental tone matches the
+  // weather right now — so a tap "compliments and expands" what's already
+  // happening instead of ignoring it.
   const randomizeActive = useCallback(() => {
+    const phase = moonPhase()
+    const height = tidalHeight(phase)
+    const spring = tidalSpring(phase)
+    const tideVolBias  = (height - 0.5) * 0.3   // -0.15 low tide .. +0.15 high tide
+    const tideFreqBias = (height - 0.5) * 0.16  // matches buildReading's tideFreqBias
+    // Spring tide (new/full moon) widens how far a jitter can swing; neap
+    // tide (quarter moons) keeps it steadier.
+    const jitterScale = 0.7 + spring * 0.6      // 0.7 (neap) .. 1.3 (spring)
+    const weatherEl = weatherElement(weatherRef.current)
+
     setNoise(prev => {
       const next = { ...prev }
       for (const s of NOISE) {
         if (!prev[s.id].on) continue
         const newVol = Math.max(0.1, Math.min(1,
-          prev[s.id].volume + (Math.random() - 0.5) * 0.5))
+          prev[s.id].volume + (Math.random() - 0.5) * jitterScale * 0.5 + tideVolBias))
         // Coarse Wǔ Yīn-style tune nudge, ±25% of the channel's default —
         // typeAngle (which color is dominant) is left alone here, same as
         // elemental tones leave their typeAngle untouched on randomize and
         // only jitter rate.
-        const newFreq = s.filterDefault * (1 + (Math.random() - 0.5) * COARSE_TUNE_PCT)
+        const newFreq = s.filterDefault * (1 + (Math.random() - 0.5) * jitterScale * COARSE_TUNE_PCT + tideFreqBias)
         setNoiseVolume(s.id, newVol)
         setNoiseFreq(s.id, newFreq)
         next[s.id] = { ...prev[s.id], volume: newVol, freq: newFreq }
@@ -440,14 +462,15 @@ export default function App() {
       const next = { ...prev }
       for (const s of TONES) {
         if (!prev[s.id].on) continue
+        const weatherBoost = s.id === weatherEl ? 0.08 : 0
         const newVol = Math.max(0.1, Math.min(1,
-          prev[s.id].volume + (Math.random() - 0.5) * 0.5))
+          prev[s.id].volume + (Math.random() - 0.5) * jitterScale * 0.5 + tideVolBias + weatherBoost))
         setToneVolume(s.id, newVol)
         let updates = { volume: newVol }
         if (s.periodic) {
           const rateRange = s.rateMax - s.rateMin
           const newRate = Math.max(s.rateMin, Math.min(s.rateMax,
-            prev[s.id].rate + (Math.random() - 0.5) * rateRange * 0.5))
+            prev[s.id].rate + (Math.random() - 0.5) * jitterScale * rateRange * 0.5))
           updates.rate = newRate
         }
         next[s.id] = { ...prev[s.id], ...updates }
@@ -466,7 +489,15 @@ export default function App() {
       { n: [{id:'pink', v:0.13,f:768}],  t: [{id:'fire', v:0.48,p:120}, {id:'birds',v:0.3,p:18}] },
       { n: [{id:'blue', v:0.12,f:1280}], t: [{id:'wind', v:0.5,p:85},   {id:'gong', v:0.26,p:72}] },
     ]
-    const preset = presets[Math.floor(Math.random() * presets.length)]
+    // Lean toward whichever preset's elemental tone matches the present
+    // decan's tarot suit (wands→fire, cups→water, swords→wind, pentacles→
+    // earth) two times out of three — still a randomize tap, just one that
+    // tends to complement the moment rather than ignoring it entirely.
+    const suitElement = { wands: 'fire', cups: 'water', swords: 'wind', pentacles: 'earth' }
+    const favoredEl = suitElement[currentDecan().suit]
+    const favored = presets.filter(p => p.t[0].id === favoredEl)
+    const pool = favored.length && Math.random() < 0.66 ? favored : presets
+    const preset = pool[Math.floor(Math.random() * pool.length)]
     setNoise(prev => {
       const next = { ...prev }
       for (const { id, v, f } of preset.n) {
@@ -796,6 +827,12 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [anyOn, stopAllSounds, resumeAllSounds])
+
+  // Register the OS media notification's stop control once, and keep the
+  // background-playback keep-alive (see audio/engine.js) in sync with
+  // whether anything is actually playing.
+  useEffect(() => { registerMediaSessionStop(stopAllSounds) }, [stopAllSounds])
+  useEffect(() => { setPlaybackActive(anyOn) }, [anyOn])
 
   return (
     <>

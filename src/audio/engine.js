@@ -7,6 +7,61 @@ let inputAudio   = null
 let inputSource  = null
 let inputNodes   = []
 
+// ── Background-playback keep-alive ─────────────────────────────────────────
+// The bell/chime/gong/birds tones schedule their next strike with a plain
+// setTimeout (audio/tones.js), not the Web Audio clock. Backgrounded mobile
+// tabs — iOS Safari especially — throttle or freeze that timer once the page
+// isn't recognized as an active media session, so strikes queue up and then
+// fire in a stuttering burst on return ("gets skippy"). A silent looping
+// HTMLAudioElement plus registering a real Media Session is the standard way
+// to get the OS/browser to treat the page as genuine background audio (the
+// same mechanism music-player PWAs rely on) rather than arbitrary background
+// JS, which keeps those timers running on schedule instead of frozen.
+let keepAliveAudio = null
+
+function getKeepAliveAudio() {
+  if (!keepAliveAudio) {
+    const numSamples = 8000 // 1s @ 8kHz, 8-bit mono ≈ 8KB
+    const buf = new ArrayBuffer(44 + numSamples)
+    const view = new DataView(buf)
+    const str = (offset, s) => { for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)) }
+    str(0, 'RIFF'); view.setUint32(4, 36 + numSamples, true); str(8, 'WAVE')
+    str(12, 'fmt '); view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true); view.setUint16(22, 1, true)
+    view.setUint32(24, 8000, true); view.setUint32(28, 8000, true)
+    view.setUint16(32, 1, true); view.setUint16(34, 8, true)
+    str(36, 'data'); view.setUint32(40, numSamples, true)
+    for (let i = 0; i < numSamples; i++) view.setUint8(44 + i, 128) // silence (8-bit midpoint)
+    keepAliveAudio = new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })))
+    keepAliveAudio.loop = true
+  }
+  return keepAliveAudio
+}
+
+// Call with true when any sound is on, false when everything stops.
+export function setPlaybackActive(active) {
+  const audio = getKeepAliveAudio()
+  if (active) {
+    audio.play().catch(() => {})
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: 'vibe', artist: 'ambient synthesis' })
+      navigator.mediaSession.playbackState = 'playing'
+    }
+  } else {
+    audio.pause()
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'
+  }
+}
+
+// Wires the OS-level media notification's stop/pause controls to fn. Call
+// once at app startup.
+export function registerMediaSessionStop(fn) {
+  if (!('mediaSession' in navigator)) return
+  navigator.mediaSession.setActionHandler('pause', fn)
+  navigator.mediaSession.setActionHandler('stop', fn)
+  navigator.mediaSession.setActionHandler('play', () => {})
+}
+
 export function getContext() {
   if (!ctx) {
     ctx = new AudioContext()

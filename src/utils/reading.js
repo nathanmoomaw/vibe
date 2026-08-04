@@ -114,7 +114,7 @@ export async function fetchWeather() {
   }
 }
 
-function weatherElement(w) {
+export function weatherElement(w) {
   if (!w) return null
   const { wc, wind, precip } = w
   if (precip > 0.5 || (wc >= 51 && wc <= 82)) return 'water'
