@@ -273,8 +273,10 @@ export default function App() {
   const [ringHover, setRingHover] = useState(false) // hovering the display ring generally (not a planet glyph) — drives the function-tip below
   const [isolatedPlanet, setIsolatedPlanet] = useState(null) // name of the astro sign presently isolated, or null
   const isolationSnapshotRef = useRef(null) // full {noise, tones} state to restore when isolation ends
+  const isolatedPlanetRef = useRef(null) // live-read by the canvas draw loop, mirrors isolatedPlanet
   useEffect(() => { noiseRef.current = noise }, [noise])
   useEffect(() => { hoveredPlanetRef.current = hoveredPlanet?.name ?? null }, [hoveredPlanet])
+  useEffect(() => { isolatedPlanetRef.current = isolatedPlanet }, [isolatedPlanet])
 
   // Cached once on load (not re-fetched per tap) so randomize gestures can
   // lean toward present natural conditions without a network round-trip
@@ -412,10 +414,11 @@ export default function App() {
           positions.push({ name: p.name, px, py })
 
           const hovered = hoveredPlanetRef.current === p.name
+          const isolated = isolatedPlanetRef.current === p.name
           const baseSize = 12 + Math.round(fade * 6)
 
           ctx.save()
-          ctx.globalAlpha = hovered ? Math.max(0.95, fade) : fade * 0.9
+          ctx.globalAlpha = isolated ? 1 : hovered ? Math.max(0.95, fade) : fade * 0.9
           ctx.shadowColor = 'rgba(255,200,80,0.9)'
           ctx.shadowBlur = hovered ? 7 : 5
           ctx.font = `bold ${hovered ? Math.round(baseSize * 1.3) : baseSize}px serif`
@@ -423,6 +426,18 @@ export default function App() {
           ctx.textBaseline = 'middle'
           ctx.fillStyle = '#ffd080'
           ctx.fillText(p.symbol, px, py)
+
+          // Isolated (focused) sign — a slow-pulsing cyan ring, distinct from
+          // the amber hover glow, so "this is the only thing playing" reads
+          // clearly rather than looking like a plain hover
+          if (isolated) {
+            const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 550)
+            ctx.beginPath()
+            ctx.arc(px, py, baseSize * 0.95 + pulse * 3, 0, Math.PI * 2)
+            ctx.strokeStyle = `rgba(120,220,255,${0.55 + pulse * 0.35})`
+            ctx.lineWidth = 1.4
+            ctx.stroke()
+          }
           ctx.restore()
         }
       }
@@ -590,6 +605,25 @@ export default function App() {
   const onRowClick = useCallback((row) => (e) => {
     if (e.target.closest('.slot')) return
     randomizeRow(row)
+  }, [randomizeRow])
+
+  // Edge/gap click — .unit__section's own onRowClick already covers the gaps
+  // *within* a row (between cards, between the label and the grid), but the
+  // vertical padding around and between the three rows belongs to
+  // .unit__body itself, which had no handler at all. Route those clicks to
+  // whichever row's card band is nearest, so "click anywhere off the
+  // elements" holds for the full row area, not just inside its own strip.
+  const onBodyClick = useCallback((e) => {
+    if (e.target.closest('.unit__section') || e.target.closest('.slot')) return
+    const sections = e.currentTarget.querySelectorAll('.unit__section')
+    if (!sections.length) return
+    let nearestIdx = 0, nearestDist = Infinity
+    sections.forEach((sec, i) => {
+      const r = sec.getBoundingClientRect()
+      const dist = e.clientY < r.top ? r.top - e.clientY : e.clientY > r.bottom ? e.clientY - r.bottom : 0
+      if (dist < nearestDist) { nearestDist = dist; nearestIdx = i }
+    })
+    randomizeRow(['noise', 'tone', 'element'][nearestIdx])
   }, [randomizeRow])
 
   // ── Apply a reading or preset sound state ──────────────────────────
@@ -1070,7 +1104,7 @@ export default function App() {
           </div>
 
           {/* Controls */}
-          <div className="unit__body">
+          <div className="unit__body" onClick={onBodyClick}>
             {mode === 'party' ? (
               <>
                 <section className="unit__section" onClick={onRowClick('noise')}>

@@ -65,17 +65,22 @@ export const PRESETS = [
       // slower cadences everywhere else
       tones.chime = { on: true, volume: 0.20, rate: 22, typeAngle: 0 }
     }),
-  preset('focussing', '🧲', 'focussing', 8.5, 25,
-    'a thin high-tuned drone, a steady breeze, and a crisp chime for clarity.',
+  preset('focussing', '🧲', 'focussing', 10.0, 25,
+    'a Wood-toned pink drone under a steady breeze — alert, not sharp.',
     (noise, tones) => {
-      // Previous combo (blue at 1280Hz + a gusty 60°/"gale" wind) read as
-      // harsh — "a spurty garden hose." Pushed blue's highpass corner up an
-      // octave (thinner, less midband hiss) and dropped its volume, swapped
-      // the gusty wind for a steady 0° breeze, and added a small crisp
-      // chime accent for the "alert clarity" the blurb promises.
-      noise.blue  = { on: true, volume: 0.045, freq: WU_YIN_HZ.wood * 3 }
-      tones.wind  = { on: true, volume: 0.14, typeAngle: 0 }   // breeze, not squall
-      tones.chime = { on: true, volume: 0.16, rate: 20, typeAngle: 0 }
+      // Blue kept reading as "hissy" even after the earlier octave-up +
+      // volume cut — blue is inherently a brighter/highpassed color by
+      // design, no amount of tuning erases that. Consonance law #3 in the
+      // acoustomancy reference calls for a pink (1/f) noise layer
+      // specifically, so switched off blue entirely. Also dropped the chime
+      // accent: its periodic strikes were likely what read as "too pulsy"
+      // even after cutting the AM-pulse depth in noise.js — a percussive
+      // onset every ~10-30s breaks a drone's steadiness in a way continuous
+      // texture doesn't, so this preset is now a pure held drone. pulseHz
+      // moved from a guessed 8.5 into the documented Focus binaural target
+      // (Alpha 10-14 Hz — acoustomancy.md), at its gentle low end.
+      noise.pink = { on: true, volume: 0.07, freq: WU_YIN_HZ.wood }
+      tones.wind = { on: true, volume: 0.16, typeAngle: 0 }   // steady breeze
     }),
   preset('meditating', '🪬', 'meditating', 7.83, 268,
     'an OM-anchored drone, a slow gong, and a crystalline earth tone at 7.83 Hz.',
