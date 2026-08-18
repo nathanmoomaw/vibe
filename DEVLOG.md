@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Aug 18 2026 (6) — misfiled batch reverted
+
+- **A batch of 5 DUMP items (row expand/contract speed, meditating-hand alignment, pill confetti, pill text rotation, panel expand animation) turned out to belong to the obfusco.us project**, not vibe — they describe obfusco.us's own floating "vibe pill" portal widget, a different component from anything in this repo. 4 of the 5 had already been implemented and pushed here before the mismatch surfaced; reverted that commit (`e79b1ff` → `7429d02`) and moved all 5 items over to `obfusco.us`'s DUMP.md (including copying the two referenced screenshots into that project's `screenshots/` folder, since they'd been pasted into the wrong dump alongside the misfiled text)
+
 ## Aug 18 2026 (5) — console text no longer selectable
 
 - **Dragging across the console (nameplate, row labels, hint text) was highlighting text like a webpage**, screenshotted mid-drag-select spanning "vibe / freq gen" through the row labels — a side effect of this week's new click targets there (row randomize, full reroll) making that area more mouse-active than before. `.unit` (the whole console) gained `user-select: none` / `-webkit-user-select: none` in `App.css`, matching the same property `.slot`/`DualKnob` already carry. Scoped to `.unit` specifically (not the whole page) so it doesn't reach the separate overlay modals (QR, presets, reading) sitting outside it. Verified via Playwright: a mouse-down-drag-up spanning the nameplate to the tone row label now selects nothing (`window.getSelection().toString()` empty), while the QR name `<input>` — a real form control, exempt from an ancestor's `user-select:none` by spec — still selects/edits normally
