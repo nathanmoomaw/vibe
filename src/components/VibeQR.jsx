@@ -192,14 +192,11 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
     // at level M failed to decode outright — 'Q' above buys headroom, and
     // this shrinks the text until its footprint is comfortably under ~6% of
     // the code's area before settling, rather than trusting a guessed size.
-    // No hard-edged plate or border — a jagged, faintly wavy dark veil (same
-    // idea puddle's PresetQR uses) instead, so the text reads as sitting IN
-    // the pattern's grain rather than pasted over it in a box, and each
-    // character gets its own small random rotation/scale/skew/baseline
-    // wobble for a recaptcha-ish squiggle — toned down from puddle's own
-    // version per request ("a bit less distorted"), and at much higher
-    // opacity than puddle's deliberately-faint watermark since this needs to
-    // actually read clearly, not just add texture.
+    // No veil, no plate, no border — the letters sit directly on the
+    // pattern, legible only via their own glow/shadow and gradient color
+    // contrast. Each character gets its own random rotation/scale/skew/
+    // baseline wobble for a recaptcha-ish squiggle, pushed a notch past
+    // puddle's own PresetQR distortion per request ("distort a bit more").
     if (name?.trim()) {
       const text = name.trim()
       ctx.save()
@@ -225,42 +222,24 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
       const py = (QR - plateH) / 2
       const cx2 = QR / 2
 
-      // Jagged veil — a closed polyline with per-vertex jitter instead of a
-      // clean rounded rect, so there's no straight border line anywhere
-      ctx.beginPath()
-      const steps = 6
-      for (let s = 0; s <= steps; s++) {
-        const vx = px + (plateW * s) / steps + (rng() - 0.5) * 5
-        const vy = py + (rng() - 0.5) * 4
-        s === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy)
-      }
-      for (let s = 0; s <= steps; s++) {
-        const vx = px + plateW - (plateW * s) / steps + (rng() - 0.5) * 5
-        const vy = py + plateH + (rng() - 0.5) * 4
-        ctx.lineTo(vx, vy)
-      }
-      ctx.closePath()
-      ctx.fillStyle = 'rgba(1, 2, 6, 0.82)'
-      ctx.fill()
-
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       lines.forEach((line, li) => {
         const ty = py + fs * 0.85 + li * lineH
         const chars = [...line]
         const charWidths = chars.map(c => ctx.measureText(c).width)
         const totalW = charWidths.reduce((a, b) => a + b, 0)
-        const waveAmp  = 1.5 + rng() * 2.5
-        const waveFreq = 0.7 + rng() * 0.7
+        const waveAmp  = 2.5 + rng() * 3.5
+        const waveFreq = 0.7 + rng() * 0.8
         const wavePhase = rng() * Math.PI * 2
         let x = cx2 - totalW / 2
         for (let ci = 0; ci < chars.length; ci++) {
           const w = charWidths[ci]
           const cxChar = x + w / 2
           const waveY = Math.sin(wavePhase + ((cxChar - cx2) / plateW) * Math.PI * 2 * waveFreq) * waveAmp
-          const angle  = (rng() - 0.5) * 0.11   // ±~6° — squiggly but still easy to read
-          const scaleX = 0.94 + rng() * 0.12
-          const scaleY = 0.94 + rng() * 0.1
-          const skewX  = (rng() - 0.5) * 0.09
+          const angle  = (rng() - 0.5) * 0.2    // ±~11° — a notch past puddle's own ±~12°... close, but still legible
+          const scaleX = 0.88 + rng() * 0.2
+          const scaleY = 0.88 + rng() * 0.18
+          const skewX  = (rng() - 0.5) * 0.16
           const [tr, tg, tb] = lerpColor(gradient, lines.length > 1 ? li / (lines.length - 1) : 0.15)
 
           ctx.save()
@@ -268,9 +247,12 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
           ctx.rotate(angle)
           ctx.transform(scaleX, 0, skewX, scaleY, 0, 0)
           ctx.fillStyle = `rgb(${tr},${tg},${tb})`
-          ctx.shadowColor = `rgba(${tr},${tg},${tb},0.85)`
-          ctx.shadowBlur = 5
+          // Stronger glow than before — with the veil gone, this is now the
+          // only thing separating the text from the busy pattern behind it
+          ctx.shadowColor = `rgba(${tr},${tg},${tb},0.95)`
+          ctx.shadowBlur = 8
           ctx.fillText(chars[ci], 0, 0)
+          ctx.fillText(chars[ci], 0, 0)   // second pass deepens the glow further
           ctx.restore()
 
           x += w
