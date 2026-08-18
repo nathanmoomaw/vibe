@@ -36,8 +36,8 @@
 }
 
 @keyframes vps-up {
-  from { transform: translateY(14px); opacity: 0 }
-  to   { transform: translateY(0);    opacity: 1 }
+  from { transform: scale(0.85); opacity: 0 }
+  to   { transform: scale(1);    opacity: 1 }
 }
 
 .vps__close {
@@ -55,9 +55,36 @@
 .vps__close:hover { color: rgba(255, 255, 255, 0.65); }
 
 .vps__title {
+  position: relative;
   display: flex;
   color: rgba(255, 209, 102, 0.6);
   filter: drop-shadow(0 0 18px rgba(0, 0, 0, 0.6));
+}
+
+/* Zero-gravity confetti drifting around the title pill — tumbling and
+   floating rather than falling, distinct from a surface sheen/shimmer. */
+.vps__confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.vps__confetti-bit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 0.85rem;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: vps-confetti-drift ease-in-out infinite;
+}
+
+@keyframes vps-confetti-drift {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.6); opacity: 0; }
+  12%  { opacity: 0.85; }
+  50%  { transform: translate(-50%, -50%) translate(var(--cx), var(--cy)) rotate(190deg) scale(1); opacity: 0.75; }
+  88%  { opacity: 0.85; }
+  100% { transform: translate(-50%, -50%) translate(0, 0) rotate(360deg) scale(0.6); opacity: 0; }
 }
 
 .vps__grid {

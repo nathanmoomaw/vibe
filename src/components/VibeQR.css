@@ -37,8 +37,8 @@
 }
 
 @keyframes vqr-slide-up {
-  from { transform: translateY(12px); opacity: 0 }
-  to   { transform: translateY(0);    opacity: 1 }
+  from { transform: scale(0.85); opacity: 0 }
+  to   { transform: scale(1);    opacity: 1 }
 }
 
 .vqr__close {

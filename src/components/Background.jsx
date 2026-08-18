@@ -234,10 +234,11 @@ function drawGlintSpike(ctx, len, width) {
   ctx.fill()
 }
 
-function drawSparkle(ctx, x, y, r, alpha, color) {
+function drawSparkle(ctx, x, y, r, alpha, color, rot = 0) {
   if (alpha < 0.01 || r < 0.5) return
   ctx.save()
   ctx.translate(x, y)
+  ctx.rotate(rot)
   ctx.globalAlpha = alpha
   ctx.fillStyle = color
   drawGlintSpike(ctx, r, r * 0.16)
@@ -263,6 +264,7 @@ export default function Background({ anyOn, activeSounds }) {
     const ripples = []
     const sparkles = []
     const glitters = []
+    const confetti = []
     let lastRipple = 0
     let fdata = null
     let raf
@@ -568,6 +570,43 @@ export default function Background({ anyOn, activeSounds }) {
         const gy = g.y + g.vy * dt + 5 * dt * dt
         const alpha = age < 0.12 ? age / 0.12 : Math.max(0, 1 - (age - 0.4) / 0.6)
         drawSparkle(ctx, gx, gy, g.r * (1 - age * 0.3), alpha * 0.75, g.color)
+      }
+
+      // Zero-gravity confetti — bigger, tumbling glints that drift weightlessly
+      // past the console rather than falling like the glitter above. Distinct
+      // from "sheen" (the diagonal light-streak glitch) per explicit feedback:
+      // this is particulate, not a surface reflection. No gravity term on
+      // velocity, and each piece slowly tumbles as it drifts.
+      const confettiChance = anyOn ? 0.022 + energy * 0.03 : 0.005
+      if (Math.random() < confettiChance) {
+        const src = activeSounds.length
+          ? activeSounds[Math.floor(Math.random() * activeSounds.length)]
+          : null
+        const angle = Math.random() * Math.PI * 2
+        const originR = 60 + Math.random() * 300
+        confetti.push({
+          born: t,
+          x: cx + Math.cos(angle) * originR,
+          y: cy + Math.sin(angle) * originR * 0.75,
+          vx: (Math.random() - 0.5) * 18,
+          vy: (Math.random() - 0.5) * 18,
+          rot0: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 2.4,
+          r: 4 + Math.random() * 5,
+          life: 2400 + Math.random() * 1800,
+          color: src ? src.glow.replace(/[\d.]+\)$/, '0.9)') : 'rgba(255,255,255,0.85)',
+        })
+      }
+      for (let i = confetti.length - 1; i >= 0; i--) {
+        const c = confetti[i]
+        const age = (t - c.born) / c.life
+        if (age >= 1) { confetti.splice(i, 1); continue }
+        const dt = (age * c.life) / 1000
+        const fx = c.x + c.vx * dt
+        const fy = c.y + c.vy * dt
+        const alpha = age < 0.15 ? age / 0.15 : Math.max(0, 1 - (age - 0.75) / 0.25)
+        const rot = c.rot0 + c.rotSpeed * dt
+        drawSparkle(ctx, fx, fy, c.r, alpha * 0.8, c.color, rot)
       }
 
       drawVignette(cx, cy)
