@@ -36,8 +36,8 @@
 }
 
 @keyframes vrd-up {
-  from { transform: scale(0.85); opacity: 0 }
-  to   { transform: scale(1);    opacity: 1 }
+  from { transform: translateY(14px); opacity: 0 }
+  to   { transform: translateY(0);    opacity: 1 }
 }
 
 .vrd__close {

@@ -112,7 +112,7 @@
   overflow: hidden;
   max-height: 0;
   opacity: 0;
-  transition: max-height 0.75s ease, opacity 0.75s ease, margin-top 0.75s ease;
+  transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease;
   margin-top: 0;
 }
 
