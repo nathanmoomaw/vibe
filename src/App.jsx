@@ -550,12 +550,14 @@ export default function App() {
   // curate a subtle start for it, instead of having to pick a slot by hand.
   // Same "pleasant" bias as randomizeFirst: Wǔ Yīn-ish default frequencies,
   // named (not blended) elemental types, subtle starting volume.
-  const randomizeRow = useCallback((row) => {
+  // `force` skips the "row must be inactive" guard — used by randomizeAll
+  // below to reroll every row regardless of its current state.
+  const randomizeRow = useCallback((row, force = false) => {
     const shuffled = (arr) => [...arr].sort(() => Math.random() - 0.5)
     const count = () => (Math.random() < 0.7 ? 1 : 2)
 
     if (row === 'noise') {
-      if (NOISE.some(s => noise[s.id].on)) return
+      if (!force && NOISE.some(s => noise[s.id].on)) return
       const picks = shuffled(NOISE).slice(0, count())
       setNoise(prev => {
         const next = { ...prev }
@@ -569,7 +571,7 @@ export default function App() {
       })
     } else if (row === 'tone') {
       const periodicTones = TONES.filter(s => s.periodic)
-      if (periodicTones.some(s => tones[s.id].on)) return
+      if (!force && periodicTones.some(s => tones[s.id].on)) return
       const picks = shuffled(periodicTones).slice(0, count())
       setTones(prev => {
         const next = { ...prev }
@@ -583,7 +585,7 @@ export default function App() {
       })
     } else if (row === 'element') {
       const elementalTones = TONES.filter(s => s.elemental)
-      if (elementalTones.some(s => tones[s.id].on)) return
+      if (!force && elementalTones.some(s => tones[s.id].on)) return
       const picks = shuffled(elementalTones).slice(0, count())
       setTones(prev => {
         const next = { ...prev }
@@ -599,6 +601,26 @@ export default function App() {
     setDispFlashing(true)
     setTimeout(() => setDispFlashing(false), 700)
   }, [noise, tones])
+
+  // ── Full reroll — the nameplate's own gesture, distinct from the ring's
+  // tap (which only jitters whatever's presently active, or curates a single
+  // first preset when nothing is). This clears everything, then re-curates
+  // all three rows fresh via randomizeRow's force mode, so a click can bring
+  // in noise+tone+element together rather than nudging what's already there.
+  const randomizeAll = useCallback(() => {
+    NOISE.forEach(s => { if (noise[s.id].on) stopNoise(s.id) })
+    TONES.forEach(s => { if (tones[s.id].on) stopTone(s.id) })
+    stopAllNoisePulses()
+    setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k, v]) => [k, { ...v, on: false }])))
+    setTones(prev => Object.fromEntries(Object.entries(prev).map(([k, v]) => [k, { ...v, on: false }])))
+    isolationSnapshotRef.current = null
+    setIsolatedPlanet(null)
+    setTimeout(() => {
+      randomizeRow('noise', true)
+      randomizeRow('tone', true)
+      randomizeRow('element', true)
+    }, 60)
+  }, [noise, tones, randomizeRow])
 
   // Row background click — ignore clicks that landed on a slot card (those
   // already handle their own toggle) so this only fires from empty space.
@@ -1085,19 +1107,12 @@ export default function App() {
             ↔ freq &nbsp;·&nbsp; ↕ vol
           </div>
 
-          {/* Nameplate — same tap-to-randomize gesture as the ring itself */}
+          {/* Nameplate — full reroll, distinct from the ring's tap (which
+              only jitters whatever's presently active) */}
           <div
             className="unit__nameplate"
             style={{ cursor: 'pointer' }}
-            onClick={() => {
-              if (anyOn) {
-                randomizeActive()
-                setDispFlashing(true)
-                setTimeout(() => setDispFlashing(false), 700)
-              } else {
-                randomizeFirst()
-              }
-            }}
+            onClick={randomizeAll}
           >
             <span className="unit__brand">vibe</span>
             <span className="unit__model">freq gen</span>
