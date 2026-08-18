@@ -11,6 +11,8 @@
 - [ ] Adjustable organic drift amount — a user-facing control for the depth/rate of the frequency drift added Jul 12 2026 (currently a fixed subtle default, not exposed as a setting)
 - [ ] Restore a way to manually find planet glyphs on noise channels — the display-drag/knob used to adjust noise frequency (and the glyph-fade logic tracks noise frequency), but as of the Jul 13 2026 color-pairing change the knob morphs color instead and frequency is only set by readings/presets, so that exploratory "search by ear" interaction is gone for noise channels specifically
 - [ ] Further mobile CPU/performance options (see Jul 14 2026 and Aug 4 2026 DEVLOG entries for fixes already shipped): consolidate per-chain drift LFOs, audit elemental tones' (wind/water/fire/earth) own internal oscillator/filter counts
+- [ ] Re-expose audio input (⊃ footer button hidden Aug 17 2026, needs fine-tuning; `showInput`/`playInputUrl`/`stopInput`/`unit__input-panel` untouched, just not reachable)
+- [ ] Further preset refinement pass — Aug 17 2026 pass fixed calming's exact knob settings, cut pulsing (global LFO depth + focussing's own rate), and added non-repeating drift wobble to wind/water/fire/earth; still worth a dedicated round on the remaining 5 presets' volumes/rates specifically
 
 ## Completed
 - [x] Favicon: circle-viz spectrum ring + flower rosette around the Qian (Heaven) trigram

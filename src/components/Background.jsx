@@ -201,6 +201,7 @@ export default function Background({ anyOn, activeSounds }) {
     const ctx = canvas.getContext('2d')
     const ripples = []
     const sparkles = []
+    const glitters = []
     let lastRipple = 0
     let fdata = null
     let raf
@@ -460,6 +461,39 @@ export default function Background({ anyOn, activeSounds }) {
         // pop in, hold, fade out
         const scale = age < 0.25 ? age / 0.25 : age > 0.7 ? Math.max(0, 1 - (age - 0.7) / 0.3) : 1
         drawSparkle(ctx, sp.x, sp.y, sp.r * scale, scale * 0.85, sp.color)
+      }
+
+      // Falling glitter — small glints that spawn around the console/ring
+      // footprint and drift downward with a light gravity accel, as if
+      // shaken loose off the console rather than popping in place like the
+      // sparkle overlay above.
+      const glitterChance = anyOn ? 0.02 + energy * 0.035 : 0.004
+      if (Math.random() < glitterChance) {
+        const src = activeSounds.length
+          ? activeSounds[Math.floor(Math.random() * activeSounds.length)]
+          : null
+        const angle = Math.random() * Math.PI * 2
+        const originR = 90 + Math.random() * 280
+        glitters.push({
+          born: t,
+          x: cx + Math.cos(angle) * originR,
+          y: cy + Math.sin(angle) * originR * 0.75,
+          vx: (Math.random() - 0.5) * 16,
+          vy: 22 + Math.random() * 28,
+          r: 1.5 + Math.random() * 2.5,
+          life: 1600 + Math.random() * 1400,
+          color: src ? src.glow.replace(/[\d.]+\)$/, '0.9)') : 'rgba(255,255,255,0.8)',
+        })
+      }
+      for (let i = glitters.length - 1; i >= 0; i--) {
+        const g = glitters[i]
+        const age = (t - g.born) / g.life
+        if (age >= 1) { glitters.splice(i, 1); continue }
+        const dt = (age * g.life) / 1000
+        const gx = g.x + g.vx * dt
+        const gy = g.y + g.vy * dt + 5 * dt * dt
+        const alpha = age < 0.12 ? age / 0.12 : Math.max(0, 1 - (age - 0.4) / 0.6)
+        drawSparkle(ctx, gx, gy, g.r * (1 - age * 0.3), alpha * 0.75, g.color)
       }
 
       drawVignette(cx, cy)

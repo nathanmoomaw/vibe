@@ -271,6 +271,8 @@ export default function App() {
   const hoveredPlanetRef = useRef(null)
   const [hoveredPlanet, setHoveredPlanet] = useState(null) // { name, x, y } | null — drives the hover tooltip
   const [ringHover, setRingHover] = useState(false) // hovering the display ring generally (not a planet glyph) — drives the function-tip below
+  const [isolatedPlanet, setIsolatedPlanet] = useState(null) // name of the astro sign presently isolated, or null
+  const isolationSnapshotRef = useRef(null) // full {noise, tones} state to restore when isolation ends
   useEffect(() => { noiseRef.current = noise }, [noise])
   useEffect(() => { hoveredPlanetRef.current = hoveredPlanet?.name ?? null }, [hoveredPlanet])
 
@@ -287,6 +289,12 @@ export default function App() {
   const [ringTipDisplay, ringTipVisible] = useFadeVisible(showRingTip ? true : null)
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
+  // Whether each row has nothing active — drives the "click empty row space
+  // to randomize" affordance (cursor hint on the label; onRowClick itself
+  // re-checks and no-ops once something's on).
+  const noiseRowInactive   = !NOISE.some(s => noise[s.id].on)
+  const toneRowInactive    = !TONES.filter(s => s.periodic).some(s => tones[s.id].on)
+  const elementRowInactive = !TONES.filter(s => s.elemental).some(s => tones[s.id].on)
   const activeSounds = [
     ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow, freq: noise[s.id].freq })),
     ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow, rateSec: s.periodic ? tones[s.id].rate : undefined })),
@@ -523,6 +531,67 @@ export default function App() {
     setTimeout(() => setDispFlashing(false), 700)
   }, [])
 
+  // ── Per-row randomize — click empty space in a fully-inactive row to
+  // curate a subtle start for it, instead of having to pick a slot by hand.
+  // Same "pleasant" bias as randomizeFirst: Wǔ Yīn-ish default frequencies,
+  // named (not blended) elemental types, subtle starting volume.
+  const randomizeRow = useCallback((row) => {
+    const shuffled = (arr) => [...arr].sort(() => Math.random() - 0.5)
+    const count = () => (Math.random() < 0.7 ? 1 : 2)
+
+    if (row === 'noise') {
+      if (NOISE.some(s => noise[s.id].on)) return
+      const picks = shuffled(NOISE).slice(0, count())
+      setNoise(prev => {
+        const next = { ...prev }
+        for (const s of picks) {
+          const volume = 0.1 + Math.random() * 0.06
+          const freq = s.filterDefault * (1 + (Math.random() - 0.5) * COARSE_TUNE_PCT)
+          startNoise(s.id, volume, prev[s.id].typeAngle, freq)
+          next[s.id] = { ...prev[s.id], on: true, volume, freq }
+        }
+        return next
+      })
+    } else if (row === 'tone') {
+      const periodicTones = TONES.filter(s => s.periodic)
+      if (periodicTones.some(s => tones[s.id].on)) return
+      const picks = shuffled(periodicTones).slice(0, count())
+      setTones(prev => {
+        const next = { ...prev }
+        for (const s of picks) {
+          const volume = 0.22 + Math.random() * 0.1
+          const rate = s.rateMin + Math.random() * (s.rateMax - s.rateMin)
+          startTone(s.id, volume, rate)
+          next[s.id] = { ...prev[s.id], on: true, volume, rate }
+        }
+        return next
+      })
+    } else if (row === 'element') {
+      const elementalTones = TONES.filter(s => s.elemental)
+      if (elementalTones.some(s => tones[s.id].on)) return
+      const picks = shuffled(elementalTones).slice(0, count())
+      setTones(prev => {
+        const next = { ...prev }
+        for (const s of picks) {
+          const volume = 0.18 + Math.random() * 0.08
+          const typeAngle = Math.floor(Math.random() * 3) * 120 // land on a named type, not a blend
+          startTone(s.id, volume, typeAngle)
+          next[s.id] = { ...prev[s.id], on: true, volume, typeAngle }
+        }
+        return next
+      })
+    }
+    setDispFlashing(true)
+    setTimeout(() => setDispFlashing(false), 700)
+  }, [noise, tones])
+
+  // Row background click — ignore clicks that landed on a slot card (those
+  // already handle their own toggle) so this only fires from empty space.
+  const onRowClick = useCallback((row) => (e) => {
+    if (e.target.closest('.slot')) return
+    randomizeRow(row)
+  }, [randomizeRow])
+
   // ── Apply a reading or preset sound state ──────────────────────────
   const applySoundState = useCallback((readingNoise, readingTones, pulseHz, onDone) => {
     stopAllNoisePulses()
@@ -531,8 +600,16 @@ export default function App() {
       for (const s of NOISE) {
         const cfg = readingNoise[s.id]
         if (cfg.on) {
-          if (!prev[s.id].on) startNoise(s.id, cfg.volume, prev[s.id].typeAngle, cfg.freq)
-          else { setNoiseVolume(s.id, cfg.volume); setNoiseFreq(s.id, cfg.freq) }
+          // Presets mostly leave typeAngle out of cfg (so applying one never
+          // fights the user's own color-blend knob) — but a preset that DOES
+          // specify one (eg calming's brown-shifted pink) should actually be
+          // heard, not just recorded in state.
+          const angle = cfg.typeAngle ?? prev[s.id].typeAngle
+          if (!prev[s.id].on) startNoise(s.id, cfg.volume, angle, cfg.freq)
+          else {
+            setNoiseVolume(s.id, cfg.volume); setNoiseFreq(s.id, cfg.freq)
+            if (cfg.typeAngle !== undefined) setNoiseType(s.id, cfg.typeAngle)
+          }
           // Apply LFO ombak pulse at binaural beat target frequency
           if (pulseHz) setTimeout(() => setNoisePulse(s.id, pulseHz), 50)
         } else {
@@ -553,6 +630,8 @@ export default function App() {
             startTone(s.id, cfg.volume, param)
           } else {
             setToneVolume(s.id, cfg.volume)
+            if (meta?.hasType && cfg.typeAngle !== undefined) setToneParam(s.id, cfg.typeAngle)
+            if (meta?.periodic && cfg.rate !== undefined) { stopTone(s.id); startTone(s.id, cfg.volume, cfg.rate) }
           }
         } else {
           if (prev[s.id].on) stopTone(s.id)
@@ -668,6 +747,81 @@ export default function App() {
     setHoveredPlanet({ name: hit.name, x: hit.px / hit.scaleX, y: hit.py / hit.scaleY, placement })
   }, [])
 
+  // Clicking an astro sign toggles between hearing ONLY the noise channel
+  // that's actually tuned close to it (the same match the glyph's own fade
+  // uses — see planetFade above) and restoring everything else. A second
+  // click of the same sign restores; clicking a different sign while
+  // isolated switches the isolation target without re-snapshotting (so
+  // hopping between a couple of signs and back still restores the original
+  // full mix, not whatever was last isolated).
+  const toggleIsolatePlanet = useCallback((name) => {
+    if (isolatedPlanet === name) {
+      const snap = isolationSnapshotRef.current
+      if (snap) {
+        setNoise(prev => {
+          for (const s of NOISE) {
+            const cfg = snap.noise[s.id]
+            if (cfg.on && !prev[s.id].on) startNoise(s.id, cfg.volume, cfg.typeAngle, cfg.freq)
+            else if (cfg.on) setNoiseVolume(s.id, cfg.volume)
+            else if (!cfg.on && prev[s.id].on) stopNoise(s.id)
+          }
+          return { ...snap.noise }
+        })
+        setTones(prev => {
+          for (const s of TONES) {
+            const cfg = snap.tones[s.id]
+            if (cfg.on && !prev[s.id].on) {
+              const param = s.hasType ? cfg.typeAngle : (s.periodic ? cfg.rate : null)
+              startTone(s.id, cfg.volume, param)
+            } else if (cfg.on) {
+              setToneVolume(s.id, cfg.volume)
+            } else if (!cfg.on && prev[s.id].on) stopTone(s.id)
+          }
+          return { ...snap.tones }
+        })
+      }
+      isolationSnapshotRef.current = null
+      setIsolatedPlanet(null)
+      return
+    }
+
+    const planetFreq = PLANETS.find(p => p.name === name)?.freq
+    if (!planetFreq) return
+    const targetId = NOISE
+      .filter(s => noise[s.id].on)
+      .reduce((best, s) => {
+        const fade = planetFade(noise[s.id].freq, planetFreq)
+        return !best || fade > best.fade ? { id: s.id, fade } : best
+      }, null)?.id
+    if (!targetId) return // sign only shows once some channel is already matching it
+
+    if (!isolationSnapshotRef.current) {
+      isolationSnapshotRef.current = {
+        noise: Object.fromEntries(NOISE.map(s => [s.id, { ...noise[s.id] }])),
+        tones: Object.fromEntries(TONES.map(s => [s.id, { ...tones[s.id] }])),
+      }
+    }
+    setNoise(prev => {
+      const next = { ...prev }
+      for (const s of NOISE) {
+        if (s.id === targetId || !prev[s.id].on) continue
+        stopNoise(s.id)
+        next[s.id] = { ...prev[s.id], on: false }
+      }
+      return next
+    })
+    setTones(prev => {
+      const next = { ...prev }
+      for (const s of TONES) {
+        if (!prev[s.id].on) continue
+        stopTone(s.id)
+        next[s.id] = { ...prev[s.id], on: false }
+      }
+      return next
+    })
+    setIsolatedPlanet(name)
+  }, [isolatedPlanet, noise, tones])
+
   // Hover-hit-test — drives the magnify effect in the draw loop and the info
   // tooltip below, independent of drag.
   const onDisplayHover = useCallback((e) => {
@@ -728,6 +882,7 @@ export default function App() {
     const planetHit = wasTap && e ? hitTestPlanet(e) : null
     if (planetHit) {
       showPlanetTip(planetHit)
+      toggleIsolatePlanet(planetHit.name)
     } else if (wasTap && anyOn) {
       randomizeActive()
       setDispFlashing(true)
@@ -735,7 +890,7 @@ export default function App() {
     } else if (wasTap && !anyOn) {
       randomizeFirst()
     }
-  }, [anyOn, randomizeActive, randomizeFirst, hitTestPlanet, showPlanetTip])
+  }, [anyOn, randomizeActive, randomizeFirst, hitTestPlanet, showPlanetTip, toggleIsolatePlanet])
 
   // ── Noise handlers ────────────────────────────────────────────────
   const toggleNoise = useCallback((id) => {
@@ -796,6 +951,9 @@ export default function App() {
     stopAllNoisePulses()
     setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
     setTones(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+    // Stopping everything makes any pending isolation snapshot stale
+    isolationSnapshotRef.current = null
+    setIsolatedPlanet(null)
   }, [noise, tones])
 
   const resumeAllSounds = useCallback(() => {
@@ -893,8 +1051,20 @@ export default function App() {
             ↔ freq &nbsp;·&nbsp; ↕ vol
           </div>
 
-          {/* Nameplate */}
-          <div className="unit__nameplate">
+          {/* Nameplate — same tap-to-randomize gesture as the ring itself */}
+          <div
+            className="unit__nameplate"
+            style={{ cursor: 'pointer' }}
+            onClick={() => {
+              if (anyOn) {
+                randomizeActive()
+                setDispFlashing(true)
+                setTimeout(() => setDispFlashing(false), 700)
+              } else {
+                randomizeFirst()
+              }
+            }}
+          >
             <span className="unit__brand">vibe</span>
             <span className="unit__model">freq gen</span>
           </div>
@@ -903,8 +1073,8 @@ export default function App() {
           <div className="unit__body">
             {mode === 'party' ? (
               <>
-                <section className="unit__section">
-                  <div className="unit__section-label">noise</div>
+                <section className="unit__section" onClick={onRowClick('noise')}>
+                  <div className="unit__section-label" style={noiseRowInactive ? { cursor: 'pointer' } : undefined}>noise</div>
                   <div className="unit__grid unit__grid--3">
                     {NOISE.map(s => {
                       const { color, glow } = noiseColorAt(s, noise[s.id].typeAngle)
@@ -930,8 +1100,8 @@ export default function App() {
                   </div>
                 </section>
 
-                <section className="unit__section">
-                  <div className="unit__section-label">tone</div>
+                <section className="unit__section" onClick={onRowClick('tone')}>
+                  <div className="unit__section-label" style={toneRowInactive ? { cursor: 'pointer' } : undefined}>tone</div>
                   <div className="unit__grid unit__grid--4">
                     {TONES.filter(s => !s.elemental).map(s => (
                       <SoundSlot
@@ -951,8 +1121,8 @@ export default function App() {
                   </div>
                 </section>
 
-                <section className="unit__section">
-                  <div className="unit__section-label">element</div>
+                <section className="unit__section" onClick={onRowClick('element')}>
+                  <div className="unit__section-label" style={elementRowInactive ? { cursor: 'pointer' } : undefined}>element</div>
                   <div className="unit__grid unit__grid--4">
                     {TONES.filter(s => s.elemental).map(s => (
                       <SoundSlot
@@ -1032,13 +1202,9 @@ export default function App() {
             <button className="unit__presets-btn" onClick={() => setShowPresets(true)} title="Presets">
               <PillIcon />
             </button>
-            <button
-              className={`unit__input-btn${inputStatus === 'playing' ? ' unit__input-btn--active' : ''}`}
-              onClick={() => { if (inputStatus === 'playing') stopInput(); else setShowInput(v => !v) }}
-              title="Audio input"
-            >
-              ⊃
-            </button>
+            {/* Audio input trigger hidden Aug 17 2026 — see ROADMAP.md. State,
+                playInputUrl/stopInput and the panel below are untouched so
+                this can come back once it's fine-tuned. */}
             <button className="unit__qr-btn" onClick={() => setShowQR(true)} title="Share / QR code">
               ◈
             </button>

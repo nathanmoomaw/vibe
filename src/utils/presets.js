@@ -40,13 +40,20 @@ function preset(id, emoji, label, pulseHz, hue, blurb, build, emojiFlip = false)
 // Muted per-preset hover hues (low saturation, evocative of each state) —
 // used as the sole hover accent color for that preset's card, replacing the
 // single shared amber tint every preset used before.
+// pulseHz drives an amplitude-modulation LFO (see setNoisePulse in
+// audio/noise.js) — every preset was reading as noticeably "pulsy",
+// focussing worst of all at 12Hz (was tremolo-fast). Lowered across the
+// board via the shared LFO depth cut in noise.js; focussing's own rate is
+// also pulled down here (12→8.5, still alpha/SMR range for focus).
 export const PRESETS = [
   preset('calming', '🌙', 'calming', 9.0, 195,
-    'a Metal-toned drone under a soft stream and a slow, distant bell.',
+    'a deep brown-noise hush under a slow ocean swell and an unhurried bell.',
     (noise, tones) => {
-      noise.pink  = { on: true, volume: 0.06, freq: WU_YIN_HZ.metal }
-      tones.water = { on: true, volume: 0.20, typeAngle: 0 }   // stream
-      tones.bell  = { on: true, volume: 0.18, rate: 32, typeAngle: 0 }
+      // typeAngle 180 pulls pink fully to its paired brown — deeper and less
+      // "present" than a bare Metal drone, closer to a hush than a hum
+      noise.pink  = { on: true, volume: 0.03, freq: WU_YIN_HZ.metal, typeAngle: 180 }
+      tones.water = { on: true, volume: 0.26, typeAngle: 240 }  // ocean
+      tones.bell  = { on: true, volume: 0.36, rate: 31, typeAngle: 0 }
     }),
   preset('relaxing', '🕯️', 'relaxing', 7.0, 135,
     'a Wood-toned drone, a light breeze, and a loose chime shimmer.',
@@ -58,7 +65,7 @@ export const PRESETS = [
       // slower cadences everywhere else
       tones.chime = { on: true, volume: 0.20, rate: 22, typeAngle: 0 }
     }),
-  preset('focussing', '🧲', 'focussing', 12.0, 25,
+  preset('focussing', '🧲', 'focussing', 8.5, 25,
     'a thin high-tuned drone, a steady breeze, and a crisp chime for clarity.',
     (noise, tones) => {
       // Previous combo (blue at 1280Hz + a gusty 60°/"gale" wind) read as

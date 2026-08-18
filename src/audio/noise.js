@@ -262,7 +262,7 @@ export function setNoisePulse(id, beatHz) {
   const lfoGain = ctx.createGain()
   lfo.type = 'sine'
   lfo.frequency.value = beatHz
-  lfoGain.gain.value = 0.08  // ±8% amplitude modulation depth
+  lfoGain.gain.value = 0.045  // ±4.5% amplitude modulation depth — was 0.08, read as too "pulsy"
   lfo.connect(lfoGain)
   lfoGain.connect(s.master.gain)
   lfo.start()

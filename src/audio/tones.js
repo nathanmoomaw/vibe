@@ -107,6 +107,24 @@ function triggerBirds(ctx, out, vol) {
   }
 }
 
+// Slow secondary sine applied to a modulation LFO's own rate (an oscillator
+// wobbling another oscillator's frequency, same trick as the drift
+// oscillators in audio/noise.js) — keeps each continuous tone's periodic
+// wander bounded (no random-walk drift risk) while breaking up the single
+// fixed-rate sine cycle that otherwise repeats predictably. Two
+// incommensurate rates summed together have an effective combined period far
+// longer than either alone, so it reads as organic rather than "looping."
+function wobble(ctx, targetParam, depth, periodSec) {
+  const wob = ctx.createOscillator()
+  const wobGain = ctx.createGain()
+  wob.type = 'sine'
+  wob.frequency.value = 1 / periodSec
+  wobGain.gain.value = depth
+  wob.connect(wobGain); wobGain.connect(targetParam)
+  wob.start()
+  return wob
+}
+
 // --- Continuous sources (wind, water, earth) ---
 
 function makeWind(ctx, initialAngle = 0) {
@@ -154,6 +172,8 @@ function makeWind(ctx, initialAngle = 0) {
   aLfoG.connect(gain.gain)
   src.connect(hpf); hpf.connect(lpf); lpf.connect(bpf); bpf.connect(gain)
   src.start(); lfo.start(); aLfo.start()
+  const wob1 = wobble(ctx, lfo.frequency, 0.035, 70 + Math.random() * 50)
+  const wob2 = wobble(ctx, aLfo.frequency, 0.02, 90 + Math.random() * 60)
 
   // quality: 0°=Xun breeze, 180°=Zhen squall, 360°=breeze again
   function setParam(angle) {
@@ -167,7 +187,7 @@ function makeWind(ctx, initialAngle = 0) {
 
   setParam(initialAngle)
 
-  return { gain, filter: bpf, setParam, stop() { try { src.stop(); lfo.stop(); aLfo.stop() } catch(_){} } }
+  return { gain, filter: bpf, setParam, stop() { try { src.stop(); lfo.stop(); aLfo.stop(); wob1.stop(); wob2.stop() } catch(_){} } }
 }
 
 // ── Water types: stream (0°), rain (120°), ocean (240°) ──────────────
@@ -207,8 +227,9 @@ function makeWaterStream(ctx) {
   const gain = ctx.createGain(); gain.gain.value = 0.7
   src.connect(bpf1); src.connect(bpf2); bpf1.connect(gain); bpf2.connect(gain)
   src.start(); lfo.start()
+  const wob = wobble(ctx, lfo.frequency, 0.25, 60 + Math.random() * 40)
 
-  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+  return { gain, stop() { try { src.stop(); lfo.stop(); wob.stop() } catch(_){} } }
 }
 
 function makeWaterRain(ctx) {
@@ -229,8 +250,9 @@ function makeWaterRain(ctx) {
   const gain = ctx.createGain(); gain.gain.value = 0.65
   src.connect(hpf); hpf.connect(bpf); bpf.connect(gain)
   src.start(); lfo.start()
+  const wob = wobble(ctx, lfo.frequency, 0.15, 70 + Math.random() * 40)
 
-  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+  return { gain, stop() { try { src.stop(); lfo.stop(); wob.stop() } catch(_){} } }
 }
 
 function makeWaterOcean(ctx) {
@@ -259,8 +281,9 @@ function makeWaterOcean(ctx) {
   src.connect(lpf); lpf.connect(gain)
   subSrc.connect(subLpf); subLpf.connect(subG); subG.connect(gain)
   src.start(); subSrc.start(); lfo.start()
+  const wob = wobble(ctx, lfo.frequency, 0.02, 90 + Math.random() * 60)
 
-  return { gain, stop() { try { src.stop(); subSrc.stop(); lfo.stop() } catch(_){} } }
+  return { gain, stop() { try { src.stop(); subSrc.stop(); lfo.stop(); wob.stop() } catch(_){} } }
 }
 
 function typeWeights(angle, positions = [0, 120, 240]) {
@@ -319,8 +342,9 @@ function makeFireCandle(ctx) {
   const gain = ctx.createGain(); gain.gain.value = 0.22
   lfoG.connect(gain.gain)
   src.connect(lpf); lpf.connect(gain); src.start(); lfo.start()
+  const wob = wobble(ctx, lfo.frequency, 0.15, 50 + Math.random() * 30)
 
-  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+  return { gain, stop() { try { src.stop(); lfo.stop(); wob.stop() } catch(_){} } }
 }
 
 function makeFireCampfire(ctx) {
@@ -347,8 +371,9 @@ function makeFireCampfire(ctx) {
   const gain = ctx.createGain(); gain.gain.value = 0.48
   lfoG.connect(gain.gain)
   src.connect(bpf); bpf.connect(lpf); lpf.connect(gain); src.start(); lfo.start()
+  const wob = wobble(ctx, lfo.frequency, 0.2, 45 + Math.random() * 30)
 
-  return { gain, stop() { try { src.stop(); lfo.stop() } catch(_){} } }
+  return { gain, stop() { try { src.stop(); lfo.stop(); wob.stop() } catch(_){} } }
 }
 
 function makeFireBonfire(ctx) {
@@ -378,8 +403,9 @@ function makeFireBonfire(ctx) {
   lfoG.connect(gain.gain)
   src.connect(lpf); lpf.connect(gain); sub.connect(subG); subG.connect(gain)
   src.start(); lfo.start(); sub.start()
+  const wob = wobble(ctx, lfo.frequency, 0.3, 40 + Math.random() * 30)
 
-  return { gain, stop() { try { src.stop(); lfo.stop(); sub.stop() } catch(_){} } }
+  return { gain, stop() { try { src.stop(); lfo.stop(); sub.stop(); wob.stop() } catch(_){} } }
 }
 
 function makeFire(ctx, initialAngle = 0) {
@@ -430,6 +456,7 @@ function makeEarth(ctx, initialAngle = 0) {
   src.connect(lpf); lpf.connect(gain)
   sub.connect(subG); subG.connect(gain)
   src.start(); sub.start(); aLfo.start()
+  const wob = wobble(ctx, aLfo.frequency, 0.01, 100 + Math.random() * 60)
 
   // quality: 0°=Kun deep loam, 180°=Qian crystalline, 360°=loam again
   function setParam(angle) {
@@ -443,7 +470,7 @@ function makeEarth(ctx, initialAngle = 0) {
 
   setParam(initialAngle)
 
-  return { gain, filter: lpf, setParam, stop() { try { src.stop(); sub.stop(); aLfo.stop() } catch(_){} } }
+  return { gain, filter: lpf, setParam, stop() { try { src.stop(); sub.stop(); aLfo.stop(); wob.stop() } catch(_){} } }
 }
 
 // --- Public API ---

@@ -85,8 +85,11 @@
   opacity: 0.55;
   transition: filter 0.2s, opacity 0.2s;
 }
+/* Polarized hover: push the swing between outline and color further apart
+   (full color, higher saturation) instead of the previous mild wash, so
+   hovering reads as a clear on/off pole rather than a half-step. */
 .vps__card:hover .vps__emoji {
-  filter: grayscale(0.5) drop-shadow(0 0 8px hsla(var(--vps-hue), 32%, 62%, 0.3));
+  filter: grayscale(0) saturate(1.3) drop-shadow(0 0 10px hsla(var(--vps-hue), 85%, 62%, 0.45));
   opacity: 1;
 }
 
@@ -99,7 +102,7 @@
   transition: color 0.2s;
 }
 .vps__card:hover .vps__label {
-  color: hsla(var(--vps-hue), 30%, 68%, 0.85);
+  color: hsla(var(--vps-hue), 78%, 72%, 0.95);
 }
 
 /* Single shared description area under the title — populated on hover of
