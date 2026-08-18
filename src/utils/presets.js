@@ -66,7 +66,7 @@ export const PRESETS = [
       tones.chime = { on: true, volume: 0.20, rate: 22, typeAngle: 0 }
     }),
   preset('focussing', '🧲', 'focussing', 10.0, 25,
-    'a Wood-toned pink drone under a steady breeze — alert, not sharp.',
+    'a Wood-toned pink drone under a steady breeze and a grounding loam tone.',
     (noise, tones) => {
       // Blue kept reading as "hissy" even after the earlier octave-up +
       // volume cut — blue is inherently a brighter/highpassed color by
@@ -76,11 +76,18 @@ export const PRESETS = [
       // accent: its periodic strikes were likely what read as "too pulsy"
       // even after cutting the AM-pulse depth in noise.js — a percussive
       // onset every ~10-30s breaks a drone's steadiness in a way continuous
-      // texture doesn't, so this preset is now a pure held drone. pulseHz
-      // moved from a guessed 8.5 into the documented Focus binaural target
-      // (Alpha 10-14 Hz — acoustomancy.md), at its gentle low end.
-      noise.pink = { on: true, volume: 0.07, freq: WU_YIN_HZ.wood }
-      tones.wind = { on: true, volume: 0.16, typeAngle: 0 }   // steady breeze
+      // texture doesn't, so this preset is now a held drone. pulseHz moved
+      // from a guessed 8.5 into the documented Focus binaural target (Alpha
+      // 10-14 Hz — acoustomancy.md), at its gentle low end.
+      //
+      // Reference only, not live — the pink+wind-only combo above minus the
+      // earth layer below (same 7%/16% volumes) was kept as a hand-tuned
+      // fallback in case this one (with earth) doesn't hold up as well:
+      //   noise.pink = { on: true, volume: 0.07, freq: WU_YIN_HZ.wood }
+      //   tones.wind = { on: true, volume: 0.16, typeAngle: 0 }
+      noise.pink  = { on: true, volume: 0.07, freq: WU_YIN_HZ.wood }
+      tones.wind  = { on: true, volume: 0.16, typeAngle: 0 }   // breeze
+      tones.earth = { on: true, volume: 0.13, typeAngle: 0 }   // loam
     }),
   preset('meditating', '🪬', 'meditating', 7.83, 268,
     'an OM-anchored drone, a slow gong, and a crystalline earth tone at 7.83 Hz.',

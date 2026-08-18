@@ -291,12 +291,6 @@ export default function App() {
   const [ringTipDisplay, ringTipVisible] = useFadeVisible(showRingTip ? true : null)
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
-  // Whether each row has nothing active — drives the "click empty row space
-  // to randomize" affordance (cursor hint on the label; onRowClick itself
-  // re-checks and no-ops once something's on).
-  const noiseRowInactive   = !NOISE.some(s => noise[s.id].on)
-  const toneRowInactive    = !TONES.filter(s => s.periodic).some(s => tones[s.id].on)
-  const elementRowInactive = !TONES.filter(s => s.elemental).some(s => tones[s.id].on)
   const activeSounds = [
     ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow, freq: noise[s.id].freq })),
     ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow, rateSec: s.periodic ? tones[s.id].rate : undefined })),
@@ -549,15 +543,27 @@ export default function App() {
   // ── Per-row randomize — click empty space in a fully-inactive row to
   // curate a subtle start for it, instead of having to pick a slot by hand.
   // Same "pleasant" bias as randomizeFirst: Wǔ Yīn-ish default frequencies,
-  // named (not blended) elemental types, subtle starting volume.
-  // `force` skips the "row must be inactive" guard — used by randomizeAll
-  // below to reroll every row regardless of its current state.
+  // named (not blended) elemental types, subtle starting volume. Click an
+  // ALREADY-active row's empty space instead and it deactivates everything
+  // in that row — symmetric on/off gesture for the row background.
+  // `force` skips both the inactive-check and the deactivate branch — used
+  // by randomizeAll below to reroll every row regardless of its current
+  // state (it's already turned everything off itself beforehand).
   const randomizeRow = useCallback((row, force = false) => {
     const shuffled = (arr) => [...arr].sort(() => Math.random() - 0.5)
     const count = () => (Math.random() < 0.7 ? 1 : 2)
 
     if (row === 'noise') {
-      if (!force && NOISE.some(s => noise[s.id].on)) return
+      const active = NOISE.filter(s => noise[s.id].on)
+      if (!force && active.length) {
+        setNoise(prev => {
+          const next = { ...prev }
+          for (const s of active) { stopNoise(s.id); next[s.id] = { ...prev[s.id], on: false } }
+          return next
+        })
+        setDispFlashing(true); setTimeout(() => setDispFlashing(false), 700)
+        return
+      }
       const picks = shuffled(NOISE).slice(0, count())
       setNoise(prev => {
         const next = { ...prev }
@@ -571,7 +577,16 @@ export default function App() {
       })
     } else if (row === 'tone') {
       const periodicTones = TONES.filter(s => s.periodic)
-      if (!force && periodicTones.some(s => tones[s.id].on)) return
+      const active = periodicTones.filter(s => tones[s.id].on)
+      if (!force && active.length) {
+        setTones(prev => {
+          const next = { ...prev }
+          for (const s of active) { stopTone(s.id); next[s.id] = { ...prev[s.id], on: false } }
+          return next
+        })
+        setDispFlashing(true); setTimeout(() => setDispFlashing(false), 700)
+        return
+      }
       const picks = shuffled(periodicTones).slice(0, count())
       setTones(prev => {
         const next = { ...prev }
@@ -585,7 +600,16 @@ export default function App() {
       })
     } else if (row === 'element') {
       const elementalTones = TONES.filter(s => s.elemental)
-      if (!force && elementalTones.some(s => tones[s.id].on)) return
+      const active = elementalTones.filter(s => tones[s.id].on)
+      if (!force && active.length) {
+        setTones(prev => {
+          const next = { ...prev }
+          for (const s of active) { stopTone(s.id); next[s.id] = { ...prev[s.id], on: false } }
+          return next
+        })
+        setDispFlashing(true); setTimeout(() => setDispFlashing(false), 700)
+        return
+      }
       const picks = shuffled(elementalTones).slice(0, count())
       setTones(prev => {
         const next = { ...prev }
@@ -1123,7 +1147,7 @@ export default function App() {
             {mode === 'party' ? (
               <>
                 <section className="unit__section" onClick={onRowClick('noise')}>
-                  <div className="unit__section-label" style={noiseRowInactive ? { cursor: 'pointer' } : undefined}>noise</div>
+                  <div className="unit__section-label" style={{ cursor: 'pointer' }}>noise</div>
                   <div className="unit__grid unit__grid--3">
                     {NOISE.map(s => {
                       const { color, glow } = noiseColorAt(s, noise[s.id].typeAngle)
@@ -1150,7 +1174,7 @@ export default function App() {
                 </section>
 
                 <section className="unit__section" onClick={onRowClick('tone')}>
-                  <div className="unit__section-label" style={toneRowInactive ? { cursor: 'pointer' } : undefined}>tone</div>
+                  <div className="unit__section-label" style={{ cursor: 'pointer' }}>tone</div>
                   <div className="unit__grid unit__grid--4">
                     {TONES.filter(s => !s.elemental).map(s => (
                       <SoundSlot
@@ -1171,7 +1195,7 @@ export default function App() {
                 </section>
 
                 <section className="unit__section" onClick={onRowClick('element')}>
-                  <div className="unit__section-label" style={elementRowInactive ? { cursor: 'pointer' } : undefined}>element</div>
+                  <div className="unit__section-label" style={{ cursor: 'pointer' }}>element</div>
                   <div className="unit__grid unit__grid--4">
                     {TONES.filter(s => s.elemental).map(s => (
                       <SoundSlot

@@ -63,12 +63,12 @@ const SOUND_SHAPE = {
   pink:  { shape: 'flower', petals: 4 },
   blue:  { shape: 'star',   points: 6 },
   bell:  { shape: 'halo',   petals: 0 },
-  chime: { shape: 'star',   points: 5 },
+  chime: { shape: 'daisy',  petals: 8 },
   gong:  { shape: 'flower', petals: 6 },
   birds: { shape: 'star',   points: 8 },
   wind:  { shape: 'halo',   petals: 0 },
   water: { shape: 'flower', petals: 5 },
-  fire:  { shape: 'flower', petals: 3 },
+  fire:  { shape: 'lotus',  petals: 5 },
   earth: { shape: 'halo',   petals: 0 },
 }
 
@@ -134,6 +134,67 @@ function drawFlower(ctx, cx, cy, r, petals, rotation, alpha, glow, age) {
   ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2)
   ctx.strokeStyle = glow.replace(/[\d.]+\)$/, `${(alpha * 0.12).toFixed(3)})`)
   ctx.lineWidth = r * 0.3
+  ctx.stroke()
+}
+
+// Rounded, overlapping petal blobs radiating from center — a fuller,
+// softer bloom than drawFlower's pointed rose curve. Each petal gets a
+// faint fill on top of its outline so overlapping petals read as translucent
+// layers rather than flat lines.
+function drawFlowerLotus(ctx, cx, cy, r, petals, rotation, alpha, glow, age) {
+  const lineW = Math.max(0.5, (1 - age) * 2)
+  ctx.save()
+  ctx.translate(cx, cy)
+  for (let i = 0; i < petals; i++) {
+    ctx.save()
+    ctx.rotate(rotation + (i / petals) * Math.PI * 2)
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.quadraticCurveTo(r * 0.32, r * 0.42, 0, r)
+    ctx.quadraticCurveTo(-r * 0.32, r * 0.42, 0, 0)
+    ctx.closePath()
+    ctx.fillStyle = glow.replace(/[\d.]+\)$/, `${(alpha * 0.07).toFixed(3)})`)
+    ctx.fill()
+    ctx.strokeStyle = glow.replace(/[\d.]+\)$/, `${(alpha * 0.75).toFixed(3)})`)
+    ctx.lineWidth = lineW
+    ctx.stroke()
+    ctx.restore()
+  }
+  ctx.restore()
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2)
+  ctx.strokeStyle = glow.replace(/[\d.]+\)$/, `${(alpha * 0.4).toFixed(3)})`)
+  ctx.lineWidth = r * 0.09
+  ctx.stroke()
+}
+
+// Thin, tapered daisy/aster petals — more numerous and narrower than the
+// lotus's rounded blobs, spiky like drawStar but curved rather than
+// straight-edged, and outline-only (no fill) for a lighter, airier bloom.
+function drawFlowerDaisy(ctx, cx, cy, r, petals, rotation, alpha, glow, age) {
+  const lineW = Math.max(0.5, (1 - age) * 1.8)
+  ctx.save()
+  ctx.translate(cx, cy)
+  for (let i = 0; i < petals; i++) {
+    ctx.save()
+    ctx.rotate(rotation + (i / petals) * Math.PI * 2)
+    ctx.beginPath()
+    ctx.moveTo(0, r * 0.16)
+    ctx.quadraticCurveTo(r * 0.1, r * 0.55, 0, r)
+    ctx.quadraticCurveTo(-r * 0.1, r * 0.55, 0, r * 0.16)
+    ctx.closePath()
+    ctx.strokeStyle = glow.replace(/[\d.]+\)$/, `${(alpha * 0.85).toFixed(3)})`)
+    ctx.lineWidth = lineW
+    ctx.stroke()
+    ctx.restore()
+  }
+  ctx.restore()
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, r * 0.15, 0, Math.PI * 2)
+  ctx.strokeStyle = glow.replace(/[\d.]+\)$/, `${(alpha * 0.55).toFixed(3)})`)
+  ctx.lineWidth = r * 0.11
   ctx.stroke()
 }
 
@@ -431,6 +492,10 @@ export default function Background({ anyOn, activeSounds }) {
           drawHalo(ctx, cx, cy, r, alpha, rip.glow, age)
         } else if (rip.shape === 'flower') {
           drawFlower(ctx, cx, cy, r, rip.petals, rot, alpha, rip.glow, age)
+        } else if (rip.shape === 'lotus') {
+          drawFlowerLotus(ctx, cx, cy, r, rip.petals, rot, alpha, rip.glow, age)
+        } else if (rip.shape === 'daisy') {
+          drawFlowerDaisy(ctx, cx, cy, r, rip.petals, rot, alpha, rip.glow, age)
         } else {
           drawStar(ctx, cx, cy, r, rip.points, rot, alpha, rip.glow, age)
         }
@@ -439,20 +504,25 @@ export default function Background({ anyOn, activeSounds }) {
 
       // Selfie-filter sparkle overlay — scattered glints that pop and fade,
       // denser when a sound is actually playing (ties the flourish to energy
-      // rather than firing at a constant background rate)
-      const sparkleChance = anyOn ? 0.015 + energy * 0.05 : 0.003
+      // rather than firing at a constant background rate). Bumped per
+      // repeated "more sparkle/shimmer" feedback — occasionally spawns a
+      // pair instead of a lone glint so it reads as a proper shimmer pass.
+      const sparkleChance = anyOn ? 0.03 + energy * 0.08 : 0.006
       if (Math.random() < sparkleChance) {
-        const src = activeSounds.length
-          ? activeSounds[Math.floor(Math.random() * activeSounds.length)]
-          : null
-        sparkles.push({
-          born: t,
-          x: Math.random() * width,
-          y: Math.random() * height,
-          r: 5 + Math.random() * 12,
-          life: 650 + Math.random() * 500,
-          color: src ? src.glow.replace(/[\d.]+\)$/, '0.9)') : 'rgba(255,255,255,0.85)',
-        })
+        const burst = Math.random() < 0.3 ? 2 : 1
+        for (let n = 0; n < burst; n++) {
+          const src = activeSounds.length
+            ? activeSounds[Math.floor(Math.random() * activeSounds.length)]
+            : null
+          sparkles.push({
+            born: t + n * 60,
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: 5 + Math.random() * 12,
+            life: 650 + Math.random() * 500,
+            color: src ? src.glow.replace(/[\d.]+\)$/, '0.9)') : 'rgba(255,255,255,0.85)',
+          })
+        }
       }
       for (let i = sparkles.length - 1; i >= 0; i--) {
         const sp = sparkles[i]
@@ -466,24 +536,28 @@ export default function Background({ anyOn, activeSounds }) {
       // Falling glitter — small glints that spawn around the console/ring
       // footprint and drift downward with a light gravity accel, as if
       // shaken loose off the console rather than popping in place like the
-      // sparkle overlay above.
-      const glitterChance = anyOn ? 0.02 + energy * 0.035 : 0.004
+      // sparkle overlay above. Bumped alongside the sparkle density per
+      // repeated "more glitter/shimmer" feedback.
+      const glitterChance = anyOn ? 0.045 + energy * 0.06 : 0.009
       if (Math.random() < glitterChance) {
-        const src = activeSounds.length
-          ? activeSounds[Math.floor(Math.random() * activeSounds.length)]
-          : null
-        const angle = Math.random() * Math.PI * 2
-        const originR = 90 + Math.random() * 280
-        glitters.push({
-          born: t,
-          x: cx + Math.cos(angle) * originR,
-          y: cy + Math.sin(angle) * originR * 0.75,
-          vx: (Math.random() - 0.5) * 16,
-          vy: 22 + Math.random() * 28,
-          r: 1.5 + Math.random() * 2.5,
-          life: 1600 + Math.random() * 1400,
-          color: src ? src.glow.replace(/[\d.]+\)$/, '0.9)') : 'rgba(255,255,255,0.8)',
-        })
+        const burst = Math.random() < 0.35 ? 2 : 1
+        for (let n = 0; n < burst; n++) {
+          const src = activeSounds.length
+            ? activeSounds[Math.floor(Math.random() * activeSounds.length)]
+            : null
+          const angle = Math.random() * Math.PI * 2
+          const originR = 90 + Math.random() * 280
+          glitters.push({
+            born: t + n * 90,
+            x: cx + Math.cos(angle) * originR,
+            y: cy + Math.sin(angle) * originR * 0.75,
+            vx: (Math.random() - 0.5) * 16,
+            vy: 22 + Math.random() * 28,
+            r: 1.5 + Math.random() * 2.5,
+            life: 1600 + Math.random() * 1400,
+            color: src ? src.glow.replace(/[\d.]+\)$/, '0.9)') : 'rgba(255,255,255,0.8)',
+          })
+        }
       }
       for (let i = glitters.length - 1; i >= 0; i--) {
         const g = glitters[i]
