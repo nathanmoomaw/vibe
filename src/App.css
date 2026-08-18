@@ -34,6 +34,13 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* The console is a physical-unit UI, not a document — dragging across
+     labels/nameplate/hint text (especially now that clicking them does
+     things: row randomize, full reroll) shouldn't ever select text. Form
+     controls (the audio-input URL field, QR name field) stay selectable —
+     user-select:none on an ancestor doesn't reach into <input>/<textarea>. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Shimmer sweep — diagonal light streak across the console face.

@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Aug 18 2026 (5) — console text no longer selectable
+
+- **Dragging across the console (nameplate, row labels, hint text) was highlighting text like a webpage**, screenshotted mid-drag-select spanning "vibe / freq gen" through the row labels — a side effect of this week's new click targets there (row randomize, full reroll) making that area more mouse-active than before. `.unit` (the whole console) gained `user-select: none` / `-webkit-user-select: none` in `App.css`, matching the same property `.slot`/`DualKnob` already carry. Scoped to `.unit` specifically (not the whole page) so it doesn't reach the separate overlay modals (QR, presets, reading) sitting outside it. Verified via Playwright: a mouse-down-drag-up spanning the nameplate to the tone row label now selects nothing (`window.getSelection().toString()` empty), while the QR name `<input>` — a real form control, exempt from an ancestor's `user-select:none` by spec — still selects/edits normally
+
 ## Aug 18 2026 (4) — QR name gets a proper outline for contrast
 
 - **Glow alone wasn't enough contrast once the veil was gone** — a glyph landing over a similarly-hued patch of the gradient could still wash out. Added a real outline pass in `VibeQR.jsx`: `ctx.strokeText` with a near-black stroke (`rgba(0,0,0,0.92)`, width scaled to font size) drawn around each character before its gradient fill+glow, so every glyph gets guaranteed separation from the pattern regardless of what color happens to sit behind it — independent of the glow, which stayed as a secondary effect rather than the only contrast mechanism. No veil, no border box, no plate — this is purely a per-glyph outline, distinct from all three things already explicitly removed this session. Re-ran the same `jsqr` sweep (14 names × 2 seeds) to confirm scannability held; it did
