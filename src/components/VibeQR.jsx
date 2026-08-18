@@ -246,13 +246,21 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
           ctx.translate(cxChar, ty + waveY)
           ctx.rotate(angle)
           ctx.transform(scaleX, 0, skewX, scaleY, 0, 0)
+
+          // Dark outline first — with no veil behind the text, glow alone
+          // wasn't enough contrast once a glyph landed over a similarly-hued
+          // patch of the pattern. A near-black stroke around each glyph's
+          // own shape guarantees separation from the background regardless
+          // of what color happens to sit behind it, independent of the glow.
+          ctx.lineJoin = 'round'
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.92)'
+          ctx.lineWidth = fs * 0.16
+          ctx.strokeText(chars[ci], 0, 0)
+
           ctx.fillStyle = `rgb(${tr},${tg},${tb})`
-          // Stronger glow than before — with the veil gone, this is now the
-          // only thing separating the text from the busy pattern behind it
           ctx.shadowColor = `rgba(${tr},${tg},${tb},0.95)`
-          ctx.shadowBlur = 8
+          ctx.shadowBlur = 6
           ctx.fillText(chars[ci], 0, 0)
-          ctx.fillText(chars[ci], 0, 0)   // second pass deepens the glow further
           ctx.restore()
 
           x += w

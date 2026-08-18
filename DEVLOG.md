@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Aug 18 2026 (4) — QR name gets a proper outline for contrast
+
+- **Glow alone wasn't enough contrast once the veil was gone** — a glyph landing over a similarly-hued patch of the gradient could still wash out. Added a real outline pass in `VibeQR.jsx`: `ctx.strokeText` with a near-black stroke (`rgba(0,0,0,0.92)`, width scaled to font size) drawn around each character before its gradient fill+glow, so every glyph gets guaranteed separation from the pattern regardless of what color happens to sit behind it — independent of the glow, which stayed as a secondary effect rather than the only contrast mechanism. No veil, no border box, no plate — this is purely a per-glyph outline, distinct from all three things already explicitly removed this session. Re-ran the same `jsqr` sweep (14 names × 2 seeds) to confirm scannability held; it did
+
 ## Aug 18 2026 (3) — QR name: veil gone, distortion pushed further
 
 - **Dropped the jagged dark veil behind the QR name entirely** — letters now sit directly on the iridescent pattern with no backing wash at all, legible only through their own glow. Doubled down on the glow to compensate (shadowBlur 5→8, drawn twice per character to deepen it) since it's now the only thing separating text from the busy pattern behind it. Per-character rotation/scale/skew/wave ranges all widened too (rotation ±6°→±11°, close to puddle's own ±12° now instead of half of it) per "distort the letters a bit more." Area budget, font-shrink loop, and the `Q`-level error-correction bump were untouched — removing the veil doesn't change how many pixels the text itself covers, so re-ran the same `jsqr`-via-Playwright sweep (14 names × 3 restyle seeds this time) purely to confirm nothing regressed, and nothing did
