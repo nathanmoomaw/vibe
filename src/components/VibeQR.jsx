@@ -182,19 +182,24 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
     ctx.globalCompositeOperation = 'source-over'
     ctx.restore()
 
-    // Name, written INTO the code as a captcha-style plate over its center —
-    // module-diced text (tinting only already-dark pixels) turned out
-    // illegible at typical module density, so instead this covers a bounded
-    // center region entirely — the same "logo in the middle of a QR"
+    // Name, written INTO the code as a captcha-style watermark over its
+    // center — module-diced text (tinting only already-dark pixels) turned
+    // out illegible at typical module density, so instead this covers a
+    // bounded center region entirely — the same "logo in the middle of a QR"
     // technique every QR-logo generator uses, which is why error correction
     // can absorb it losslessly, PROVIDED the covered area stays small.
     // Empirically (via jsQR against this exact renderer) even ~20% coverage
-    // at level M failed to decode outright — 'H' above buys headroom, and
-    // this shrinks the plate until it's comfortably under ~11% of the code's
-    // area before settling, rather than trusting a single guessed size.
-    // The iridescent pattern still shows faintly through the plate's
-    // translucency and the text is colored from the active-frequency
-    // gradient, so it reads as emerging from the code rather than pasted on.
+    // at level M failed to decode outright — 'Q' above buys headroom, and
+    // this shrinks the text until its footprint is comfortably under ~6% of
+    // the code's area before settling, rather than trusting a guessed size.
+    // No hard-edged plate or border — a jagged, faintly wavy dark veil (same
+    // idea puddle's PresetQR uses) instead, so the text reads as sitting IN
+    // the pattern's grain rather than pasted over it in a box, and each
+    // character gets its own small random rotation/scale/skew/baseline
+    // wobble for a recaptcha-ish squiggle — toned down from puddle's own
+    // version per request ("a bit less distorted"), and at much higher
+    // opacity than puddle's deliberately-faint watermark since this needs to
+    // actually read clearly, not just add texture.
     if (name?.trim()) {
       const text = name.trim()
       ctx.save()
@@ -218,24 +223,58 @@ export function drawVibeQR(canvas, url, name, seed = 0, activeGlows = []) {
       const lineH = fs * 1.2
       const px = (QR - plateW) / 2
       const py = (QR - plateH) / 2
+      const cx2 = QR / 2
 
-      const [pr, pg, pb] = lerpColor(gradient, 0.5)
+      // Jagged veil — a closed polyline with per-vertex jitter instead of a
+      // clean rounded rect, so there's no straight border line anywhere
       ctx.beginPath()
-      ctx.roundRect(px, py, plateW, plateH, 10)
-      ctx.fillStyle = 'rgba(1, 2, 6, 0.86)'
+      const steps = 6
+      for (let s = 0; s <= steps; s++) {
+        const vx = px + (plateW * s) / steps + (rng() - 0.5) * 5
+        const vy = py + (rng() - 0.5) * 4
+        s === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy)
+      }
+      for (let s = 0; s <= steps; s++) {
+        const vx = px + plateW - (plateW * s) / steps + (rng() - 0.5) * 5
+        const vy = py + plateH + (rng() - 0.5) * 4
+        ctx.lineTo(vx, vy)
+      }
+      ctx.closePath()
+      ctx.fillStyle = 'rgba(1, 2, 6, 0.82)'
       ctx.fill()
-      ctx.strokeStyle = `rgba(${pr},${pg},${pb},0.55)`
-      ctx.lineWidth = 1.4
-      ctx.stroke()
 
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       lines.forEach((line, li) => {
         const ty = py + fs * 0.85 + li * lineH
-        const [tr, tg, tb] = lerpColor(gradient, lines.length > 1 ? li / (lines.length - 1) : 0.15)
-        ctx.fillStyle = `rgb(${tr},${tg},${tb})`
-        ctx.shadowColor = `rgba(${tr},${tg},${tb},0.8)`
-        ctx.shadowBlur = 6
-        ctx.fillText(line, QR / 2, ty)
+        const chars = [...line]
+        const charWidths = chars.map(c => ctx.measureText(c).width)
+        const totalW = charWidths.reduce((a, b) => a + b, 0)
+        const waveAmp  = 1.5 + rng() * 2.5
+        const waveFreq = 0.7 + rng() * 0.7
+        const wavePhase = rng() * Math.PI * 2
+        let x = cx2 - totalW / 2
+        for (let ci = 0; ci < chars.length; ci++) {
+          const w = charWidths[ci]
+          const cxChar = x + w / 2
+          const waveY = Math.sin(wavePhase + ((cxChar - cx2) / plateW) * Math.PI * 2 * waveFreq) * waveAmp
+          const angle  = (rng() - 0.5) * 0.11   // ±~6° — squiggly but still easy to read
+          const scaleX = 0.94 + rng() * 0.12
+          const scaleY = 0.94 + rng() * 0.1
+          const skewX  = (rng() - 0.5) * 0.09
+          const [tr, tg, tb] = lerpColor(gradient, lines.length > 1 ? li / (lines.length - 1) : 0.15)
+
+          ctx.save()
+          ctx.translate(cxChar, ty + waveY)
+          ctx.rotate(angle)
+          ctx.transform(scaleX, 0, skewX, scaleY, 0, 0)
+          ctx.fillStyle = `rgb(${tr},${tg},${tb})`
+          ctx.shadowColor = `rgba(${tr},${tg},${tb},0.85)`
+          ctx.shadowBlur = 5
+          ctx.fillText(chars[ci], 0, 0)
+          ctx.restore()
+
+          x += w
+        }
       })
       ctx.shadowBlur = 0
       ctx.restore()
