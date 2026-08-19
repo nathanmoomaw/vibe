@@ -296,26 +296,41 @@ export default function App() {
     ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow, rateSec: s.periodic ? tones[s.id].rate : undefined })),
   ]
 
-  // Decode settings from URL on first load
+  // Decode settings from URL on first load. Autoplays by default (matches
+  // this app's own native QR-share feature, unchanged) — `play=0` is an
+  // opt-out a linking site can add when its own source wasn't actively
+  // playing, so the destination still receives the settings/parameters but
+  // lands paused rather than forcing playback that wasn't actually
+  // requested (obfusco.us's VibePill handoff uses this).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const encoded = params.get('v')
     if (!encoded) return
+    const shouldAutoplay = params.get('play') !== '0'
     setNoise(n => {
       setTones(t => {
         const decoded = decodeSettings(encoded, n, t, NOISE, TONES)
         if (!decoded) return t
-        // Start any sounds that are on in the decoded state
-        NOISE.forEach(s => {
-          if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].typeAngle, decoded.noise[s.id].freq)
-        })
-        TONES.forEach(s => {
-          const ds = decoded.tones[s.id]
-          if (ds.on) {
-            const param = s.hasType ? ds.typeAngle : (s.periodic ? ds.rate : null)
-            startTone(s.id, ds.volume, param)
-          }
-        })
+        if (shouldAutoplay) {
+          // Start any sounds that are on in the decoded state
+          NOISE.forEach(s => {
+            if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].typeAngle, decoded.noise[s.id].freq)
+          })
+          TONES.forEach(s => {
+            const ds = decoded.tones[s.id]
+            if (ds.on) {
+              const param = s.hasType ? ds.typeAngle : (s.periodic ? ds.rate : null)
+              startTone(s.id, ds.volume, param)
+            }
+          })
+        } else {
+          // Keep the tuned parameters (volume/freq/typeAngle/rate) but land
+          // paused — flip `on` off on every channel without starting audio,
+          // rather than autoplaying settings the source site wasn't
+          // actually playing.
+          NOISE.forEach(s => { decoded.noise[s.id] = { ...decoded.noise[s.id], on: false } })
+          TONES.forEach(s => { decoded.tones[s.id] = { ...decoded.tones[s.id], on: false } })
+        }
         setTimeout(() => setNoise(() => decoded.noise), 0)
         return decoded.tones
       })
