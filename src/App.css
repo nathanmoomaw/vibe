@@ -547,9 +547,13 @@
   cursor: pointer;
   padding: 2px 4px;
   line-height: 1;
-  transition: color 0.2s;
+  filter: drop-shadow(0 0 6px rgba(120, 160, 255, 0.45));
+  transition: color 0.2s, filter 0.2s;
 }
-.unit__qr-btn:hover { color: rgba(255, 255, 255, 0.6); }
+.unit__qr-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+  filter: drop-shadow(0 0 8px rgba(120, 160, 255, 0.7));
+}
 
 .unit__joker-btn {
   background: none;
@@ -560,11 +564,11 @@
   line-height: 1;
   opacity: 0.35;
   transition: opacity 0.2s, filter 0.2s;
-  filter: grayscale(0.5);
+  filter: grayscale(0.5) drop-shadow(0 0 6px rgba(180, 150, 255, 0.55));
 }
 .unit__joker-btn:hover {
   opacity: 0.85;
-  filter: grayscale(0) drop-shadow(0 0 6px rgba(180, 150, 255, 0.6));
+  filter: grayscale(0) drop-shadow(0 0 8px rgba(180, 150, 255, 0.75));
 }
 
 .unit__presets-btn {
@@ -576,9 +580,13 @@
   line-height: 1;
   display: inline-flex;
   align-items: center;
-  transition: color 0.2s;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.45));
+  transition: color 0.2s, filter 0.2s;
 }
-.unit__presets-btn:hover { color: rgba(255, 255, 255, 0.6); }
+.unit__presets-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+  filter: drop-shadow(0 0 8px rgba(255, 209, 102, 0.7));
+}
 
 /* Occasional tiny sparkle on each footer button, idle-only (before anything
    is playing) to draw a little attention to them — a single small ✨ badge
@@ -597,20 +605,20 @@
   position: absolute;
   top: -4px;
   right: -6px;
-  font-size: 0.5rem;
+  font-size: 0.6rem;
   opacity: 0;
   pointer-events: none;
   animation: footer-sparkle ease-in-out infinite;
 }
 
-.unit--silent .unit__joker-btn::after   { animation-duration: 15s; animation-delay: 0s; }
-.unit--silent .unit__presets-btn::after { animation-duration: 18s; animation-delay: 5s; }
-.unit--silent .unit__qr-btn::after      { animation-duration: 21s; animation-delay: 10s; }
+.unit--silent .unit__joker-btn::after   { animation-duration: 10s; animation-delay: 0s; }
+.unit--silent .unit__presets-btn::after { animation-duration: 13s; animation-delay: 3s; }
+.unit--silent .unit__qr-btn::after      { animation-duration: 16s; animation-delay: 6s; }
 
 @keyframes footer-sparkle {
-  0%, 92%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
-  95%           { opacity: 0.9; transform: scale(1) rotate(12deg); }
-  98%           { opacity: 0; transform: scale(0.6) rotate(20deg); }
+  0%, 88%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  93%           { opacity: 1; transform: scale(1.15) rotate(12deg); }
+  97%           { opacity: 0; transform: scale(0.6) rotate(20deg); }
 }
 
 /* ─── Audio input panel ──────────────────────────────────────────── */

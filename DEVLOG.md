@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Aug 19 2026 (3) — footer icon glow, sparkle turned up
+
+- **Footer buttons (reading/presets/qr) get a permanent subtle glow**, not just on hover — each carries its own low-key `drop-shadow` in its accent hue (purple for reading, amber for presets matching the presets-modal pill, blue for qr matching the QR modal's own accent), still brightening further on hover as before. First pass (4px blur, ~0.22 alpha) was confirmed via computed-style check to be applying, but read as essentially invisible in a screenshot — bumped to 6px blur / ~0.45-0.55 alpha base, ~8px / ~0.7 on hover, until it actually reads as a glow rather than a rounding error
+- **Yesterday's idle footer sparkle (Aug 19 (2)) turned up** per "increase their sparkle by a bit": cycle durations shortened (15/18/21s → 10/13/16s, so each button's sparkle fires noticeably more often) and the peak itself bumped (opacity 0.9→1, scale 1→1.15, glyph size 0.5rem→0.6rem) — still idle-only (`.unit--silent`) and still staggered so the three don't flash in sync
+
 ## Aug 19 2026 (2) — footer sparkle, tooltip renames, IP-geolocation fallback, reading entropy, AQI
 
 - **Footer buttons (reading/presets/qr) now get an occasional tiny ✨ badge** while idle — a single small sparkle per button (not a particle field) on its own long, staggered animation cycle (15s/18s/21s, offset delays) so the three never flash together, gated to `.unit--silent` so it only shows before anything is playing. Verified via computed-style check: `animationName` is `footer-sparkle` while idle and `none` once a preset is playing
