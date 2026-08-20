@@ -89,26 +89,59 @@ function timePeriod(h) {
 }
 
 // ── Weather fetch (Open-Meteo, no key required) ───────────────────────────────
+const LA_FALLBACK = { lat: 34.0522, lon: -118.2437 }
+
+// IP-based coarse location — no permission prompt, used when the user denies
+// (or the browser lacks) precise geolocation, so a declined prompt still gets
+// a real reading for wherever they roughly are instead of always landing on
+// the hardcoded LA default.
+async function getCoordsByIP() {
+  try {
+    const res = await fetch('https://ipapi.co/json/')
+    if (!res.ok) return null
+    const json = await res.json()
+    if (typeof json.latitude !== 'number' || typeof json.longitude !== 'number') return null
+    return { lat: json.latitude, lon: json.longitude }
+  } catch {
+    return null
+  }
+}
+
 async function getCoords() {
+  if (!navigator.geolocation) return (await getCoordsByIP()) ?? LA_FALLBACK
   return new Promise(resolve => {
-    if (!navigator.geolocation) return resolve({ lat: 34.0522, lon: -118.2437 })
     navigator.geolocation.getCurrentPosition(
       p => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
-      ()  => resolve({ lat: 34.0522, lon: -118.2437 }),
+      async () => resolve((await getCoordsByIP()) ?? LA_FALLBACK),
       { timeout: 4000 }
     )
   })
+}
+
+// Air quality — separate Open-Meteo endpoint, fetched alongside the regular
+// forecast so a reading can lean toward "clearing" (wind) when the air is
+// actually bad, rather than only reacting to precipitation/wind/sky state.
+async function fetchAqi(lat, lon) {
+  try {
+    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=us_aqi`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.current?.us_aqi ?? null
+  } catch {
+    return null
+  }
 }
 
 export async function fetchWeather() {
   try {
     const { lat, lon } = await getCoords()
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=weather_code,wind_speed_10m,precipitation&forecast_days=1`
-    const res = await fetch(url)
+    const [res, aqi] = await Promise.all([fetch(url), fetchAqi(lat, lon)])
     if (!res.ok) return null
     const json = await res.json()
     const { weather_code: wc, wind_speed_10m: wind, precipitation: precip } = json.current
-    return { wc, wind, precip }
+    return { wc, wind, precip, aqi }
   } catch {
     return null
   }
@@ -286,7 +319,16 @@ function pick(arr, seed) {
   return arr[Math.floor(seed * arr.length) % arr.length]
 }
 
+// Golden-ratio low-discrepancy step — each call lands somewhere new and
+// well-spread from the last, so two readings taken seconds apart (same hour,
+// same weather) still read as genuinely different rather than identical.
+// The moon/time/weather-driven sound config itself is unaffected — this only
+// spreads the narrative line picks — matching "the user's own condition has
+// shifted a little" rather than re-randomizing the whole reading.
+let readingCallCount = 0
+
 export function buildReading(phase, weather) {
+  readingCallCount += 1
   const hour = new Date().getHours()
   const moon = moonState(phase)
   const time = timePeriod(hour)
@@ -294,9 +336,12 @@ export function buildReading(phase, weather) {
   const spring = tidalSpring(phase)
   const height = tidalHeight(phase)
 
-  // Seed: hour-based + weather entropy so conditions vary the reading within an hour
+  // Seed: hour-based + weather entropy + a per-call golden-ratio increment,
+  // so conditions still ground the reading but immediate repeats never land
+  // on the exact same narrative lines
   const weatherEntropy = weather ? (weather.wind * 0.013 + weather.precip * 0.09) % 1 : 0
-  const seed = ((Date.now() / 3600000) + weatherEntropy * 0.6) % 1
+  const callEntropy = (readingCallCount * 0.6180339887) % 1
+  const seed = ((Date.now() / 3600000) + weatherEntropy * 0.6 + callEntropy * 0.4) % 1
 
   // Default state (all off) — noise volumes kept quiet by design
   const noise = {
@@ -450,6 +495,14 @@ export function buildReading(phase, weather) {
   if (spring > 0.85 && height > 0.7 && !tones.water.on && !weatherEl) {
     tones.water = { on: true, volume: 0.22 * timeVol * tidalVolMod, typeAngle: 0 }
     reasons.water = 'spring tide at its height — the ocean frequency rises as a subtle undertone'
+  }
+
+  // Poor air quality → a clearing wind undertone (moving air carries it out),
+  // subtle enough not to override a more specific weather-driven element
+  const aqi = weather?.aqi
+  if (aqi > 100 && !tones.wind.on) {
+    tones.wind = { on: true, volume: 0.2 * timeVol, typeAngle: aqi > 150 ? 90 : 45 }
+    reasons.wind = `the air quality is poor here (US AQI ${Math.round(aqi)}) — a clearing wind undertone to carry it out`
   }
 
   // Narrative text (3 lines)

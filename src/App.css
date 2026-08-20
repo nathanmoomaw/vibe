@@ -345,7 +345,7 @@
 .unit__ring-tip {
   position: absolute;
   left: 50%;
-  top: calc(100% + 10px);
+  top: calc(100% + 13px);
   transform: translateX(-50%);
   width: max-content;
   background: rgba(3, 3, 10, 0.97);
@@ -579,6 +579,39 @@
   transition: color 0.2s;
 }
 .unit__presets-btn:hover { color: rgba(255, 255, 255, 0.6); }
+
+/* Occasional tiny sparkle on each footer button, idle-only (before anything
+   is playing) to draw a little attention to them — a single small ✨ badge
+   per button rather than a particle field, each on its own long, staggered
+   cycle so the three never flash together. */
+.unit--silent .unit__joker-btn,
+.unit--silent .unit__presets-btn,
+.unit--silent .unit__qr-btn {
+  position: relative;
+}
+
+.unit--silent .unit__joker-btn::after,
+.unit--silent .unit__presets-btn::after,
+.unit--silent .unit__qr-btn::after {
+  content: '✨';
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  font-size: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  animation: footer-sparkle ease-in-out infinite;
+}
+
+.unit--silent .unit__joker-btn::after   { animation-duration: 15s; animation-delay: 0s; }
+.unit--silent .unit__presets-btn::after { animation-duration: 18s; animation-delay: 5s; }
+.unit--silent .unit__qr-btn::after      { animation-duration: 21s; animation-delay: 10s; }
+
+@keyframes footer-sparkle {
+  0%, 92%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  95%           { opacity: 0.9; transform: scale(1) rotate(12deg); }
+  98%           { opacity: 0; transform: scale(0.6) rotate(20deg); }
+}
 
 /* ─── Audio input panel ──────────────────────────────────────────── */
 

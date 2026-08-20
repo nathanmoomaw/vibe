@@ -1284,16 +1284,16 @@ export default function App() {
                 }, 700)
               }
               setShowReading(true)
-            }} title="Your vibe reading">
+            }} title="read your vibe">
               🃏
             </button>
-            <button className="unit__presets-btn" onClick={() => setShowPresets(true)} title="Presets">
+            <button className="unit__presets-btn" onClick={() => setShowPresets(true)} title="prescriptions">
               <PillIcon />
             </button>
             {/* Audio input trigger hidden Aug 17 2026 — see ROADMAP.md. State,
                 playInputUrl/stopInput and the panel below are untouched so
                 this can come back once it's fine-tuned. */}
-            <button className="unit__qr-btn" onClick={() => setShowQR(true)} title="Share / QR code">
+            <button className="unit__qr-btn" onClick={() => setShowQR(true)} title="qr / share">
               ◈
             </button>
           </div>
