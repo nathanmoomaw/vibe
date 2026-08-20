@@ -430,20 +430,54 @@
   padding: 0.5rem 0 0;
 }
 
+/* Both labels carry their own slow, subtle rainbow drift (different periods
+   and directions so they never sync up into one shared cycle) instead of a
+   flat tint — colors kept low-alpha/desaturated at rest to stay subtle, and
+   only turned up (faster + more saturated) on nameplate hover. */
 .unit__brand {
   font-size: 0.7rem;
   font-weight: 400;
   letter-spacing: 0.5em;
   text-transform: lowercase;
-  color: rgba(220, 180, 90, 0.45);
+  background-image: linear-gradient(90deg,
+    rgba(255,130,130,0.5), rgba(255,205,100,0.5), rgba(170,255,150,0.5),
+    rgba(120,215,255,0.5), rgba(180,140,255,0.5), rgba(255,130,190,0.5), rgba(255,130,130,0.5));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: nameplate-rainbow 24s linear infinite;
+  transition: filter 0.3s ease, animation-duration 0.3s ease;
 }
 
 .unit__model {
   font-size: 0.5rem;
   letter-spacing: 0.3em;
   /* text-transform: uppercase; */
-  color: rgba(255, 255, 255, 0.12);
+  background-image: linear-gradient(90deg,
+    rgba(140,205,255,0.28), rgba(200,145,255,0.28), rgba(255,140,205,0.28),
+    rgba(255,205,140,0.28), rgba(150,255,180,0.28), rgba(140,205,255,0.28));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: nameplate-rainbow 33s linear infinite reverse;
+  transition: filter 0.3s ease, animation-duration 0.3s ease;
 }
+
+@keyframes nameplate-rainbow {
+  from { background-position: 0% 50%; }
+  to   { background-position: 300% 50%; }
+}
+
+.unit__nameplate:hover .unit__brand,
+.unit__nameplate:hover .unit__model {
+  filter: saturate(1.9) brightness(1.35);
+}
+.unit__nameplate:hover .unit__brand { animation-duration: 10s; }
+.unit__nameplate:hover .unit__model { animation-duration: 14s; }
 
 /* ─── Faceplate divider ──────────────────────────────────────────── */
 
