@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Aug 24 2026 — v1 cut: dev/v1 replaces dev/v0, merged to production
+
+- **Cut `dev/v1` from `dev/v0`'s tip**, per "call this present state v1." Before merging to `main`, merged `main` into `dev/v1` first so nothing from the Aug 19 `play=0` production hotfix (`0212b68`) got orphaned — it turned out `dev/v0` already carried the same change independently (`03d31ab`, a separately-hashed commit with identical content, likely applied twice rather than cherry-picked once), so the merge was nearly trivial. One real conflict: `main`'s `startNoise(id, volume, freq)` call was a stale 3-arg form from before `startNoise` gained a `typeAngle` parameter — resolved in favor of `dev/v0`'s current 4-arg call (`startNoise(id, volume, typeAngle, freq)`, matching `audio/noise.js`'s live signature)
+- `main` then fast-forward merged from `dev/v1` cleanly (42 files, the full backlog since the last direct-to-main hotfix) and pushed to production
+- `CLAUDE.md`'s Git Workflow section updated: `dev/v1` is now the active dev branch (autodeploys to vibe-dev.obfusco.us via the existing `dev/**` wildcard in `.github/workflows/deploy.yml` — no CI changes needed), `dev/v0` retired but left intact on GitHub as history, not deleted
+- Switched back to `dev/v1` to continue work, per instruction
+
 ## Aug 19 2026 (3) — footer icon glow, sparkle turned up
 
 - **Footer buttons (reading/presets/qr) get a permanent subtle glow**, not just on hover — each carries its own low-key `drop-shadow` in its accent hue (purple for reading, amber for presets matching the presets-modal pill, blue for qr matching the QR modal's own accent), still brightening further on hover as before. First pass (4px blur, ~0.22 alpha) was confirmed via computed-style check to be applying, but read as essentially invisible in a screenshot — bumped to 6px blur / ~0.45-0.55 alpha base, ~8px / ~0.7 on hover, until it actually reads as a glow rather than a rounding error
