@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Aug 25 2026 — geolocation prompt no longer fires on page load
+
+- **The location-services dialog was popping up immediately on landing**, before the user had done anything — traced to a mount-time `useEffect` in `App.jsx` (`fetchWeather()`, added to cache weather for randomize gestures) that called `getCoords()`, which reaches straight for `navigator.geolocation.getCurrentPosition` and triggers the browser permission prompt. This is separate from `VibeReading.jsx`'s own `fetchWeather()` call, which is fine as-is since that component only mounts once the user opens the "read your vibe" modal
+- Fixed by giving `fetchWeather()` a `precise` parameter (`reading.js`): `precise=true` (the reading flow's default) behaves as before, `precise=false` skips `navigator.geolocation` entirely and goes straight to the IP-based fallback (or the LA default). App.jsx's mount-time cache now calls `fetchWeather(false)` — still gets real-ish coarse weather to bias randomize gestures, no permission prompt until the user actually clicks "read your vibe"
+
 ## Aug 24 2026 — v1 cut: dev/v1 replaces dev/v0, merged to production
 
 - **Cut `dev/v1` from `dev/v0`'s tip**, per "call this present state v1." Before merging to `main`, merged `main` into `dev/v1` first so nothing from the Aug 19 `play=0` production hotfix (`0212b68`) got orphaned — it turned out `dev/v0` already carried the same change independently (`03d31ab`, a separately-hashed commit with identical content, likely applied twice rather than cherry-picked once), so the merge was nearly trivial. One real conflict: `main`'s `startNoise(id, volume, freq)` call was a stale 3-arg form from before `startNoise` gained a `typeAngle` parameter — resolved in favor of `dev/v0`'s current 4-arg call (`startNoise(id, volume, typeAngle, freq)`, matching `audio/noise.js`'s live signature)

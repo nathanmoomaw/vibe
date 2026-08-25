@@ -133,9 +133,13 @@ async function fetchAqi(lat, lon) {
   }
 }
 
-export async function fetchWeather() {
+// precise=false skips the navigator.geolocation permission prompt entirely
+// (IP-based coords only) — used for background/mount-time fetches that must
+// not surface the browser's location dialog before the user has asked for a
+// reading. precise=true (the reading flow) still prompts as intended.
+export async function fetchWeather(precise = true) {
   try {
-    const { lat, lon } = await getCoords()
+    const { lat, lon } = precise ? await getCoords() : ((await getCoordsByIP()) ?? LA_FALLBACK)
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=weather_code,wind_speed_10m,precipitation&forecast_days=1`
     const [res, aqi] = await Promise.all([fetch(url), fetchAqi(lat, lon)])
     if (!res.ok) return null

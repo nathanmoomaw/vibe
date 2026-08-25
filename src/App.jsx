@@ -280,9 +280,11 @@ export default function App() {
 
   // Cached once on load (not re-fetched per tap) so randomize gestures can
   // lean toward present natural conditions without a network round-trip
-  // every time — see randomizeActive/randomizeFirst below.
+  // every time — see randomizeActive/randomizeFirst below. IP-based only
+  // (precise=false): this fires on mount, before the user has asked for a
+  // reading, so it must not trigger the browser's geolocation prompt.
   const weatherRef = useRef(null)
-  useEffect(() => { fetchWeather().then(w => { weatherRef.current = w }) }, [])
+  useEffect(() => { fetchWeather(false).then(w => { weatherRef.current = w }) }, [])
 
   // Ease both circle-viz tooltips out on hover-end instead of yanking them
   // off instantly — they already faded in, this makes the exit match.
