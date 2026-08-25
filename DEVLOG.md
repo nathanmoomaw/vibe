@@ -4,6 +4,7 @@
 
 - **The location-services dialog was popping up immediately on landing**, before the user had done anything — traced to a mount-time `useEffect` in `App.jsx` (`fetchWeather()`, added to cache weather for randomize gestures) that called `getCoords()`, which reaches straight for `navigator.geolocation.getCurrentPosition` and triggers the browser permission prompt. This is separate from `VibeReading.jsx`'s own `fetchWeather()` call, which is fine as-is since that component only mounts once the user opens the "read your vibe" modal
 - Fixed by giving `fetchWeather()` a `precise` parameter (`reading.js`): `precise=true` (the reading flow's default) behaves as before, `precise=false` skips `navigator.geolocation` entirely and goes straight to the IP-based fallback (or the LA default). App.jsx's mount-time cache now calls `fetchWeather(false)` — still gets real-ish coarse weather to bias randomize gestures, no permission prompt until the user actually clicks "read your vibe"
+- Confirmed fixed on `dev/v1`; fast-forward merged straight to `main` and pushed to production (no new commits on `main` since the last release, so no merge conflicts), then switched back to `dev/v1` to continue work
 
 ## Aug 24 2026 — v1 cut: dev/v1 replaces dev/v0, merged to production
 
