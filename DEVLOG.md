@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Aug 26 2026 (2) — stop button: smaller, opacity waver added
+
+- **Icon dialed down 25%** (2.8rem → 2.1rem)
+- **New `stop-waver` opacity animation** layered on top of the existing color-cycle and glow-pulse — deliberately uneven keyframe spacing/depths (not a clean sine) so it reads as an organic flicker, dipping to 50% opacity at its lowest point, own 5.4s period so it doesn't sync with the other two animations
+- Hover now also pins `opacity: 1 !important`, same reasoning as the existing color/filter `!important`s — without it, hovering mid-waver would freeze the icon at whatever opacity it happened to be paused on instead of snapping to full clarity
+- Verified via Playwright: confirmed all three animation names apply via computed style, and screenshots at two different points in the cycle show the visible opacity swing at rest, with hover still landing at full opacity and the mute icon intact
+
 ## Aug 26 2026 — viz tap resumes last settings after a stop, not a fresh randomize
 
 - **Tapping the circle viz while stopped now resumes exactly what was playing before**, instead of always rolling a brand-new "pleasant random set." `resumeAllSounds` already existed for spacebar's stop/resume toggle (`pausedRef` holds a `{noise, tones}` snapshot taken the moment `stopAllSounds` runs); `onDisplayUp`'s silent-tap branch now calls it too when a snapshot exists, falling back to the original `randomizeFirst()` only for a genuinely fresh session with nothing to resume
