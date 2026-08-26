@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Aug 26 2026 (4) — merged to production
+
+- Fast-forward merged `dev/v1` → `main` and pushed to production: QR-landing playback fix, mobile Screen Wake Lock, viz-tap resume, and the whole stop-button rework/tuning pass. Switched back to `dev/v1` to continue work
+
 ## Aug 26 2026 (3) — stop button waver slowed by half
 
 - `stop-waver`'s duration doubled, 5.4s → 10.8s, per feedback that the flicker was too fast
