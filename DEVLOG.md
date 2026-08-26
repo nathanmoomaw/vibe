@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Aug 25 2026 (4) — stop button dialed back to 40% opacity
+
+- **Yesterday's stop-button rework read as too bold** — all its alphas (rest-state color cycle, shimmer-pulse glow, hover color/glow, and the square/mute-icon opacity crossfade) scaled to 40% of their prior values, same colors and animation timing otherwise. Verified via Playwright screenshots at rest and on hover: both noticeably fainter, mute icon on hover still legible
+
 ## Aug 25 2026 (3) — stop button 4x, redder shimmer, hover reveals a mute glyph
 
 - **Stop-all button (`.unit__stop-all`) rebuilt as an inline SVG** instead of the bare "□" text glyph — needed to fit a second icon inside it. At rest it's the same outline square, now 4x the size (2.8rem, up from a ~0.7rem glyph) and recolored: the slow `stop-outline-shift` color-cycle moved off the gold/blue/amber console palette onto an all red/orange range, so it reads as "stop" even before hover, plus a new `stop-shimmer-pulse` glow-pulse animation layered on for actual shimmer motion at rest
