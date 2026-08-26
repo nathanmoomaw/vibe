@@ -210,6 +210,35 @@
   cursor: pointer;
 }
 
+/* ─── /r stealth-record indicator — upper left, status only ────── */
+
+.unit__rec-indicator {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  color: rgba(255, 110, 90, 0.65);
+  z-index: 10;
+  pointer-events: none;
+}
+.unit__rec-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 70, 60, 0.85);
+  animation: rec-dot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes rec-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
+
 /* ─── Stop-all button — upper right, only when audio is playing ──── */
 
 .unit__stop-all {

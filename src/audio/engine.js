@@ -230,3 +230,43 @@ export function stopAudioInput() {
 export function isAudioInputActive() {
   return inputAudio !== null
 }
+
+// ── Recording (vibe.obfusco.us/r only — see App.jsx's isRecordMode) ───────────
+// Taps the master bus into a MediaStreamAudioDestinationNode in parallel with
+// the normal analyser→destination path, so recording doesn't touch playback
+// or the visualizer at all.
+let recordDest = null
+let recorder = null
+let recordedChunks = []
+
+const RECORD_MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+
+export function startRecording() {
+  if (recorder) return // already recording
+  const ctx = getContext()
+  if (!recordDest) {
+    recordDest = ctx.createMediaStreamDestination()
+    masterGain.connect(recordDest)
+  }
+  const mimeType = RECORD_MIME_CANDIDATES.find(t => MediaRecorder.isTypeSupported(t))
+  recordedChunks = []
+  recorder = new MediaRecorder(recordDest.stream, mimeType ? { mimeType } : undefined)
+  recorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data) }
+  recorder.start()
+}
+
+// Resolves with { blob, extension } once the recorder has flushed its final
+// chunk, or null if nothing was recording.
+export function stopRecording() {
+  if (!recorder) return Promise.resolve(null)
+  const activeRecorder = recorder
+  const mimeType = activeRecorder.mimeType || 'audio/webm'
+  return new Promise(resolve => {
+    activeRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: mimeType })
+      recordedChunks = []
+      resolve({ blob, extension: mimeType.includes('mp4') ? 'm4a' : 'webm' })
+    }
+    activeRecorder.stop()
+  }).finally(() => { recorder = null })
+}

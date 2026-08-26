@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { getAnalyser, setAudioInput, stopAudioInput, updateAudioInputFilters, isAudioInputActive, fadeMaster, setPlaybackActive, registerMediaSessionStop } from './audio/engine.js'
+import { getAnalyser, setAudioInput, stopAudioInput, updateAudioInputFilters, isAudioInputActive, fadeMaster, setPlaybackActive, registerMediaSessionStop, startRecording, stopRecording } from './audio/engine.js'
 import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq, setNoiseType } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
@@ -262,6 +262,12 @@ export default function App() {
   const [inputStatus, setInputStatus] = useState('idle') // idle | loading | playing | error
   const [glitch, setGlitch] = useState(null) // null | { variant: 'blue'|'warm', duration }
 
+  // vibe.obfusco.us/r — a stealth recording mode with no manual controls:
+  // playback starting/stopping auto-starts/stops a recording of the master
+  // bus, prompting a download the moment it stops. Computed once; the path
+  // doesn't change mid-session in this SPA.
+  const [isRecordMode] = useState(() => window.location.pathname === '/r')
+
   const canvasRef       = useRef(null)
   const rafRef           = useRef(null)
   const dispDragRef      = useRef(false)
@@ -295,6 +301,7 @@ export default function App() {
   const [ringTipDisplay, ringTipVisible] = useFadeVisible(showRingTip ? true : null)
 
   const anyOn = [...Object.values(noise), ...Object.values(tones)].some(s => s.on)
+  const isRecording = isRecordMode && anyOn
   const activeSounds = [
     ...NOISE.filter(s => noise[s.id].on).map(s => ({ id: s.id, glow: s.glow, freq: noise[s.id].freq })),
     ...TONES.filter(s => tones[s.id].on).map(s => ({ id: s.id, glow: s.glow, rateSec: s.periodic ? tones[s.id].rate : undefined })),
@@ -1127,6 +1134,26 @@ export default function App() {
   useEffect(() => { registerMediaSessionStop(stopAllSounds) }, [stopAllSounds])
   useEffect(() => { setPlaybackActive(anyOn) }, [anyOn])
 
+  // /r stealth recording: start the moment playback starts, stop and
+  // download the moment it stops — no manual record button, per spec.
+  useEffect(() => {
+    if (!isRecordMode) return
+    if (anyOn) {
+      startRecording()
+    } else {
+      stopRecording().then(result => {
+        if (!result) return
+        const { blob, extension } = result
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `vibe-recording-${stamp}.${extension}`
+        a.click()
+        URL.revokeObjectURL(a.href)
+      })
+    }
+  }, [isRecordMode, anyOn])
+
   return (
     <>
       {mode === 'party' && <Background anyOn={anyOn} activeSounds={activeSounds} />}
@@ -1136,6 +1163,14 @@ export default function App() {
           className={`unit${!anyOn ? ' unit--silent' : ''}${glitch ? ` unit--glitch-${glitch.variant}` : ''}`}
           style={glitch ? { '--glitch-dur': `${glitch.duration}s` } : undefined}
         >
+
+          {/* /r stealth-record indicator — upper left, mirrors the stop
+              button's corner so it reads as status, not a control. */}
+          {isRecording && (
+            <div className="unit__rec-indicator" title="Recording — will download when stopped">
+              <span className="unit__rec-dot" />rec
+            </div>
+          )}
 
           {/* Stop-all button — upper right, only visible when sounds are playing.
               Plain outline square at rest; hover swaps in a monochrome

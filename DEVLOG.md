@@ -1,5 +1,14 @@
 # DEVLOG — vibe
 
+## Aug 26 2026 (5) — stealth recording at /r
+
+- **New hidden mode: visiting `/r` auto-records and auto-downloads.** No manual button — `isRecordMode` (`App.jsx`) checks `window.location.pathname === '/r'` once at mount; an effect keyed on `anyOn` calls `startRecording()` the moment playback starts and `stopRecording()` (triggering an immediate download) the moment it stops. A small pulsing "● rec" indicator, upper-left, is the only visible affordance — didn't want a silent background recorder with zero user feedback
+- `audio/engine.js` gained `startRecording`/`stopRecording`: taps `masterGain` into a `MediaStreamAudioDestinationNode` in parallel with the existing analyser→destination chain (recording touches neither playback nor the visualizer), feeds a `MediaRecorder` picking the first supported mimeType from `['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']`, resolves a `{ blob, extension }` on stop
+- Answers yesterday's "how do I capture vibe as mp3" question directly — output is native-codec (webm/opus in Chrome, m4a in Safari), not literal mp3 container, same one-`ffmpeg`-command-away caveat already given, but now it's an in-app button-free flow instead of OS-level screen recording / BlackHole routing
+- Caught a lint issue before shipping: first pass tracked recording state as its own `useState`, set synchronously inside the `anyOn` effect — `isRecording` is just `isRecordMode && anyOn`, so it's derived inline instead, no extra state
+- Verified via Playwright against the dev server: `/r` returns 200 and mounts the SPA, the rec indicator is absent on a normal (non-`/r`) load with the same playback, present on `/r`, and stopping playback fires a real `download` event with a non-empty (~19KB for a few seconds) audio file
+- **Not yet confirmed on the actual deployed infra** — deploy is a bare `aws s3 sync` (`.github/workflows/deploy.yml`) with no SPA-fallback config in this repo, so whether `/r` resolves to `index.html` in production depends entirely on the S3 error-document / CloudFront custom-error-response setup, which lives outside this repo and wasn't checked this session
+
 ## Aug 26 2026 (4) — merged to production
 
 - Fast-forward merged `dev/v1` → `main` and pushed to production: QR-landing playback fix, mobile Screen Wake Lock, viz-tap resume, and the whole stop-button rework/tuning pass. Switched back to `dev/v1` to continue work
