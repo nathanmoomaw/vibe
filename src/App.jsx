@@ -267,7 +267,8 @@ export default function App() {
   const dispDragRef      = useRef(false)
   const dispTotalMoved   = useRef(0)
   const noiseRef         = useRef(noise)
-  const pausedRef        = useRef(null) // snapshot of {noise, tones} taken right before a stop-all, for spacebar resume
+  const pausedRef        = useRef(null) // snapshot of {noise, tones} taken right before a stop-all, for spacebar/viz-tap resume
+  const [hasResumable, setHasResumable] = useState(false) // mirrors !!pausedRef.current for render (ring-tip label, viz-tap branch)
   const planetPosRef     = useRef([])   // latest on-screen planet glyph positions, for hover hit-testing
   const hoveredPlanetRef = useRef(null)
   const [hoveredPlanet, setHoveredPlanet] = useState(null) // { name, x, y } | null — drives the hover tooltip
@@ -828,6 +829,42 @@ export default function App() {
     }
   }, [noise, tones, inputStatus])
 
+  // ── Stop-all / spacebar resume ──────────────────────────────────────
+  // Defined ahead of onDisplayDown/onDisplayUp below — the viz tap handler
+  // (onDisplayUp) also calls resumeAllSounds, and a const referenced in a
+  // useCallback dependency array must already be initialized at that point
+  // in the render pass, even though the callback body itself only runs
+  // later on an actual tap.
+  const stopAllSounds = useCallback(() => {
+    pausedRef.current = { noise, tones }
+    setHasResumable(true)
+    NOISE.forEach(s => { if (noise[s.id].on) stopNoise(s.id) })
+    TONES.forEach(s => { if (tones[s.id].on) stopTone(s.id) })
+    stopAllNoisePulses()
+    setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+    setTones(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
+    // Stopping everything makes any pending isolation snapshot stale
+    isolationSnapshotRef.current = null
+    setIsolatedPlanet(null)
+  }, [noise, tones])
+
+  const resumeAllSounds = useCallback(() => {
+    const snap = pausedRef.current
+    if (!snap) return
+    NOISE.forEach(s => {
+      const st = snap.noise[s.id]
+      if (st?.on) startNoise(s.id, st.volume, st.typeAngle, st.freq)
+    })
+    TONES.forEach(s => {
+      const st = snap.tones[s.id]
+      if (st?.on) startTone(s.id, st.volume, s.hasType ? st.typeAngle : (s.periodic ? st.rate : null))
+    })
+    setNoise(snap.noise)
+    setTones(snap.tones)
+    pausedRef.current = null
+    setHasResumable(false)
+  }, [])
+
   // ── Circular display drag + tap ───────────────────────────────────
   const onDisplayDown = useCallback((e) => {
     dispDragRef.current = true
@@ -1009,9 +1046,15 @@ export default function App() {
       setDispFlashing(true)
       setTimeout(() => setDispFlashing(false), 700)
     } else if (wasTap && !anyOn) {
-      randomizeFirst()
+      // A stop (button or spacebar) leaves a resumable snapshot in
+      // pausedRef — tapping the viz while silent should bring that back
+      // rather than rolling a brand new random set, matching spacebar's
+      // own stop/resume toggle. Only falls through to randomizeFirst for a
+      // genuinely fresh session with nothing to resume.
+      if (pausedRef.current) resumeAllSounds()
+      else randomizeFirst()
     }
-  }, [anyOn, randomizeActive, randomizeFirst, hitTestPlanet, showPlanetTip, toggleIsolatePlanet])
+  }, [anyOn, randomizeActive, randomizeFirst, resumeAllSounds, hitTestPlanet, showPlanetTip, toggleIsolatePlanet])
 
   // ── Noise handlers ────────────────────────────────────────────────
   const toggleNoise = useCallback((id) => {
@@ -1062,35 +1105,6 @@ export default function App() {
       setToneParam(id, angle)
       return { ...prev, [id]: { ...prev[id], typeAngle: angle } }
     })
-  }, [])
-
-  // ── Stop-all / spacebar resume ──────────────────────────────────────
-  const stopAllSounds = useCallback(() => {
-    pausedRef.current = { noise, tones }
-    NOISE.forEach(s => { if (noise[s.id].on) stopNoise(s.id) })
-    TONES.forEach(s => { if (tones[s.id].on) stopTone(s.id) })
-    stopAllNoisePulses()
-    setNoise(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
-    setTones(prev => Object.fromEntries(Object.entries(prev).map(([k,v]) => [k,{...v,on:false}])))
-    // Stopping everything makes any pending isolation snapshot stale
-    isolationSnapshotRef.current = null
-    setIsolatedPlanet(null)
-  }, [noise, tones])
-
-  const resumeAllSounds = useCallback(() => {
-    const snap = pausedRef.current
-    if (!snap) return
-    NOISE.forEach(s => {
-      const st = snap.noise[s.id]
-      if (st?.on) startNoise(s.id, st.volume, st.typeAngle, st.freq)
-    })
-    TONES.forEach(s => {
-      const st = snap.tones[s.id]
-      if (st?.on) startTone(s.id, st.volume, s.hasType ? st.typeAngle : (s.periodic ? st.rate : null))
-    })
-    setNoise(snap.noise)
-    setTones(snap.tones)
-    pausedRef.current = null
   }, [])
 
   // Spacebar stops everything playing, or resumes exactly what was paused
@@ -1169,7 +1183,7 @@ export default function App() {
             )}
             {ringTipDisplay && (
               <div className={`unit__ring-tip${ringTipVisible ? ' unit__ring-tip--visible' : ''}`}>
-                <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#9679;</span>tap — randomize</div>
+                <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#9679;</span>tap — {!anyOn && hasResumable ? 'resume' : 'randomize'}</div>
                 <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8597;</span>up / down — volume</div>
                 <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8596;</span>left / right — rate</div>
               </div>

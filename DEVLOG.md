@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Aug 26 2026 — viz tap resumes last settings after a stop, not a fresh randomize
+
+- **Tapping the circle viz while stopped now resumes exactly what was playing before**, instead of always rolling a brand-new "pleasant random set." `resumeAllSounds` already existed for spacebar's stop/resume toggle (`pausedRef` holds a `{noise, tones}` snapshot taken the moment `stopAllSounds` runs); `onDisplayUp`'s silent-tap branch now calls it too when a snapshot exists, falling back to the original `randomizeFirst()` only for a genuinely fresh session with nothing to resume
+- Added a `hasResumable` state mirroring `!!pausedRef.current`, since React's ref-read-during-render lint rule blocks reading the ref directly in JSX — used to swap the ring tooltip's "tap — randomize" label to "tap — resume" while a snapshot is pending, and kept in lockstep with the ref in both `stopAllSounds` and `resumeAllSounds`
+- Had to move the `stopAllSounds`/`resumeAllSounds` `useCallback` block earlier in the file (now right before `onDisplayDown`), since `onDisplayUp`'s dependency array referencing `resumeAllSounds` would otherwise hit a temporal-dead-zone error — the two were previously declared ~70 lines after `onDisplayUp`
+- Verified via Playwright: captured the exact on/off channel set, stopped via the stop-all button, confirmed the ring tooltip read "resume," tapped the viz, and confirmed the identical channel set came back (not a new random one)
+
 ## Aug 25 2026 (5) — stop button rest state split the difference with hover
 
 - **Hover was confirmed good as-is**; rest-state alphas (color cycle + shimmer-pulse glow) moved to the midpoint between the prior 40% pass and hover's own alphas, hover left untouched. Verified via Playwright screenshots: rest noticeably more present than the 40% pass without approaching hover's boldness, hover unchanged
