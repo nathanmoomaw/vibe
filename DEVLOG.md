@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Aug 25 2026 (5) — stop button rest state split the difference with hover
+
+- **Hover was confirmed good as-is**; rest-state alphas (color cycle + shimmer-pulse glow) moved to the midpoint between the prior 40% pass and hover's own alphas, hover left untouched. Verified via Playwright screenshots: rest noticeably more present than the 40% pass without approaching hover's boldness, hover unchanged
+
 ## Aug 25 2026 (4) — stop button dialed back to 40% opacity
 
 - **Yesterday's stop-button rework read as too bold** — all its alphas (rest-state color cycle, shimmer-pulse glow, hover color/glow, and the square/mute-icon opacity crossfade) scaled to 40% of their prior values, same colors and animation timing otherwise. Verified via Playwright screenshots at rest and on hover: both noticeably fainter, mute icon on hover still legible
