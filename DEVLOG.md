@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Aug 26 2026 (3) — stop button waver slowed by half
+
+- `stop-waver`'s duration doubled, 5.4s → 10.8s, per feedback that the flicker was too fast
+
 ## Aug 26 2026 (2) — stop button: smaller, opacity waver added
 
 - **Icon dialed down 25%** (2.8rem → 2.1rem)
