@@ -38,18 +38,44 @@ function getKeepAliveAudio() {
   return keepAliveAudio
 }
 
+// Screen Wake Lock — keeps the device from auto-locking on its inactivity
+// timeout while a vibe is playing (reported: audio cutting out on a Pixel 7
+// "when it sleeps or just about to"). This only covers the screen-timeout
+// case; it can't stop a manual power-button lock or app switch, and the
+// browser auto-releases it the moment the tab is hidden, so it's paired
+// with re-acquiring on visibilitychange below rather than relied on alone.
+let wakeLock = null
+let wantWakeLock = false
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return
+  try {
+    wakeLock = await navigator.wakeLock.request('screen')
+    wakeLock.addEventListener('release', () => { wakeLock = null })
+  } catch {
+    // Permission denied / page not visible / unsupported — nothing to do
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && wantWakeLock && !wakeLock) acquireWakeLock()
+})
+
 // Call with true when any sound is on, false when everything stops.
 export function setPlaybackActive(active) {
   const audio = getKeepAliveAudio()
+  wantWakeLock = active
   if (active) {
     audio.play().catch(() => {})
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({ title: 'vibe', artist: 'ambient synthesis' })
       navigator.mediaSession.playbackState = 'playing'
     }
+    acquireWakeLock()
   } else {
     audio.pause()
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'
+    if (wakeLock) wakeLock.release()
   }
 }
 

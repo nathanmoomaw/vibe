@@ -7,6 +7,7 @@ import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
 import { VibeQR } from './components/VibeQR.jsx'
+import { VibeQRLanding } from './components/VibeQRLanding.jsx'
 import { VibePhilosophy } from './components/VibePhilosophy.jsx'
 import { VibeReading } from './components/VibeReading.jsx'
 import { VibePresets } from './components/VibePresets.jsx'
@@ -299,11 +300,21 @@ export default function App() {
   ]
 
   // Decode settings from URL on first load. Autoplays by default (matches
-  // this app's own native QR-share feature, unchanged) — `play=0` is an
-  // opt-out a linking site can add when its own source wasn't actively
-  // playing, so the destination still receives the settings/parameters but
-  // lands paused rather than forcing playback that wasn't actually
-  // requested (obfusco.us's VibePill handoff uses this).
+  // this app's own native QR-share feature) — `play=0` is an opt-out a
+  // linking site can add when its own source wasn't actively playing, so
+  // the destination still receives the settings/parameters but lands paused
+  // rather than forcing playback that wasn't actually requested (obfusco.us's
+  // VibePill handoff uses this).
+  //
+  // The "autoplay" case never starts audio directly from this effect,
+  // though — a bare page load (QR scan, pasted link) carries no real user
+  // gesture, so startNoise/startTone here would hit a suspended AudioContext
+  // and silently produce no sound (reported: QR landings not playing).
+  // Instead it stashes the decoded config in pendingLandingRef and shows the
+  // VibeQRLanding overlay; handleQrLandingStart actually starts playback
+  // once a genuine click comes in on that overlay.
+  const pendingLandingRef = useRef(null)
+  const [qrLanding, setQrLanding] = useState(null) // { url, name } | null
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const encoded = params.get('v')
@@ -314,31 +325,44 @@ export default function App() {
         const decoded = decodeSettings(encoded, n, t, NOISE, TONES)
         if (!decoded) return t
         if (shouldAutoplay) {
-          // Start any sounds that are on in the decoded state
-          NOISE.forEach(s => {
-            if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].typeAngle, decoded.noise[s.id].freq)
-          })
-          TONES.forEach(s => {
-            const ds = decoded.tones[s.id]
-            if (ds.on) {
-              const param = s.hasType ? ds.typeAngle : (s.periodic ? ds.rate : null)
-              startTone(s.id, ds.volume, param)
-            }
-          })
-        } else {
-          // Keep the tuned parameters (volume/freq/typeAngle/rate) but land
-          // paused — flip `on` off on every channel without starting audio,
-          // rather than autoplaying settings the source site wasn't
-          // actually playing.
-          NOISE.forEach(s => { decoded.noise[s.id] = { ...decoded.noise[s.id], on: false } })
-          TONES.forEach(s => { decoded.tones[s.id] = { ...decoded.tones[s.id], on: false } })
+          pendingLandingRef.current = decoded
+          setQrLanding({ url: window.location.href, name: params.get('p') || '' })
         }
-        setTimeout(() => setNoise(() => decoded.noise), 0)
-        return decoded.tones
+        // Land paused either way — decoded.*.on gets flipped on for real
+        // once handleQrLandingStart (or never, for play=0) starts it. Build
+        // fresh paused copies rather than mutating `decoded` in place —
+        // pendingLandingRef above holds that same object and needs its
+        // original on/off flags intact for handleQrLandingStart to read.
+        const pausedNoise = {}
+        NOISE.forEach(s => { pausedNoise[s.id] = { ...decoded.noise[s.id], on: false } })
+        const pausedTones = {}
+        TONES.forEach(s => { pausedTones[s.id] = { ...decoded.tones[s.id], on: false } })
+        setTimeout(() => setNoise(() => pausedNoise), 0)
+        return pausedTones
       })
       return n
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleQrLandingStart = useCallback(() => {
+    const decoded = pendingLandingRef.current
+    if (decoded) {
+      NOISE.forEach(s => {
+        if (decoded.noise[s.id].on) startNoise(s.id, decoded.noise[s.id].volume, decoded.noise[s.id].typeAngle, decoded.noise[s.id].freq)
+      })
+      TONES.forEach(s => {
+        const ds = decoded.tones[s.id]
+        if (ds.on) {
+          const param = s.hasType ? ds.typeAngle : (s.periodic ? ds.rate : null)
+          startTone(s.id, ds.volume, param)
+        }
+      })
+      setNoise(decoded.noise)
+      setTones(decoded.tones)
+      pendingLandingRef.current = null
+    }
+    setQrLanding(null)
   }, [])
 
   // Console glitch/shimmer — fires at an irregular interval with a randomly
@@ -1099,14 +1123,23 @@ export default function App() {
           style={glitch ? { '--glitch-dur': `${glitch.duration}s` } : undefined}
         >
 
-          {/* Stop-all button — upper right, only visible when sounds are playing */}
+          {/* Stop-all button — upper right, only visible when sounds are playing.
+              Plain outline square at rest; hover swaps in a monochrome
+              muted-speaker glyph inside it to read unambiguously as mute/stop. */}
           {anyOn && (
             <button
               className="unit__stop-all"
               onClick={stopAllSounds}
               title="Stop all sounds (spacebar)"
             >
-              □
+              <svg viewBox="0 0 24 24" className="unit__stop-icon" aria-hidden="true">
+                <rect x="2.5" y="2.5" width="19" height="19" rx="2" className="unit__stop-square" />
+                <g className="unit__stop-mute">
+                  <path d="M7.5 9.5v5h2.6l3.6 3.2V6.3l-3.6 3.2H7.5z" />
+                  <line x1="16" y1="9" x2="20" y2="15" />
+                  <line x1="20" y1="9" x2="16" y2="15" />
+                </g>
+              </svg>
             </button>
           )}
 
@@ -1329,6 +1362,14 @@ export default function App() {
           name={new URLSearchParams(window.location.search).get('p') || ''}
           activeSounds={activeSounds}
           onClose={() => setShowQR(false)}
+        />
+      )}
+
+      {qrLanding && (
+        <VibeQRLanding
+          url={qrLanding.url}
+          name={qrLanding.name}
+          onStart={handleQrLandingStart}
         />
       )}
     </>
