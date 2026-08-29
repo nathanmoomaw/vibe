@@ -168,12 +168,25 @@ function makeWind(ctx, initialAngle = 0) {
   aLfoG.gain.value = 0.10
   aLfo.connect(aLfoG)
 
+  // Q-modulation, alongside the existing frequency-modulation above — the
+  // tone-science reference on wind synthesis calls Q-mod "as important as
+  // freq-mod" (varies how gusty/resonant vs. diffuse the band sounds, not
+  // just where it's centered), but only frequency was ever wobbled here.
+  // Kept subtle/slow to match this element's already-tuned "gentle, not
+  // harsh" character rather than introducing an audible new gustiness.
+  const qLfo = ctx.createOscillator()
+  const qLfoG = ctx.createGain()
+  qLfo.type = 'sine'; qLfo.frequency.value = 0.03
+  qLfoG.gain.value = 0.3
+  qLfo.connect(qLfoG); qLfoG.connect(bpf.Q)
+
   const gain = ctx.createGain(); gain.gain.value = 0.45
   aLfoG.connect(gain.gain)
   src.connect(hpf); hpf.connect(lpf); lpf.connect(bpf); bpf.connect(gain)
-  src.start(); lfo.start(); aLfo.start()
+  src.start(); lfo.start(); aLfo.start(); qLfo.start()
   const wob1 = wobble(ctx, lfo.frequency, 0.035, 70 + Math.random() * 50)
   const wob2 = wobble(ctx, aLfo.frequency, 0.02, 90 + Math.random() * 60)
+  const wob3 = wobble(ctx, qLfo.frequency, 0.012, 110 + Math.random() * 70)
 
   // quality: 0°=Xun breeze, 180°=Zhen squall, 360°=breeze again
   function setParam(angle) {
@@ -182,12 +195,13 @@ function makeWind(ctx, initialAngle = 0) {
     bpf.frequency.setTargetAtTime(380 + t * 500, now, 0.15)
     lfoG.gain.setTargetAtTime(180 + t * 440, now, 0.15)
     lfo.frequency.setTargetAtTime(0.04 + t * 0.14, now, 0.15)
+    qLfoG.gain.setTargetAtTime(0.3 + t * 0.2, now, 0.15) // squall end wobbles Q more — gustier resonance
     gain.gain.setTargetAtTime(0.45 + t * 0.22, now, 0.15)
   }
 
   setParam(initialAngle)
 
-  return { gain, filter: bpf, setParam, stop() { try { src.stop(); lfo.stop(); aLfo.stop(); wob1.stop(); wob2.stop() } catch(_){} } }
+  return { gain, filter: bpf, setParam, stop() { try { src.stop(); lfo.stop(); aLfo.stop(); qLfo.stop(); wob1.stop(); wob2.stop(); wob3.stop() } catch(_){} } }
 }
 
 // ── Water types: stream (0°), rain (120°), ocean (240°) ──────────────
