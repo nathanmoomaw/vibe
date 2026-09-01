@@ -1,4 +1,5 @@
 import { getContext, getMaster } from './engine.js'
+import { getDriftDepthMult, getDriftRateMult } from './driftSettings.js'
 
 function whiteBuffer(ctx, sec = 6) {
   const len = Math.floor(ctx.sampleRate * sec)
@@ -161,7 +162,7 @@ function buildColorChain(ctx, colorId, freq, driftOsc) {
   if (FILTER_TYPE[colorId] === 'peaking') filter.gain.value = FILTER_GAIN[colorId] ?? 0
 
   const driftGain = ctx.createGain()
-  driftGain.gain.value = freq * DRIFT_DEPTH_PCT
+  driftGain.gain.value = freq * DRIFT_DEPTH_PCT * getDriftDepthMult()
   driftOsc.connect(driftGain)
   driftGain.connect(filter.frequency)
 
@@ -203,7 +204,7 @@ export function startNoise(id, volume = 0.5, typeAngle = 0, tuneHz = null) {
 
   const driftOsc = ctx.createOscillator()
   driftOsc.type = 'sine'
-  driftOsc.frequency.value = DRIFT_RATE_MIN + Math.random() * DRIFT_RATE_RANGE
+  driftOsc.frequency.value = (DRIFT_RATE_MIN + Math.random() * DRIFT_RATE_RANGE) * getDriftRateMult()
   driftOsc.start()
 
   const primary = buildColorChain(ctx, id, primaryFreq(id, tuneHz), driftOsc)
@@ -252,7 +253,7 @@ export function setNoiseFreq(id, hz) {
   if (!s) return
   const freq = primaryFreq(id, hz)
   s.primary.filter.frequency.value = freq
-  s.primary.driftGain.gain.value = freq * DRIFT_DEPTH_PCT
+  s.primary.driftGain.gain.value = freq * DRIFT_DEPTH_PCT * getDriftDepthMult()
 }
 
 // ── LFO ombak pulse (amplitude modulation at binaural beat target Hz) ──────

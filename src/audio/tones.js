@@ -1,4 +1,5 @@
 import { getContext, getMaster } from './engine.js'
+import { getDriftDepthMult, getDriftRateMult } from './driftSettings.js'
 
 // Shared reverb tail
 function makeReverb(ctx, sec = 2.5, decay = 2) {
@@ -114,12 +115,17 @@ function triggerBirds(ctx, out, vol) {
 // fixed-rate sine cycle that otherwise repeats predictably. Two
 // incommensurate rates summed together have an effective combined period far
 // longer than either alone, so it reads as organic rather than "looping."
+//
+// depth/periodSec are scaled by the global drift settings (driftSettings.js,
+// Sep 1 2026) here in the one shared helper, rather than at each of wind/
+// water/fire/earth's many individual call sites — a higher rate multiplier
+// shortens the period (faster wobble), a higher depth multiplier widens it.
 function wobble(ctx, targetParam, depth, periodSec) {
   const wob = ctx.createOscillator()
   const wobGain = ctx.createGain()
   wob.type = 'sine'
-  wob.frequency.value = 1 / periodSec
-  wobGain.gain.value = depth
+  wob.frequency.value = (1 / periodSec) * getDriftRateMult()
+  wobGain.gain.value = depth * getDriftDepthMult()
   wob.connect(wobGain); wobGain.connect(targetParam)
   wob.start()
   return wob

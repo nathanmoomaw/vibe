@@ -11,7 +11,9 @@ import { VibeQRLanding } from './components/VibeQRLanding.jsx'
 import { VibePhilosophy } from './components/VibePhilosophy.jsx'
 import { VibeReading } from './components/VibeReading.jsx'
 import { VibePresets } from './components/VibePresets.jsx'
+import { VibeDrift } from './components/VibeDrift.jsx'
 import { PillIcon } from './components/PillIcon.jsx'
+import { DriftIcon } from './components/DriftIcon.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
 import { moonPhase, tidalSpring, tidalHeight, fetchWeather, weatherElement, currentDecan } from './utils/reading.js'
 import './App.css'
@@ -257,6 +259,7 @@ export default function App() {
   const [showPhilosophy, setShowPhilosophy] = useState(false)
   const [showReading, setShowReading] = useState(false)
   const [showPresets, setShowPresets] = useState(false)
+  const [showDrift, setShowDrift] = useState(false)
   const [showInput, setShowInput] = useState(false)
   const [inputUrl, setInputUrl] = useState('')
   const [inputStatus, setInputStatus] = useState('idle') // idle | loading | playing | error
@@ -1374,6 +1377,9 @@ export default function App() {
             <button className="unit__presets-btn" onClick={() => setShowPresets(true)} title="prescriptions">
               <PillIcon />
             </button>
+            <button className="unit__drift-btn" onClick={() => setShowDrift(true)} title="drift">
+              <DriftIcon />
+            </button>
             {/* Audio input trigger hidden Aug 17 2026 — see ROADMAP.md. State,
                 playInputUrl/stopInput and the panel below are untouched so
                 this can come back once it's fine-tuned. */}
@@ -1403,6 +1409,10 @@ export default function App() {
           onClose={() => setShowPresets(false)}
           onApply={applyPreset}
         />
+      )}
+
+      {showDrift && (
+        <VibeDrift onClose={() => setShowDrift(false)} />
       )}
 
       {showQR && (

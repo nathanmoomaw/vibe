@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Sep 1 2026 (2) — adjustable organic drift, new footer icon
+
+- **Roadmap line 11**: new `audio/driftSettings.js` — two module-level multipliers (`depthMult`, `rateMult`, 0–2x, default 1x) — read by `noise.js`'s per-color drift LFO (both the depth-gain calc and the shared driftOsc's randomized rate) and by `tones.js`'s shared `wobble()` helper, which every continuous element (wind/water/fire/earth) already routes its own organic-wander LFOs through. Scaling inside that one shared helper meant not touching wind/water/fire/earth's many individual call sites at all
+- **New footer icon** (squiggle SVG, `DriftIcon.jsx`) opens `VibeDrift.jsx` — a small panel, same overlay/card structure as `VibePresets`/`VibeQR`, with depth/rate sliders (0–200%) and explicit copy noting the real limitation: settings are read at chain-*build* time, so a change applies the next time a sound (re)starts, not live to whatever's already playing — converting every wobble/LFO into a live-automated AudioParam was out of scope for a v1
+- Verified via Playwright: opened the panel, drove both sliders to their extremes (depth 0%, rate 200%), confirmed the module getters reflect the change, then started noise + wind at those settings — zero console errors at either edge (no-wobble-at-all and double-rate)
+
 ## Sep 1 2026 — roadmap sweep: spectral retune + drift-LFO consolidation
 
 - **Addressed 5 backlog items at once** (roadmap lines 8/11/12/13/20 as they stood before this session): asked upfront which of the ambiguous ones (visual pulsing "deeper," drift-control UI placement, glyph-search restore UX) needed a decision before touching code, since guessing wrong on 3 stacked UX calls risked real rework. Answers: fold "deeper" pulsing into the Chladni/cymatics roadmap item rather than a smaller step, a new footer icon for drift control, outer-ring-drags-frequency for glyph search, and go ahead best-effort on the spectral retune. This entry covers the two unambiguous ones; the UI/design ones are separate entries once built
