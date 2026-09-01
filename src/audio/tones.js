@@ -223,19 +223,24 @@ function makePinkNoiseBuf(ctx, sec = 6) {
   return buf
 }
 
+// Bandpass centers pulled down from their original 900/2000 Hz (Aug 29 2026
+// spectral-ecology pass, tone-science memory's Krause layering rule: Water
+// should sit Low-mid/200-1500 Hz, not creep into Wind/Chimes' register) —
+// LFO depth on bpf1 scaled down proportionally so the modulation still
+// swings the same *relative* amount around the new, lower center.
 function makeWaterStream(ctx) {
   const src = ctx.createBufferSource()
   src.buffer = makePinkNoiseBuf(ctx, 6); src.loop = true
 
   const bpf1 = ctx.createBiquadFilter()
-  bpf1.type = 'bandpass'; bpf1.frequency.value = 900; bpf1.Q.value = 1.4
+  bpf1.type = 'bandpass'; bpf1.frequency.value = 600; bpf1.Q.value = 1.4
 
   const bpf2 = ctx.createBiquadFilter()
-  bpf2.type = 'bandpass'; bpf2.frequency.value = 2000; bpf2.Q.value = 0.7
+  bpf2.type = 'bandpass'; bpf2.frequency.value = 1300; bpf2.Q.value = 0.7
 
   const lfo = ctx.createOscillator()
   const lfoG = ctx.createGain()
-  lfo.frequency.value = 0.9; lfoG.gain.value = 350
+  lfo.frequency.value = 0.9; lfoG.gain.value = 230
   lfo.connect(lfoG); lfoG.connect(bpf1.frequency)
 
   const gain = ctx.createGain(); gain.gain.value = 0.7
@@ -246,19 +251,22 @@ function makeWaterStream(ctx) {
   return { gain, stop() { try { src.stop(); lfo.stop(); wob.stop() } catch(_){} } }
 }
 
+// bpf pulled down from 2800 Hz (same Aug 29 2026 pass as makeWaterStream) —
+// still the brightest of the 3 water types, just no longer above the
+// Low-mid ceiling. hpf nudged down slightly to match.
 function makeWaterRain(ctx) {
   const src = ctx.createBufferSource()
   src.buffer = makePinkNoiseBuf(ctx, 6); src.loop = true
 
   const hpf = ctx.createBiquadFilter()
-  hpf.type = 'highpass'; hpf.frequency.value = 600
+  hpf.type = 'highpass'; hpf.frequency.value = 500
 
   const bpf = ctx.createBiquadFilter()
-  bpf.type = 'bandpass'; bpf.frequency.value = 2800; bpf.Q.value = 0.5
+  bpf.type = 'bandpass'; bpf.frequency.value = 1450; bpf.Q.value = 0.5
 
   const lfo = ctx.createOscillator()
   const lfoG = ctx.createGain()
-  lfo.frequency.value = 0.45; lfoG.gain.value = 700
+  lfo.frequency.value = 0.45; lfoG.gain.value = 360
   lfo.connect(lfoG); lfoG.connect(bpf.frequency)
 
   const gain = ctx.createGain(); gain.gain.value = 0.65
@@ -269,12 +277,14 @@ function makeWaterRain(ctx) {
   return { gain, stop() { try { src.stop(); lfo.stop(); wob.stop() } catch(_){} } }
 }
 
+// Nudged down slightly from 650 Hz (same Aug 29 2026 pass) for cleaner
+// separation now that stream's center dropped to 600 Hz too.
 function makeWaterOcean(ctx) {
   const src = ctx.createBufferSource()
   src.buffer = makePinkNoiseBuf(ctx, 10); src.loop = true
 
   const lpf = ctx.createBiquadFilter()
-  lpf.type = 'lowpass'; lpf.frequency.value = 650; lpf.Q.value = 0.9
+  lpf.type = 'lowpass'; lpf.frequency.value = 500; lpf.Q.value = 0.9
 
   // Very slow wave LFO
   const lfo = ctx.createOscillator()
@@ -377,7 +387,9 @@ function makeFireCampfire(ctx) {
   const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true
 
   const bpf = ctx.createBiquadFilter(); bpf.type='bandpass'; bpf.frequency.value=620; bpf.Q.value=0.5
-  const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2200
+  // Ceiling pulled down from 2200 Hz (Aug 29 2026 spectral-ecology pass,
+  // same reasoning as the water retune above) — Fire should stay Low-mid.
+  const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=1400
 
   const lfo = ctx.createOscillator(); const lfoG = ctx.createGain()
   lfo.frequency.value=0.9; lfoG.gain.value=0.22; lfo.connect(lfoG)

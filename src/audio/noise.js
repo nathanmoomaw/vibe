@@ -143,7 +143,13 @@ function weights(angle) {
   return [1 - t, t] // [primary weight, paired weight]
 }
 
-function buildColorChain(ctx, colorId, freq) {
+// driftOsc is shared per noise SLOT (see startNoise) rather than built fresh
+// per color chain — primary and paired used to each roll their own drift
+// oscillator, doubling that node whenever a paired chain was active for zero
+// audible benefit (both still get their own depth-scaled driftGain, so each
+// chain's wobble stays sized to its own center frequency; only the
+// underlying LFO rate is now shared between the two).
+function buildColorChain(ctx, colorId, freq, driftOsc) {
   const source = ctx.createBufferSource()
   source.buffer = BUFFERS[colorId](ctx)
   source.loop = true
@@ -154,26 +160,21 @@ function buildColorChain(ctx, colorId, freq) {
   filter.Q.value = 0.7
   if (FILTER_TYPE[colorId] === 'peaking') filter.gain.value = FILTER_GAIN[colorId] ?? 0
 
-  const drift = ctx.createOscillator()
   const driftGain = ctx.createGain()
-  drift.type = 'sine'
-  drift.frequency.value = DRIFT_RATE_MIN + Math.random() * DRIFT_RATE_RANGE
   driftGain.gain.value = freq * DRIFT_DEPTH_PCT
-  drift.connect(driftGain)
+  driftOsc.connect(driftGain)
   driftGain.connect(filter.frequency)
-  drift.start()
 
   const gain = ctx.createGain() // this color's blend-weight within the pair
   source.connect(filter)
   filter.connect(gain)
   source.start()
 
-  return { colorId, source, filter, drift, driftGain, gain }
+  return { colorId, source, filter, driftGain, gain }
 }
 
 function stopColorChain(c) {
   try { c.source.stop() } catch (_) {}
-  try { c.drift.stop() } catch (_) {}
   try { c.driftGain.disconnect() } catch (_) {}
   try { c.gain.disconnect() } catch (_) {}
 }
@@ -190,7 +191,7 @@ function ensurePaired(id, initialWeight) {
   const s = active[id]
   if (!s || s.paired) return
   const ctx = getContext()
-  s.paired = buildColorChain(ctx, s.pairedId, FILTER_DEFAULT[s.pairedId])
+  s.paired = buildColorChain(ctx, s.pairedId, FILTER_DEFAULT[s.pairedId], s.driftOsc)
   s.paired.gain.gain.value = initialWeight
   s.paired.gain.connect(s.master)
 }
@@ -200,7 +201,12 @@ export function startNoise(id, volume = 0.5, typeAngle = 0, tuneHz = null) {
   const ctx = getContext()
   const pairedId = NOISE_PAIR[id]
 
-  const primary = buildColorChain(ctx, id, primaryFreq(id, tuneHz))
+  const driftOsc = ctx.createOscillator()
+  driftOsc.type = 'sine'
+  driftOsc.frequency.value = DRIFT_RATE_MIN + Math.random() * DRIFT_RATE_RANGE
+  driftOsc.start()
+
+  const primary = buildColorChain(ctx, id, primaryFreq(id, tuneHz), driftOsc)
   const [wp, ws] = weights(typeAngle)
   primary.gain.gain.value = wp
 
@@ -210,7 +216,7 @@ export function startNoise(id, volume = 0.5, typeAngle = 0, tuneHz = null) {
   primary.gain.connect(master)
   master.connect(getMaster())
 
-  active[id] = { primary, paired: null, master, pairedId }
+  active[id] = { primary, paired: null, master, pairedId, driftOsc }
   if (ws > PAIRED_WEIGHT_THRESHOLD) ensurePaired(id, ws)
 }
 
@@ -219,6 +225,7 @@ export function stopNoise(id) {
   if (!s) return
   stopColorChain(s.primary)
   if (s.paired) stopColorChain(s.paired)
+  try { s.driftOsc.stop() } catch (_) {}
   try { s.master.disconnect() } catch (_) {}
   delete active[id]
 }
