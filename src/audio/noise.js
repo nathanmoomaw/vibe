@@ -108,8 +108,8 @@ export const FILTER_DEFAULT = { white: 2000, pink: 900, blue: 3500, violet: 4500
 // nowhere near pink's 900Hz default. A percentage-of-default clamp collapses
 // every note to the same boundary value; only an absolute range spanning
 // each color's original register keeps the notes distinct.
-const FILTER_MIN = { white: 200, pink: 100, blue: 500 }
-const FILTER_MAX = { white: 8000, pink: 5000, blue: 10000 }
+export const FILTER_MIN = { white: 200, pink: 100, blue: 500 }
+export const FILTER_MAX = { white: 8000, pink: 5000, blue: 10000 }
 
 const active = {}
 

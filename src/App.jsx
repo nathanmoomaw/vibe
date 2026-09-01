@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { getAnalyser, setAudioInput, stopAudioInput, updateAudioInputFilters, isAudioInputActive, fadeMaster, setPlaybackActive, registerMediaSessionStop, startRecording, stopRecording } from './audio/engine.js'
 import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
-import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq, setNoiseType } from './audio/noise.js'
+import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq, setNoiseType, FILTER_MIN, FILTER_MAX } from './audio/noise.js'
 import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
 import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
@@ -1009,15 +1009,35 @@ export default function App() {
     const dy = e.movementY
     const dx = e.movementX
 
+    // While isolated on a single noise channel (astro-sign click — see
+    // toggleIsolatePlanet), left/right normally drives tone rate, which is
+    // meaningless for noise (no periodic-rate concept, and every tone is
+    // stopped during isolation anyway). Free to repurpose as a live
+    // frequency-search sweep instead — restores the "drag to find the
+    // planet glyph" interaction noise channels lost when their knob became
+    // a color-morph control (Jul 13 2026), scoped to isolation rather than
+    // reintroducing it as a global always-on gesture that would fight with
+    // the knob's own color-morph drag.
+    const isolatedNoiseId = isolatedPlanetRef.current
+      ? NOISE.find(s => noiseRef.current[s.id].on)?.id
+      : null
+
     setNoise(prev => {
       const next = { ...prev }
       for (const s of NOISE) {
         if (!prev[s.id].on) continue
         const newVol = Math.max(0, Math.min(1, prev[s.id].volume - dy / 400))
-        const newAngle = (((prev[s.id].typeAngle + dx / 500 * 360) % 360) + 360) % 360
         setNoiseVolume(s.id, newVol)
-        setNoiseType(s.id, newAngle)
-        next[s.id] = { ...prev[s.id], volume: newVol, typeAngle: newAngle }
+        if (s.id === isolatedNoiseId) {
+          const min = FILTER_MIN[s.id], max = FILTER_MAX[s.id]
+          const newFreq = Math.max(min, Math.min(max, prev[s.id].freq + dx / 500 * (max - min)))
+          setNoiseFreq(s.id, newFreq)
+          next[s.id] = { ...prev[s.id], volume: newVol, freq: newFreq }
+        } else {
+          const newAngle = (((prev[s.id].typeAngle + dx / 500 * 360) % 360) + 360) % 360
+          setNoiseType(s.id, newAngle)
+          next[s.id] = { ...prev[s.id], volume: newVol, typeAngle: newAngle }
+        }
       }
       return next
     })
@@ -1223,7 +1243,7 @@ export default function App() {
               <div className={`unit__ring-tip${ringTipVisible ? ' unit__ring-tip--visible' : ''}`}>
                 <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#9679;</span>tap — {!anyOn && hasResumable ? 'resume' : 'randomize'}</div>
                 <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8597;</span>up / down — volume</div>
-                <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8596;</span>left / right — rate</div>
+                <div className="unit__ring-tip-row"><span className="unit__ring-tip-icon">&#8596;</span>left / right — {isolatedPlanet ? 'search freq' : 'rate'}</div>
               </div>
             )}
           </div>
