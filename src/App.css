@@ -349,9 +349,21 @@
 }
 
 .unit__viz {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* Chladni/cymatics layer sits behind the spectrum/planet canvas — same
+   size and position, painted first so the existing visuals stack on top
+   unchanged. */
+.unit__viz-chladni {
+  z-index: 0;
+}
+.unit__viz:not(.unit__viz-chladni) {
+  z-index: 1;
 }
 
 .unit__display-idle {

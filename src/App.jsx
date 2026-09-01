@@ -272,6 +272,7 @@ export default function App() {
   const [isRecordMode] = useState(() => window.location.pathname === '/r')
 
   const canvasRef       = useRef(null)
+  const chladniCanvasRef = useRef(null)
   const rafRef           = useRef(null)
   const dispDragRef      = useRef(false)
   const dispTotalMoved   = useRef(0)
@@ -491,6 +492,112 @@ export default function App() {
     }
     draw()
     return () => cancelAnimationFrame(rafRef.current)
+  }, [anyOn])
+
+  // Cymatics/Chladni background layer — a standing-wave interference pattern
+  // (tone-science memory's exact formula) rendered on a second canvas stacked
+  // BEHIND the existing spectrum/planet canvas, so this is purely additive:
+  // nothing about the spectrum bars, planet glyphs, or their hit-testing
+  // changes. Mode numbers (m, n) are driven live by low/high FFT-band energy
+  // instead of a fixed shape, so the pattern's complexity tracks what's
+  // actually playing rather than just cycling on its own.
+  useEffect(() => {
+    const canvas = chladniCanvasRef.current
+    if (!canvas) return
+    const gl = canvas.getContext('webgl')
+    if (!gl) return // very old browser — silently skip, spectrum canvas is unaffected
+
+    if (!anyOn) {
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      return
+    }
+
+    const vsSrc = `
+      attribute vec2 a_pos;
+      void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+    `
+    const fsSrc = `
+      precision mediump float;
+      uniform vec2 u_resolution;
+      uniform float u_m, u_n, u_time, u_alpha;
+      uniform vec3 u_colorA, u_colorB;
+      void main() {
+        vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+        vec2 p = uv * 2.0 - 1.0;
+        float dist = length(p);
+        if (dist > 1.0) discard;
+        float pattern = cos(u_m * 3.14159265 * p.x) * cos(u_n * 3.14159265 * p.y)
+                       - cos(u_n * 3.14159265 * p.x) * cos(u_m * 3.14159265 * p.y);
+        float line = 1.0 - smoothstep(0.0, 0.12, abs(pattern));
+        vec3 color = mix(u_colorA, u_colorB, 0.5 + 0.5 * sin(pattern * 2.0 + u_time * 0.15));
+        float edgeFade = smoothstep(1.0, 0.7, dist);
+        gl_FragColor = vec4(color * line, line * u_alpha * edgeFade);
+      }
+    `
+    function compile(type, src) {
+      const sh = gl.createShader(type)
+      gl.shaderSource(sh, src)
+      gl.compileShader(sh)
+      return sh
+    }
+    const prog = gl.createProgram()
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsSrc))
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsSrc))
+    gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return // compile/link failed — skip silently
+    gl.useProgram(prog)
+
+    const posBuf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW)
+    const posLoc = gl.getAttribLocation(prog, 'a_pos')
+    gl.enableVertexAttribArray(posLoc)
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0)
+
+    const uRes = gl.getUniformLocation(prog, 'u_resolution')
+    const uM = gl.getUniformLocation(prog, 'u_m')
+    const uN = gl.getUniformLocation(prog, 'u_n')
+    const uTime = gl.getUniformLocation(prog, 'u_time')
+    const uAlpha = gl.getUniformLocation(prog, 'u_alpha')
+    const uColorA = gl.getUniformLocation(prog, 'u_colorA')
+    const uColorB = gl.getUniformLocation(prog, 'u_colorB')
+
+    gl.viewport(0, 0, canvas.width, canvas.height)
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.uniform2f(uRes, canvas.width, canvas.height)
+    gl.uniform3f(uColorA, 0.35, 0.55, 1.0)   // matches the spectrum bars' blue hue
+    gl.uniform3f(uColorB, 0.85, 0.45, 0.75)  // pink counterpart, same palette family
+
+    const analyser = getAnalyser()
+    const data = new Uint8Array(analyser.frequencyBinCount)
+    let mCurrent = 3, nCurrent = 5
+    let rafId
+
+    function draw(t) {
+      rafId = requestAnimationFrame(draw)
+      analyser.getByteFrequencyData(data)
+      const lowBand = data.slice(0, Math.floor(data.length * 0.15))
+      const highBand = data.slice(Math.floor(data.length * 0.15), Math.floor(data.length * 0.5))
+      const lowAvg = lowBand.reduce((a, b) => a + b, 0) / lowBand.length / 255
+      const highAvg = highBand.reduce((a, b) => a + b, 0) / highBand.length / 255
+      const overallAvg = data.reduce((a, b) => a + b, 0) / data.length / 255
+
+      // Smoothed toward the live target so mode changes read as a morph,
+      // not a jump — same "ease toward target" approach used elsewhere
+      // in this codebase (e.g. the filter-frequency drift LFOs).
+      mCurrent += ((2 + lowAvg * 11) - mCurrent) * 0.04
+      nCurrent += ((3 + highAvg * 11) - nCurrent) * 0.04
+
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.uniform1f(uM, mCurrent)
+      gl.uniform1f(uN, nCurrent)
+      gl.uniform1f(uTime, t / 1000)
+      gl.uniform1f(uAlpha, 0.35 + overallAvg * 0.4)
+      gl.drawArrays(gl.TRIANGLES, 0, 6)
+    }
+    rafId = requestAnimationFrame(draw)
+    return () => cancelAnimationFrame(rafId)
   }, [anyOn])
 
   // ── Randomize all active sounds' parameters ───────────────────────
@@ -1227,6 +1334,7 @@ export default function App() {
             style={{ touchAction: 'none', cursor: anyOn ? (dispDragging ? 'grabbing' : 'crosshair') : 'default' }}
           >
             <div className="unit__display-clip">
+              <canvas ref={chladniCanvasRef} className="unit__viz unit__viz-chladni" width={200} height={200} />
               <canvas ref={canvasRef} className="unit__viz" width={200} height={200} />
               {!anyOn && <div className="unit__display-idle">vibe</div>}
             </div>
