@@ -1,0 +1,88 @@
+/* Transparent, non-blocking full-screen overlay — unlike the other modals
+   (VibeReading/VibePresets/VibeQR/VibeDrift), this one must not intercept
+   clicks on the console underneath, so only the close button and the wheel's
+   glyphs (for hover tooltips) opt back into pointer events. */
+.vas__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: vas-in 0.35s ease;
+}
+
+@keyframes vas-in {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+
+.vas__close {
+  position: fixed;
+  top: 14px; right: 16px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  pointer-events: auto;
+  transition: color 0.15s;
+  z-index: 901;
+}
+.vas__close:hover { color: rgba(255, 255, 255, 0.8); }
+
+.vas__wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.vas__wheel {
+  width: min(88vw, 88vh);
+  height: min(88vw, 88vh);
+  filter: drop-shadow(0 0 30px rgba(120, 160, 255, 0.18));
+}
+
+.vas__ring {
+  fill: none;
+  stroke: rgba(200, 210, 255, 0.28);
+  stroke-width: 1;
+}
+
+.vas__tick {
+  stroke: rgba(200, 210, 255, 0.22);
+  stroke-width: 1;
+}
+
+.vas__sign {
+  fill: rgba(210, 220, 255, 0.75);
+  font-family: 'Apple Symbols', 'Noto Sans Symbols', 'Segoe UI Symbol', sans-serif;
+  font-size: 15px;
+  pointer-events: auto;
+  cursor: default;
+}
+
+.vas__planet {
+  fill: #ffd080;
+  font-size: 17px;
+  font-weight: bold;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 3px;
+  pointer-events: auto;
+  cursor: default;
+}
+
+.vas__caption {
+  color: rgba(210, 220, 255, 0.55);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}

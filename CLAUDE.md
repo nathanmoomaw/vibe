@@ -35,6 +35,13 @@ Visiting `/r` (e.g. vibe.obfusco.us/r) enables a hidden recording mode with no m
 
 **Depends on infra outside this repo.** Deploy is a plain `aws s3 sync` to a bucket read by CloudFront (`.github/workflows/deploy.yml`) — there's no SPA fallback/rewrite config in this repo. `/r` only works if the S3 bucket's error document or CloudFront's custom error responses are set to serve `/index.html` for 403/404s; if not, `/r` 404s before any JS loads and this feature never triggers. Verified working against Vite's dev server (which has built-in SPA fallback) — **not yet confirmed against the live vibe.obfusco.us/vibe-dev.obfusco.us infra.**
 
+## Present-sky astro chart (`VibeAstro.jsx`, Sep 1 2026)
+New footer icon (`AstroIcon.jsx`) toggles a transparent, non-blocking full-screen zodiac wheel — 12 signs + live planet glyphs at their true ecliptic longitude, using the same `eclipticLon`/`PLANETS` math the circle-viz already used (now shared from `src/utils/planets.js`, extracted out of `App.jsx` so both stay in sync instead of carrying two copies). Deliberately **no houses/Ascendant** — confirmed via repo-wide grep before building that nothing here computes sidereal time or house cusps, and `eclipticLon` is geocentric-mean (location-independent by design); adding houses is a from-scratch math addition, tracked in ROADMAP. Reuses `reading.js`'s `getCoords()` (now exported) for the same geolocation→IP-fallback→LA-default chain `VibeReading` uses, triggered on mount so it only prompts once the wheel is actually opened.
+
+Unlike every other modal (`VibeReading`/`VibePresets`/`VibeQR`/`VibeDrift` — all opaque backdrop, click-anywhere-to-close), this overlay is `pointer-events: none` end to end except the close button and the wheel's own glyphs, so the console underneath stays fully interactive while it's open; closes via the same footer icon (toggle) or the upper-right ×, not by clicking the transparent backdrop.
+
+**Zodiac glyphs (♈–♓) need explicit text-presentation handling** — Chromium defaults them to colorful boxed emoji rather than plain line glyphs. The VS15 variation selector alone doesn't fix it inside SVG `<text>`; also needs `font-family: 'Apple Symbols', 'Noto Sans Symbols', 'Segoe UI Symbol', sans-serif` pinned on the glyph class (`.vas__sign` in `VibeAstro.css`). If more zodiac-range glyphs show up elsewhere in the app, they'll need the same treatment.
+
 ## Git Workflow
 - Active dev branch: `dev/v1` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v0` Aug 24 2026, `dev/v0` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)

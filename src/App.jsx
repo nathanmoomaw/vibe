@@ -14,49 +14,12 @@ import { VibePresets } from './components/VibePresets.jsx'
 import { VibeDrift } from './components/VibeDrift.jsx'
 import { PillIcon } from './components/PillIcon.jsx'
 import { DriftIcon } from './components/DriftIcon.jsx'
+import { AstroIcon } from './components/AstroIcon.jsx'
+import { VibeAstro } from './components/VibeAstro.jsx'
 import { encodeSettings, decodeSettings } from './utils/settings.js'
 import { moonPhase, tidalSpring, tidalHeight, fetchWeather, weatherElement, currentDecan } from './utils/reading.js'
+import { PLANETS, PLANET_QUALITY, eclipticLon } from './utils/planets.js'
 import './App.css'
-
-// ── Planetary Cousto frequencies (Cosmic Octave, orbital period → Hz via 2ⁿ) ──
-const PLANETS = [
-  { name: 'Sun',     symbol: '☉', freq: 126.22 },
-  { name: 'Moon',    symbol: '☽', freq: 210.42 },
-  { name: 'Mercury', symbol: '☿', freq: 141.27 },
-  { name: 'Venus',   symbol: '♀', freq: 221.23 },
-  { name: 'Mars',    symbol: '♂', freq: 144.72 },
-  { name: 'Jupiter', symbol: '♃', freq: 183.58 },
-  { name: 'Saturn',  symbol: '♄', freq: 147.85 },
-  { name: 'Uranus',  symbol: '♅', freq: 207.36 },
-  { name: 'Neptune', symbol: '♆', freq: 211.44 },
-]
-
-// Energetic-quality blurbs for the hover tooltip on each planetary glyph
-const PLANET_QUALITY = {
-  Sun:     'vitality and identity — the core pulse. resonant near 126.22 Hz.',
-  Moon:    'receptivity and tide — the emotional body. resonant near 210.42 Hz.',
-  Mercury: 'quick and communicative — shimmer and motion. resonant near 141.27 Hz.',
-  Venus:   'harmony and pleasure — softens the edges of the sound. resonant near 221.23 Hz.',
-  Mars:    'drive and heat — sharpens toward intensity. resonant near 144.72 Hz.',
-  Jupiter: 'expansion and ease — widens the sound outward. resonant near 183.58 Hz.',
-  Saturn:  'structure and depth — slows the sound toward gravity. resonant near 147.85 Hz.',
-  Uranus:  'sudden shift and spark — an unpredictable charge. resonant near 207.36 Hz.',
-  Neptune: 'dissolve and dream — blurs the sound toward the unconscious. resonant near 211.44 Hz.',
-}
-
-// Mean ecliptic longitude from J2000.0 (Jan 1.5, 2000) using mean motion
-const J2000_ORBITS = {
-  Sun: { L0: 280.460, rate: 0.9856474 }, Moon: { L0: 218.316, rate: 13.176396 },
-  Mercury: { L0: 252.250, rate: 4.092317 }, Venus: { L0: 181.979, rate: 1.602130 },
-  Mars: { L0: 355.453, rate: 0.524039 }, Jupiter: { L0: 34.396, rate: 0.083091 },
-  Saturn: { L0: 50.066, rate: 0.033460 }, Uranus: { L0: 314.055, rate: 0.011733 },
-  Neptune: { L0: 304.349, rate: 0.005996 },
-}
-function eclipticLon(name) {
-  const d = Date.now() / 86400000 - 10957.5  // days since J2000.0
-  const o = J2000_ORBITS[name]
-  return ((o.L0 + o.rate * d) % 360 + 360) % 360
-}
 
 // Octave-invariant frequency proximity (cents deviation, mod 1200)
 function planetFade(noiseFreq, planetFreq) {
@@ -260,6 +223,7 @@ export default function App() {
   const [showReading, setShowReading] = useState(false)
   const [showPresets, setShowPresets] = useState(false)
   const [showDrift, setShowDrift] = useState(false)
+  const [showAstro, setShowAstro] = useState(false)
   const [showInput, setShowInput] = useState(false)
   const [inputUrl, setInputUrl] = useState('')
   const [inputStatus, setInputStatus] = useState('idle') // idle | loading | playing | error
@@ -1508,6 +1472,9 @@ export default function App() {
             <button className="unit__drift-btn" onClick={() => setShowDrift(true)} title="drift">
               <DriftIcon />
             </button>
+            <button className="unit__astro-btn" onClick={() => setShowAstro(v => !v)} title="present sky">
+              <AstroIcon />
+            </button>
             {/* Audio input trigger hidden Aug 17 2026 — see ROADMAP.md. State,
                 playInputUrl/stopInput and the panel below are untouched so
                 this can come back once it's fine-tuned. */}
@@ -1541,6 +1508,10 @@ export default function App() {
 
       {showDrift && (
         <VibeDrift onClose={() => setShowDrift(false)} />
+      )}
+
+      {showAstro && (
+        <VibeAstro onClose={() => setShowAstro(false)} />
       )}
 
       {showQR && (

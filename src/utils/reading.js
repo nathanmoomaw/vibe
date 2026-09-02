@@ -107,7 +107,7 @@ async function getCoordsByIP() {
   }
 }
 
-async function getCoords() {
+export async function getCoords() {
   if (!navigator.geolocation) return (await getCoordsByIP()) ?? LA_FALLBACK
   return new Promise(resolve => {
     navigator.geolocation.getCurrentPosition(

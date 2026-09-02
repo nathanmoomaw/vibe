@@ -686,6 +686,23 @@
   filter: drop-shadow(0 0 8px rgba(120, 160, 255, 0.7));
 }
 
+.unit__astro-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  filter: drop-shadow(0 0 6px rgba(180, 200, 255, 0.45));
+  transition: color 0.2s, filter 0.2s;
+}
+.unit__astro-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+  filter: drop-shadow(0 0 8px rgba(180, 200, 255, 0.7));
+}
+
 /* Occasional tiny sparkle on each footer button, idle-only (before anything
    is playing) to draw a little attention to them — a single small ✨ badge
    per button rather than a particle field, each on its own long, staggered
@@ -693,6 +710,7 @@
 .unit--silent .unit__joker-btn,
 .unit--silent .unit__presets-btn,
 .unit--silent .unit__drift-btn,
+.unit--silent .unit__astro-btn,
 .unit--silent .unit__qr-btn {
   position: relative;
 }
@@ -700,6 +718,7 @@
 .unit--silent .unit__joker-btn::after,
 .unit--silent .unit__presets-btn::after,
 .unit--silent .unit__drift-btn::after,
+.unit--silent .unit__astro-btn::after,
 .unit--silent .unit__qr-btn::after {
   content: '✨';
   position: absolute;
@@ -714,6 +733,7 @@
 .unit--silent .unit__joker-btn::after   { animation-duration: 10s; animation-delay: 0s; }
 .unit--silent .unit__presets-btn::after { animation-duration: 13s; animation-delay: 3s; }
 .unit--silent .unit__drift-btn::after   { animation-duration: 19s; animation-delay: 9s; }
+.unit--silent .unit__astro-btn::after   { animation-duration: 17s; animation-delay: 12s; }
 .unit--silent .unit__qr-btn::after      { animation-duration: 16s; animation-delay: 6s; }
 
 @keyframes footer-sparkle {
