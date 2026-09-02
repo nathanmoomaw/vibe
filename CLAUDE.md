@@ -43,9 +43,9 @@ Unlike every other modal (`VibeReading`/`VibePresets`/`VibeQR`/`VibeDrift` — a
 **Zodiac glyphs (♈–♓) need explicit text-presentation handling** — Chromium defaults them to colorful boxed emoji rather than plain line glyphs. The VS15 variation selector alone doesn't fix it inside SVG `<text>`; also needs `font-family: 'Apple Symbols', 'Noto Sans Symbols', 'Segoe UI Symbol', sans-serif` pinned on the glyph class (`.vas__sign` in `VibeAstro.css`). If more zodiac-range glyphs show up elsewhere in the app, they'll need the same treatment.
 
 ## Git Workflow
-- Active dev branch: `dev/v1` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v0` Aug 24 2026, `dev/v0` retired
+- Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)
-- After merging dev → main, always switch back to `dev/v1`
+- After merging dev → main, always switch back to `dev/v2`
 - Always push after committing
 - Update CLAUDE.md, DEVLOG.md, ROADMAP.md before committing when relevant
 - Git auth via `gh auth` with HTTPS
