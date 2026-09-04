@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Sep 3 2026 (3) — lens sheen tuning + first shapes-digest application
+
+- **Lens sheen still read as an obvious "flux"/pulse** even after the first pass — the 0.35↔0.85 opacity swing (a 2.4x relative change) was too visible even though the gradient's own alphas are low. Narrowed to 0.5↔0.7 and slowed the cycle 9s→15s so it reads as a subtle gleam instead
+- **First concrete application of the Sep 3 `/shapes` digest's bouba/kiki finding** (rounded shapes read calmer than sharp ones): circle-viz spectrum bars now use `ctx.lineCap = 'round'` — applied globally since every one of VIBE's six intent states is meant to be non-harsh. More precisely, the astro chart's aspect lines (`VibeAstro.css`) now split by harmony: `--soft`/`--conjunction` get `stroke-linecap: round`, `--tense` keeps `butt` — the one place aspect harmony is already a named, existing distinction, rather than a blanket change
+
 ## Sep 3 2026 (2) — astro-sign isolation bug, circle-viz lens treatment, astro chart aspects + click-outside-dismiss
 
 - **Astro-sign isolation was showing more signs than intended**: tapping a sign to isolate audio to one noise channel didn't restrict the *glyph rendering* to that one sign — every other planet within octave-distance of the single remaining active frequency (e.g. Sun/Mercury/Venus/Mars are all close octave-equivalents of white noise's default 2000Hz) kept rendering too, so isolating and restoring read as several signs flashing in/out. Confirmed via a Playwright repro (temporary debug hooks, removed after) showing 4 signs rendering during what should've been a single-sign isolation. Fixed by gating the circle-viz draw loop's planet loop on `isolatedPlanetRef.current` — while isolated, only that one sign is eligible to render at all
