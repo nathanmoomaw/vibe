@@ -412,9 +412,17 @@ export default function App() {
         .filter(s => noiseRef.current[s.id]?.on)
         .map(s => noiseRef.current[s.id].freq)
 
+      // While isolated on one sign, only that sign's glyph is eligible to
+      // render — otherwise every other planet within octave-distance of the
+      // one remaining active frequency lights up too (Sun/Mercury/Venus/Mars
+      // are all close octave-equivalents of white noise's default 2000Hz,
+      // for instance), which reads as several signs flashing in/out around
+      // an isolate/restore tap when the isolated one is meant to stand alone.
+      const isolatedName = isolatedPlanetRef.current
       const positions = []
       if (activeFreqs.length > 0) {
         for (const p of PLANETS) {
+          if (isolatedName && p.name !== isolatedName) continue
           const fade = Math.max(...activeFreqs.map(f => planetFade(f, p.freq)))
           if (fade < 0.02) continue
 
@@ -464,7 +472,9 @@ export default function App() {
   // nothing about the spectrum bars, planet glyphs, or their hit-testing
   // changes. Mode numbers (m, n) are driven live by low/high FFT-band energy
   // instead of a fixed shape, so the pattern's complexity tracks what's
-  // actually playing rather than just cycling on its own.
+  // actually playing rather than just cycling on its own — this mirrors real
+  // Chladni's Law (higher driving frequency excites higher mode numbers,
+  // producing finer/more numerous nodal lines), not just a visual analogy.
   useEffect(() => {
     const canvas = chladniCanvasRef.current
     if (!canvas) return
@@ -1297,8 +1307,13 @@ export default function App() {
             onPointerLeave={() => { setHoveredPlanet(null); setRingHover(false) }}
             style={{ touchAction: 'none', cursor: anyOn ? (dispDragging ? 'grabbing' : 'crosshair') : 'default' }}
           >
+            {/* Chladni layer lives outside the clipped .unit__display-clip so its
+                glow can bleed ~75px past the ring itself — the shader's own
+                edgeFade+discard (see the chladni effect) already fades it out
+                and cuts it off at a circle, so enlarging the canvas just moves
+                that built-in falloff circle out to the new, bigger edge. */}
+            <canvas ref={chladniCanvasRef} className="unit__viz unit__viz-chladni" width={350} height={350} />
             <div className="unit__display-clip">
-              <canvas ref={chladniCanvasRef} className="unit__viz unit__viz-chladni" width={200} height={200} />
               <canvas ref={canvasRef} className="unit__viz" width={200} height={200} />
               {!anyOn && <div className="unit__display-idle">vibe</div>}
             </div>

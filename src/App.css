@@ -338,6 +338,34 @@
   flex-shrink: 0;
 }
 
+/* Faux-glass lens sheen — a fixed diagonal highlight (not a traveling sweep
+   like the console's own shimmer) that slowly breathes in and out, so the
+   ring reads as curved glass rather than a flat disc. Sits above the
+   spectrum/planet canvas and the extended chladni glow (z-index 5) but
+   below the tooltips (z-index 25/30). */
+.unit__display-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(
+    128deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 20%,
+    transparent 42%,
+    transparent 64%,
+    rgba(170, 200, 255, 0.05) 84%,
+    transparent 100%
+  );
+  animation: lens-sheen-phase 9s ease-in-out infinite;
+}
+@keyframes lens-sheen-phase {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
+}
+
 /* Circular clip for the canvas only — kept separate from .unit__display-ring
    so the planet-hover tooltip (a sibling) can escape the circle instead of
    being cut off near the rim. */
@@ -356,11 +384,24 @@
   display: block;
 }
 
-/* Chladni/cymatics layer sits behind the spectrum/planet canvas — same
-   size and position, painted first so the existing visuals stack on top
-   unchanged. */
+/* Chladni/cymatics layer sits behind the spectrum/planet canvas, and — unlike
+   that canvas — lives outside .unit__display-clip so it isn't cut off flush
+   at the ring's own edge. Sized 75px larger than the ring on all sides
+   (inset:-75px) so its glow visibly bleeds past the bezel; the shader's own
+   edgeFade+discard (see the chladni effect in App.jsx) already fades the
+   pattern to nothing well before its canvas edge, so enlarging the canvas
+   just moves that built-in falloff circle out to this new, bigger edge
+   instead of adding a second, redundant CSS-level fade. */
 .unit__viz-chladni {
+  inset: -75px;
+  /* .unit__viz sets explicit width/height:100%, which (per spec) wins over
+     the inset offsets above for sizing — leaving all four insets set but
+     the box still 100% of the ring would just shift it diagonally instead
+     of growing it symmetrically. auto restores normal inset-stretch sizing. */
+  width: auto;
+  height: auto;
   z-index: 0;
+  pointer-events: none;
 }
 .unit__viz:not(.unit__viz-chladni) {
   z-index: 1;

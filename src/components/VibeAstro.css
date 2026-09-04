@@ -67,6 +67,20 @@
   cursor: default;
 }
 
+/* Aspect lines — classic astrology connections between planets currently in
+   a major aspect (conjunction/sextile/square/trine/opposition). Kept faint
+   so the wheel doesn't turn into a cluttered natal-chart aspect grid; the
+   `title` on each line gives the exact aspect on hover, needing
+   pointer-events:stroke since these have no fill to hit-test against. */
+.vas__aspect {
+  fill: none;
+  stroke-width: 1;
+  pointer-events: stroke;
+}
+.vas__aspect--soft       { stroke: rgba(140, 190, 255, 0.35); }
+.vas__aspect--tense      { stroke: rgba(255, 130, 100, 0.32); }
+.vas__aspect--conjunction { stroke: rgba(255, 240, 210, 0.22); }
+
 .vas__planet {
   fill: #ffd080;
   font-size: 17px;
