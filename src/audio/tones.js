@@ -542,8 +542,11 @@ export function startTone(id, volume = 0.5, rateSec = null) {
 
     // Re-randomize the wait on every firing (not just once) so the period
     // never settles into a metronome — each gap is its own random draw.
+    // Reads state.interval (not the `interval` const above) so a live
+    // updateToneRate() call while this tone is playing actually changes the
+    // next-scheduled delay instead of being silently ignored.
     const scheduleNext = () => {
-      const delay = interval * (0.5 + Math.random() * 1.1)
+      const delay = state.interval * (0.5 + Math.random() * 1.1)
       state.timer = setTimeout(() => {
         fn(ctx, reverb, state.volume)
         scheduleNext()
@@ -567,6 +570,26 @@ export function startTone(id, volume = 0.5, rateSec = null) {
 
 export function setToneParam(id, value) {
   if (activeContinuous[id]?.setParam) activeContinuous[id].setParam(value)
+}
+
+// Live rate-knob adjustment for periodic tones (bell/chime/gong/birds).
+// Dragging the knob fires this on every pointermove — restarting via
+// startTone() each time (its own stopTone+immediate-strike) produced a
+// spammy, full-volume strike per pixel of drag, which read as way too much
+// "adjustment sound". Instead: update the interval in place (takes effect
+// on the tone's next natural strike, no reschedule/reset) and give a quiet,
+// throttled preview strike so dragging still has feedback, just far less of it.
+const RATE_PREVIEW_MIN_GAP_MS = 220
+const RATE_PREVIEW_VOLUME_MULT = 0.35
+
+export function updateToneRate(id, rateSec) {
+  const state = activeIntervals[id]
+  if (!state) return
+  state.interval = rateSec * 1000
+  const now = performance.now()
+  if (state.lastPreview && now - state.lastPreview < RATE_PREVIEW_MIN_GAP_MS) return
+  state.lastPreview = now
+  state.fn(getContext(), state.reverb, state.volume * RATE_PREVIEW_VOLUME_MULT)
 }
 
 export function stopTone(id) {

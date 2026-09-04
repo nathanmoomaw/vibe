@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { getAnalyser, setAudioInput, stopAudioInput, updateAudioInputFilters, isAudioInputActive, fadeMaster, setPlaybackActive, registerMediaSessionStop, startRecording, stopRecording } from './audio/engine.js'
 import { setNoisePulse, stopAllNoisePulses } from './audio/noise.js'
 import { startNoise, stopNoise, setNoiseVolume, setNoiseFreq, setNoiseType, FILTER_MIN, FILTER_MAX } from './audio/noise.js'
-import { startTone, stopTone, setToneVolume, setToneParam } from './audio/tones.js'
+import { startTone, stopTone, setToneVolume, setToneParam, updateToneRate } from './audio/tones.js'
 import Background from './components/Background.jsx'
 import SoundSlot from './components/SoundSlot.jsx'
 import LoView from './components/LoView.jsx'
@@ -1196,7 +1196,7 @@ export default function App() {
   const setToneRate = useCallback((id, r) => {
     setTones(prev => {
       const s = prev[id]
-      if (s.on) { stopTone(id); startTone(id, s.volume, r) }
+      if (s.on) updateToneRate(id, r)
       return { ...prev, [id]: { ...s, rate: r } }
     })
   }, [])
