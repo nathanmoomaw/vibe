@@ -388,6 +388,12 @@ export default function App() {
       const maxR = cx * 0.8
       const minR = cx * 0.3
 
+      // Rounded caps per the shapes/sound digest's bouba/kiki finding — rounded
+      // shapes read as calmer than sharp/flat ones, and every one of VIBE's six
+      // intent states (calming/relaxing/focussing/meditating/dreaming/floating)
+      // is meant to be non-harsh, so the default bar cap is softened rather
+      // than reserving it for a specific preset.
+      ctx.lineCap = 'round'
       for (let i = 0; i < bars; i++) {
         const val = data[i * step] / 255
         const angle = (i / bars) * Math.PI * 2 - Math.PI / 2

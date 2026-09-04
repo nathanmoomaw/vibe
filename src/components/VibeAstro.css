@@ -77,9 +77,13 @@
   stroke-width: 1;
   pointer-events: stroke;
 }
-.vas__aspect--soft       { stroke: rgba(140, 190, 255, 0.35); }
-.vas__aspect--tense      { stroke: rgba(255, 130, 100, 0.32); }
-.vas__aspect--conjunction { stroke: rgba(255, 240, 210, 0.22); }
+/* Line cap encodes harmony per the shapes/sound digest's bouba/kiki finding —
+   rounded reads calmer, sharp/flat reads more tense — so it's applied at the
+   one place aspect harmony is already a real, named distinction, rather than
+   as a blanket global change. */
+.vas__aspect--soft       { stroke: rgba(140, 190, 255, 0.35); stroke-linecap: round; }
+.vas__aspect--tense      { stroke: rgba(255, 130, 100, 0.32); stroke-linecap: butt; }
+.vas__aspect--conjunction { stroke: rgba(255, 240, 210, 0.22); stroke-linecap: round; }
 
 .vas__planet {
   fill: #ffd080;

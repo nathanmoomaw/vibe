@@ -359,11 +359,15 @@
     rgba(170, 200, 255, 0.05) 84%,
     transparent 100%
   );
-  animation: lens-sheen-phase 9s ease-in-out infinite;
+  animation: lens-sheen-phase 15s ease-in-out infinite;
 }
+/* Narrower swing + slower cycle than the first pass (was 0.35-0.85 over 9s) —
+   that relative 2.4x change still read as an obvious "flux"/breathing pulse
+   even though the gradient's own alphas are low. Tightened so it reads as a
+   subtle gleam rather than a pulse, per feedback. */
 @keyframes lens-sheen-phase {
-  0%, 100% { opacity: 0.35; }
-  50%      { opacity: 0.85; }
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.7; }
 }
 
 /* Circular clip for the canvas only — kept separate from .unit__display-ring
