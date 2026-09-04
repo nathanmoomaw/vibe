@@ -248,27 +248,28 @@
    blue/amber cycle so this button reads as "stop" even before hover, still
    animated rather than a flat static-red fill. A slow glow-pulse layered on
    top (stop-shimmer-pulse) gives it some shimmer at rest too. Rest-state
-   alphas sit halfway between the dialed-back-to-40% pass and the (unchanged,
-   liked-as-is) hover alphas below, per feedback. */
+   alphas halved again (Sep 3 2026) from the previous halfway-to-hover pass —
+   still too opaque per feedback; hover alphas below are unchanged/liked. */
 @keyframes stop-outline-shift {
-  0%, 100% { color: rgba(255, 110, 90, 0.30); }
-  33%      { color: rgba(255, 150, 70, 0.29); }
-  66%      { color: rgba(255, 90, 90, 0.32); }
+  0%, 100% { color: rgba(255, 110, 90, 0.15); }
+  33%      { color: rgba(255, 150, 70, 0.145); }
+  66%      { color: rgba(255, 90, 90, 0.16); }
 }
 @keyframes stop-shimmer-pulse {
   0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 120, 90, 0)); }
-  50%      { filter: drop-shadow(0 0 6px rgba(255, 120, 90, 0.22)); }
+  50%      { filter: drop-shadow(0 0 6px rgba(255, 120, 90, 0.14)); }
 }
 /* Opacity waver — uneven keyframe spacing/depths rather than a clean sine,
-   so it reads as an organic flicker rather than a mechanical pulse. Dips to
-   50% of full opacity at its lowest point, per feedback. */
+   so it reads as an organic flicker rather than a mechanical pulse. Rest
+   state dialed down further (halved from the prior pass) per feedback that
+   the button still read as too opaque; dips to 30% of full at its lowest. */
 @keyframes stop-waver {
-  0%   { opacity: 1; }
-  22%  { opacity: 0.68; }
-  38%  { opacity: 0.5; }
-  55%  { opacity: 0.82; }
-  71%  { opacity: 0.58; }
-  100% { opacity: 1; }
+  0%   { opacity: 0.55; }
+  22%  { opacity: 0.4; }
+  38%  { opacity: 0.3; }
+  55%  { opacity: 0.48; }
+  71%  { opacity: 0.34; }
+  100% { opacity: 0.55; }
 }
 /* `color` and `filter` are both driven by the keyframe animations above
    (stop-outline-shift, stop-shimmer-pulse), so plain overrides here are
