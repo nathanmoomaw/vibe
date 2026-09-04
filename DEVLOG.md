@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Sep 3 2026 — quieter tone-knob adjustment sound; stop-button opacity pass on a review branch
+
+- **Bell/chime/gong/birds rate-knob dragging was spamming full-volume strikes**: `DualKnob`'s `onParamChange` fires on every `pointermove`, and `setToneRate` responded to each one with a full `stopTone`+`startTone` restart — which plays an immediate full-volume strike per pixel of drag. Added `updateToneRate()` (`audio/tones.js`) which instead updates the periodic tone's interval in place and gives a throttled (≤1 per 220ms), quiet (35% volume) preview strike, so dragging still gives audible feedback, just far less of it
+- Fixing this surfaced a real latent bug in `startTone`'s own reschedule loop: `scheduleNext` read a closed-over `interval` const captured once at tone-start, not `state.interval` — meaning any live interval change (this new path, or anything else touching `state.interval`) was being silently ignored. Now reads `state.interval` so live updates actually take effect on the tone's next natural strike
+- **Stop button still read as too opaque** per feedback — rather than edit `main` directly, cut `dev/v1-stopupdate` off `origin/main` (not merged) with the rest-state color alphas and opacity-waver range halved again from the previous "halfway to hover" pass. Left for local review before going live; `dev/v2` unaffected
+
 ## Sep 1 2026 (5) — present-sky astro chart overlay
 
 - **New footer icon** (wheel-with-tick-marks-and-stars SVG, `AstroIcon.jsx`) opens `VibeAstro.jsx` — a transparent, full-screen zodiac wheel showing where the Sun/Moon/planets sit right now, dismissed by clicking the same icon again (a toggle, not a one-way open) or the upper-right ×. Unlike every other modal in the app (`VibeReading`/`VibePresets`/`VibeQR`/`VibeDrift`, all opaque-backdrop + click-to-close-anywhere), this overlay's outer container is `pointer-events: none` end to end except the close button and the wheel's own glyphs — the console underneath stays fully clickable while it's showing, per the ask that it "not interfere with any of the app's controls"
