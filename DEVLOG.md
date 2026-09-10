@@ -1,5 +1,10 @@
 # DEVLOG — vibe
 
+## Sep 10 2026 — cymatics off-center bug, astro chart waver
+
+- **Cymatics canvas was genuinely off-center**, 8px down-right of the display ring — confirmed via Playwright `getBoundingClientRect()` comparison against the reported screenshot before touching any code. The Sep 3 fix (`width/height: auto` override) turned out to still be wrong at a deeper level: `<canvas>` is a replaced element, and an absolutely-positioned replaced element with `width/height: auto` and all four `inset` sides set is over-constrained per spec — it falls back to the canvas's intrinsic HTML attribute size (350×350) rather than stretching to the inset box, and only honors `left`/`top` while silently dropping `right`/`bottom`. Fixed by sizing explicitly with `calc(100% + 150px)` instead of `auto`, so it no longer depends on the replaced-element fallback. Re-measured after the fix: offset went from `{dx:8, dy:8}` to `{dx:0, dy:0}`
+- **Astro chart now wavers translucency** (`.vas__wheel`, `VibeAstro.css`) — a slow (17s), shallow (opacity 0.82–1) uneven-keyframe loop, same "organic flicker" approach as the stop button's existing `stop-waver`, so the full-screen overlay reads as gently alive instead of static. Verified opacity is actually cycling via computed-style sampling over time (0.997 → 0.860 → 0.926 across two 4s waits), not just present in the CSS
+
 ## Sep 3 2026 (3) — lens sheen tuning + first shapes-digest application
 
 - **Lens sheen still read as an obvious "flux"/pulse** even after the first pass — the 0.35↔0.85 opacity swing (a 2.4x relative change) was too visible even though the gradient's own alphas are low. Narrowed to 0.5↔0.7 and slowed the cycle 9s→15s so it reads as a subtle gleam instead
