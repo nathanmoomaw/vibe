@@ -398,12 +398,16 @@
    instead of adding a second, redundant CSS-level fade. */
 .unit__viz-chladni {
   inset: -75px;
-  /* .unit__viz sets explicit width/height:100%, which (per spec) wins over
-     the inset offsets above for sizing — leaving all four insets set but
-     the box still 100% of the ring would just shift it diagonally instead
-     of growing it symmetrically. auto restores normal inset-stretch sizing. */
-  width: auto;
-  height: auto;
+  /* NOT width/height:auto — canvas is a replaced element, and per spec an
+     abspos replaced element with width/height:auto AND all four insets set
+     is over-constrained: it falls back to the canvas's intrinsic HTML
+     width/height attribute (350x350) instead of stretching to the inset
+     box, and only honors left/top (right/bottom get silently dropped) —
+     measured this shifting the canvas 8px down-right of the ring's true
+     center. calc() against the containing block's own 100% sizes it
+     explicitly so left/top -75px lands symmetric on both edges. */
+  width: calc(100% + 150px);
+  height: calc(100% + 150px);
   z-index: 0;
   pointer-events: none;
 }
