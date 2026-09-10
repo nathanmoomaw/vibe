@@ -46,6 +46,8 @@ Unlike every other modal (`VibeReading`/`VibePresets`/`VibeQR`/`VibeDrift` — a
 
 **Waver (Sep 10 2026):** `.vas__wheel` now carries a slow (17s), shallow (opacity 0.82–1) `vas-waver` keyframe loop so the whole chart reads as gently alive rather than a static overlay — same uneven-keyframe-spacing "organic flicker" approach as the stop button's `stop-waver` (App.css), just shallower since this covers the full screen rather than a small accent element.
 
+**Larger + repositioned caption (Sep 10 2026):** `.vas__wheel` grew from `min(88vw,88vh)` to `min(96vw,96vh)` — near the screen edges and deliberately bigger than the console, so the ring sits further out from center and is less likely to visually crowd the physical console underneath even though the chart as a whole is bigger. The `present sky · lat/lon · time` caption moved out of the centered `.vas__wrap` flex column (removed, no longer needed with only the wheel left in it) into `position: fixed; bottom:14px; left:16px`, mirroring the close button's fixed top-right placement as a paired corner anchor instead of competing with the console for bottom-center.
+
 ## Circle-viz lens treatment + cymatics overflow (Sep 3 2026)
 `.unit__display-ring::before` is a fixed diagonal-gradient "glass sheen" that slowly breathes in and out (9s cycle) so the ring reads as curved glass rather than a flat disc — distinct from `.unit__display-ring--silent::after`'s idle radial-glint pseudo-element, since one element can only have one `::before` and one `::after`.
 

@@ -1,6 +1,12 @@
 # DEVLOG — vibe
 
-## Sep 10 2026 — cymatics off-center bug, astro chart waver
+## Sep 10 2026 (2) — astro chart size + caption placement
+
+- **Astro chart expanded to near screen edges and made deliberately larger than the console** — `.vas__wheel` grew `min(88vw,88vh)` → `min(96vw,96vh)`, per feedback that this is actually *less* obtrusive: pushing the ring further out from center leaves the console less crowded even though the overall chart reads bigger
+- **Caption moved to bottom-left** as a fixed corner anchor (`position:fixed; bottom:14px; left:16px`), mirroring the close button's fixed top-right placement, instead of sitting centered under the wheel competing with the console for bottom-center. Removed the now-empty `.vas__wrap` flex wrapper since the wheel is the only thing left inside it
+- Verified via Playwright: at a 1000×800 viewport the wheel measured 768×768 (edge-to-edge), caption box at `(16, 773)` confirming bottom-left placement; screenshotted to confirm the wheel visually sits larger than and around the console rather than tucked inside it
+
+## Sep 10 2026 (1) — cymatics off-center bug, astro chart waver
 
 - **Cymatics canvas was genuinely off-center**, 8px down-right of the display ring — confirmed via Playwright `getBoundingClientRect()` comparison against the reported screenshot before touching any code. The Sep 3 fix (`width/height: auto` override) turned out to still be wrong at a deeper level: `<canvas>` is a replaced element, and an absolutely-positioned replaced element with `width/height: auto` and all four `inset` sides set is over-constrained per spec — it falls back to the canvas's intrinsic HTML attribute size (350×350) rather than stretching to the inset box, and only honors `left`/`top` while silently dropping `right`/`bottom`. Fixed by sizing explicitly with `calc(100% + 150px)` instead of `auto`, so it no longer depends on the replaced-element fallback. Re-measured after the fix: offset went from `{dx:8, dy:8}` to `{dx:0, dy:0}`
 - **Astro chart now wavers translucency** (`.vas__wheel`, `VibeAstro.css`) — a slow (17s), shallow (opacity 0.82–1) uneven-keyframe loop, same "organic flicker" approach as the stop button's existing `stop-waver`, so the full-screen overlay reads as gently alive instead of static. Verified opacity is actually cycling via computed-style sampling over time (0.997 → 0.860 → 0.926 across two 4s waits), not just present in the CSS
