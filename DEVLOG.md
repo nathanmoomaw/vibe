@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Sep 11 2026 (6) — large center glyph when an astro sign is solo'd
+
+- **New large center glyph** on circle-viz when a sign is isolated (solo'd via click) — the existing small ring-edge glyph stays, this adds a big version dead-center so "only this is playing" reads immediately. Fill color is the *actual live color* of the one NOISE channel isolation leaves on (`noiseColorAt`), not a fixed hue — genuinely tracks the sound. A slow rainbow-hued shadow glow breathes behind it, same sine wave also breathes the glyph's own size
+- **Spent most of this session's time chasing a "rendering bug" that wasn't one.** An early version's glyph wasn't visible at the size expected. Confirmed step by step it wasn't broken: `ctx.font` readback matched what was requested, a `fillRect` control draw at the same coordinates sized correctly, a hardcoded 100px font produced a proportionally-scaled (just still small-looking) result. Root cause: measured via a pixel bounding-box scan that these astrological symbols in this font stack only render ~42% of their nominal font-size as visible ink — the glyph was rendering at exactly the requested size the whole time, it just read as small because of that ink ratio. Recalibrated the size formula (`minR * 1.8` → `minR * 4.3`) once the actual ratio was known, rather than continuing to hunt for a bug in the drawing code
+- Verified via Playwright: measured the final glyph's bounding box directly (63×63 canvas px, clearly dominant over the ring-edge glyph and the pre-existing small center circle) and sampled colors just outside its edge at two points in time to confirm the rainbow glow is actually animating
+
 ## Sep 11 2026 (5) — selectively merged vibe reading fixes to production
 
 - Per explicit request, merged **only** the two "read your vibe" entropy/frequency-text fixes to `main` — not a full `dev/v2` merge, since dev has unmerged in-progress work (astro chart overlay, Chladni visualizer, drift controls, stealth recording). Cherry-picked `6f14c3b` (entropy fix) and `0d7dab6` (frozen frequency text fix) onto `main`, with the one incidental `VibeAstro.css`/`export` line from the first commit excluded (astro chart stays dev-only)
