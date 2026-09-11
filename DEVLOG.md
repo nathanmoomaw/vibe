@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Sep 11 2026 (8) — learn session kicked off: tone/shapes/divination, acoustomancy for VIBE
+
+- Launched a `/learn tone shapes divination` session (background agent) focused on acoustomancy and mood-adjustment — how tone/shape/sound combinations shift mood states, and whether any finding could inform `reading.js`'s `buildReading()` prescription logic or the circle-viz's cymatics/shape visuals. Research only, no code touched. Digest saves to LIFE memory as `learn_digest_2026-09-11b_tone_shapes_divination.md`, emails, and publishes to cat.obfusco.us; its "Worth Saving" items sync into `worth-saving/vibe.md` on a future `/dump` run once the agent finishes
+
 ## Sep 11 2026 (7) — center glyph sized down 50%
 
 - Center-glyph `size` formula halved (`minR * 4.3 + breathe * minR * 0.6` → `minR * 2.15 + breathe * minR * 0.3`) per follow-up feedback that the previous pass read as too large once seen live. Re-verified via the same bounding-box measurement approach as the original build: 63×63 canvas px → 31×31, essentially exact
