@@ -4,6 +4,10 @@ on:
   push:
     branches: [main, 'dev/**']
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy-main:
     if: github.ref == 'refs/heads/main'
