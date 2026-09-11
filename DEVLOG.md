@@ -1,6 +1,11 @@
 # DEVLOG — vibe
 
-## Sep 11 2026 — vibe reading entropy fix, astro chart pushed further to edges
+## Sep 11 2026 (2) — confirmed reading-entropy fix live on dev
+
+- **Verified the Sep 11 (1) entropy fix is actually live** on vibe-dev.obfusco.us, not just committed — checked `gh run list`/`gh run view` for the deploy workflow (both the code and doc commits built and deployed successfully, CloudFront invalidation completed), confirmed the deployed JS bundle hash matches a fresh local build, grepped the deployed bundle for the fix's distinctive golden-ratio/√2/√3 constants (present, just minifier-reformatted without the leading `0`), and ran a Playwright pass directly against `https://vibe-dev.obfusco.us` clicking "read your vibe" 4 times in a row — all 4 came back with distinct 3-line combinations. Also confirmed `main`/production is 21 commits behind `dev/v2` and does not have this fix (expected — not merged yet, dev-only so far)
+- No code change needed here; if the feedback was based on a stale browser tab open from before the deploy finished, a hard refresh should pick up the new bundle
+
+## Sep 11 2026 (1) — vibe reading entropy fix, astro chart pushed further to edges
 
 - **"Read your vibe" was returning byte-identical readings on immediate repeats** — confirmed via a Node repro calling `buildReading()` 6-8 times back to back with the same phase/weather and diffing output. Two causes: (1) the narrative-line entropy scaled one shared `seed` by three different multipliers instead of using independent randoms, which correlates strongly enough that 3 of 6 repro calls produced an identical 3-line reading; (2) sound settings (volume/freq) had zero per-call variation — 100% deterministic on moon/weather/tide/time-of-day, none of which meaningfully change within minutes
 - Fixed with three fully independent low-discrepancy counters (golden ratio, √2−1, √3−1, each at full per-call weight) for the three narrative lines, plus a ±6%/±3% per-call jitter on active sound volumes/frequencies (mirroring `randomizeActive()`'s existing jitter approach). Re-ran the repro: 8/8 calls now came back with distinct text+number combinations, vs. 3+ duplicates before
