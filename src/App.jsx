@@ -494,7 +494,7 @@ export default function App() {
           const { color: soundColor } = noiseColorAt(soloChannel, noiseRef.current[soloChannel.id].typeAngle ?? 0)
           const rainbowHue = (performance.now() / 4000 * 360) % 360
           const breathe = 0.5 + 0.5 * Math.sin(performance.now() / 1400)
-          const size = minR * 4.3 + breathe * minR * 0.6
+          const size = minR * 2.15 + breathe * minR * 0.3
 
           ctx.save()
           ctx.textAlign = 'center'
