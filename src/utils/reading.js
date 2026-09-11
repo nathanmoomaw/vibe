@@ -145,7 +145,10 @@ export async function fetchWeather(precise = true) {
     if (!res.ok) return null
     const json = await res.json()
     const { weather_code: wc, wind_speed_10m: wind, precipitation: precip } = json.current
-    return { wc, wind, precip, aqi }
+    // lat/lon are carried through so buildReading can use location as its own
+    // entropy input, not just indirectly through whatever weather comes back
+    // for that spot — see the reading's own location line/log.
+    return { wc, wind, precip, aqi, lat, lon }
   } catch {
     return null
   }
@@ -323,12 +326,17 @@ function pick(arr, seed) {
   return arr[Math.floor(seed * arr.length) % arr.length]
 }
 
-// Golden-ratio low-discrepancy step — each call lands somewhere new and
-// well-spread from the last, so two readings taken seconds apart (same hour,
-// same weather) still read as genuinely different rather than identical.
-// The moon/time/weather-driven sound config itself is unaffected — this only
-// spreads the narrative line picks — matching "the user's own condition has
-// shifted a little" rather than re-randomizing the whole reading.
+// Three independent low-discrepancy counters (distinct irrational steps —
+// golden ratio, sqrt(2)-1, sqrt(3)-1) instead of one shared `seed` scaled by
+// three different multipliers. The old single-seed approach correlated the
+// three narrative lines strongly enough that consecutive reading calls
+// landed on byte-identical text far more often than intended (verified:
+// repeated calls at the same hour/weather reused the same line 3-4 times in
+// a row) — each multiplier just rotates the same point around the same
+// circle, so nearby seeds still cluster into the same bucket for all three
+// picks at once. Each counter here gets the FULL per-call increment (not a
+// 0.4-weighted fraction of it), so a golden-ratio-style step (>1/3) all but
+// guarantees a different bucket every single call for a 3-item array.
 let readingCallCount = 0
 
 export function buildReading(phase, weather) {
@@ -340,12 +348,22 @@ export function buildReading(phase, weather) {
   const spring = tidalSpring(phase)
   const height = tidalHeight(phase)
 
-  // Seed: hour-based + weather entropy + a per-call golden-ratio increment,
-  // so conditions still ground the reading but immediate repeats never land
-  // on the exact same narrative lines
+  const hourFrac = (Date.now() / 3600000) % 1
   const weatherEntropy = weather ? (weather.wind * 0.013 + weather.precip * 0.09) % 1 : 0
-  const callEntropy = (readingCallCount * 0.6180339887) % 1
-  const seed = ((Date.now() / 3600000) + weatherEntropy * 0.6 + callEntropy * 0.4) % 1
+  // Location as its own entropy input — previously only affected the reading
+  // indirectly through whatever weather numbers came back for that spot, so
+  // two different locations with coincidentally identical weather produced
+  // byte-identical readings. Folds in even without weather (falls back to 0
+  // when coords never resolved), same as weatherEntropy above.
+  const locEntropy = (weather && typeof weather.lat === 'number')
+    ? (Math.abs(weather.lat) * 13.7 + Math.abs(weather.lon) * 7.3) % 1
+    : 0
+  const seedA = (hourFrac + weatherEntropy * 0.5 + locEntropy * 0.3 + readingCallCount * 0.6180339887) % 1
+  const seedB = (hourFrac + weatherEntropy * 0.3 + locEntropy * 0.5 + readingCallCount * 0.4142135624) % 1
+  const seedC = (hourFrac + weatherEntropy * 0.4 + locEntropy * 0.4 + readingCallCount * 0.7320508076) % 1
+  // Kept for the sound-settings jitter below — same call-count-driven spread,
+  // just centered on 0 instead of used as a pick() index.
+  const settingsJitter = ((readingCallCount * 0.6180339887) % 1) - 0.5
 
   // Default state (all off) — noise volumes kept quiet by design
   const noise = {
@@ -509,10 +527,25 @@ export function buildReading(phase, weather) {
     reasons.wind = `the air quality is poor here (US AQI ${Math.round(aqi)}) — a clearing wind undertone to carry it out`
   }
 
-  // Narrative text (3 lines)
-  const moonLine = pick(MOON_TEXT[moon], seed)
-  const timeLine = pick(TIME_TEXT[time], seed * 1.37)
-  const presLine = pick(PRESCRIPTION[prescriptionKey], seed * 2.11)
+  // Per-call jitter (~±6% volume, ±3% freq) on whatever ended up active —
+  // the grounding conditions above (moon/weather/tide/time) barely change
+  // minute to minute, so without this two readings taken seconds apart were
+  // not just similar but byte-identical in every number.
+  for (const k of Object.keys(noise)) {
+    if (!noise[k].on) continue
+    noise[k].volume = Math.max(0.05, Math.min(1, noise[k].volume * (1 + settingsJitter * 0.12)))
+    noise[k].freq = Math.round(noise[k].freq * (1 + settingsJitter * 0.06))
+  }
+  for (const k of Object.keys(tones)) {
+    if (!tones[k].on) continue
+    tones[k].volume = Math.max(0.05, Math.min(1, tones[k].volume * (1 + settingsJitter * 0.12)))
+  }
+
+  // Narrative text (3 lines) — each from its own independent seed (see above)
+  // so they don't all shift (or fail to shift) together call to call
+  const moonLine = pick(MOON_TEXT[moon], seedA)
+  const timeLine = pick(TIME_TEXT[time], seedB)
+  const presLine = pick(PRESCRIPTION[prescriptionKey], seedC)
 
   // Build ordered sound cards (noise first, then tones) with reasons
   const soundCards = [

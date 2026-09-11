@@ -34,13 +34,15 @@
 }
 .vas__close:hover { color: rgba(255, 255, 255, 0.8); }
 
-/* Sized close to the viewport edges (was 88vmin) — bigger than the console
-   itself, per feedback, so the ring sits further out from screen center and
-   is less likely to visually crowd the physical console underneath, even
-   though the chart as a whole reads as bigger. */
+/* Sized close to the viewport edges (88vmin → 96vmin → 99vmin) — bigger than
+   the console itself, per feedback, so the ring sits further out from screen
+   center and is less likely to visually crowd the physical console
+   underneath, even though the chart as a whole reads as bigger. Stopped at
+   99, not 100, so the ring's own stroke (already inset ~10% of the SVG's
+   viewBox from its edge) never touches the literal viewport edge. */
 .vas__wheel {
-  width: min(96vw, 96vh);
-  height: min(96vw, 96vh);
+  width: min(99vw, 99vh);
+  height: min(99vw, 99vh);
   filter: drop-shadow(0 0 30px rgba(120, 160, 255, 0.18));
   animation: vas-waver 17s ease-in-out infinite;
 }
