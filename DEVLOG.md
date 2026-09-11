@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Sep 11 2026 (7) — center glyph sized down 50%
+
+- Center-glyph `size` formula halved (`minR * 4.3 + breathe * minR * 0.6` → `minR * 2.15 + breathe * minR * 0.3`) per follow-up feedback that the previous pass read as too large once seen live. Re-verified via the same bounding-box measurement approach as the original build: 63×63 canvas px → 31×31, essentially exact
+
 ## Sep 11 2026 (6) — large center glyph when an astro sign is solo'd
 
 - **New large center glyph** on circle-viz when a sign is isolated (solo'd via click) — the existing small ring-edge glyph stays, this adds a big version dead-center so "only this is playing" reads immediately. Fill color is the *actual live color* of the one NOISE channel isolation leaves on (`noiseColorAt`), not a fixed hue — genuinely tracks the sound. A slow rainbow-hued shadow glow breathes behind it, same sine wave also breathes the glyph's own size
