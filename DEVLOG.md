@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Sep 11 2026 — vibe reading entropy fixes cherry-picked to production
+
+- Cherry-picked just the two "read your vibe" fixes from `dev/v2` (not a full merge — dev has unmerged in-progress work: astro chart overlay, Chladni visualizer, drift controls, stealth recording): (1) three independent low-discrepancy seeds replacing one correlated shared seed for the narrative lines, plus per-call jitter on sound volume/freq, plus location folded in as a direct entropy input — repeated "read your vibe" taps were coming back byte-identical; (2) the frequency reason text (e.g. "136.1 Hz") was frozen at the base constant instead of reflecting the actual post-jitter/tide-adjusted number
+- Excluded the one incidental line from the first commit that touched `VibeAstro.css` (99vmin chart sizing) and the `export` on `getCoords()` in `reading.js` — both belong to the astro chart overlay feature, which stays dev-only for now
+- Verified via `npm run build` (clean) that `main`'s `reading.js` now matches `dev/v2`'s except for that one intentionally-excluded `export` keyword
+
 ## Aug 26 2026 (3) — stop button waver slowed by half
 
 - `stop-waver`'s duration doubled, 5.4s → 10.8s, per feedback that the flicker was too fast
