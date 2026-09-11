@@ -467,6 +467,46 @@ export default function App() {
         }
       }
       planetPosRef.current = positions
+
+      // Large center glyph while a sign is solo'd — the ring-edge glyph above
+      // already shows the isolated sign small and off to the side; this
+      // repeats it big and centered so "this one thing is playing, alone"
+      // reads immediately without hunting for the small edge glyph. Fill
+      // color is the actual live color of the one noise channel left on
+      // (not a fixed palette entry), so it genuinely "emphasizes the colors
+      // the sound represents" rather than an arbitrary hue; a slow
+      // rainbow-hued glow breathes behind it for "gently pulse in rainbow
+      // colors." Isolation always leaves exactly one NOISE channel on and
+      // every TONE off (see toggleIsolatePlanet), so the on-channel search
+      // below is unambiguous.
+      //
+      // The astrological glyphs render with a lot of internal whitespace in
+      // their em-square in this font stack — measured via a pixel bounding-
+      // box scan that the visible ink is only ~42% of the requested font
+      // size (e.g. a 100px font produces ~43px of actual ink), not the ~90%+
+      // a denser glyph would use. `size` is scaled up accordingly so the
+      // glyph actually reads as large/dominant rather than merely matching
+      // its nominal font-size number.
+      if (isolatedName) {
+        const isoPlanet = PLANETS.find(p => p.name === isolatedName)
+        const soloChannel = NOISE.find(s => noiseRef.current[s.id]?.on)
+        if (isoPlanet && soloChannel) {
+          const { color: soundColor } = noiseColorAt(soloChannel, noiseRef.current[soloChannel.id].typeAngle ?? 0)
+          const rainbowHue = (performance.now() / 4000 * 360) % 360
+          const breathe = 0.5 + 0.5 * Math.sin(performance.now() / 1400)
+          const size = minR * 4.3 + breathe * minR * 0.6
+
+          ctx.save()
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.shadowColor = `hsla(${rainbowHue}, 85%, 65%, ${0.5 + breathe * 0.3})`
+          ctx.shadowBlur = 18 + breathe * 14
+          ctx.font = `bold ${Math.round(size)}px serif`
+          ctx.fillStyle = soundColor
+          ctx.fillText(isoPlanet.symbol, cx, cy)
+          ctx.restore()
+        }
+      }
     }
     draw()
     return () => cancelAnimationFrame(rafRef.current)
