@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Sep 11 2026 (5) — selectively merged vibe reading fixes to production
+
+- Per explicit request, merged **only** the two "read your vibe" entropy/frequency-text fixes to `main` — not a full `dev/v2` merge, since dev has unmerged in-progress work (astro chart overlay, Chladni visualizer, drift controls, stealth recording). Cherry-picked `6f14c3b` (entropy fix) and `0d7dab6` (frozen frequency text fix) onto `main`, with the one incidental `VibeAstro.css`/`export` line from the first commit excluded (astro chart stays dev-only)
+- Verified via `npm run build` that `main`'s `reading.js` matches `dev/v2`'s exactly except that one intentional exclusion, and via Playwright directly against `https://vibe.obfusco.us` (3 consecutive "read your vibe" opens → 3 distinct readings, zero console/page errors, confirmed the astro icon does *not* appear on prod)
+- Also bumped `package.json` version `0.1.0` → `0.2.0` on `main` per request, pushed and deployed separately
+- Switched back to `dev/v2` after, per this project's standing git workflow
+
 ## Sep 11 2026 (4) — dev site broken by a deploy race, fixed with a concurrency guard
 
 - **vibe-dev.obfusco.us went fully blank** ("Failed to load module script... MIME type of text/html") right after two commits pushed ~8 seconds apart. Root cause: `deploy.yml` had no `concurrency` group, so the two pushes' `deploy-dev` jobs ran overlapping (16:18:15-16:18:45 and 16:18:23-16:18:44) and both called `aws s3 sync dist/ ... --delete` against the same bucket. The older commit's job (docs-only, pre-fix code — so its own build still hashed to the *previous* JS bundle) finished 1 second after the newer one and re-synced the bucket back to that older build, deleting the newer commit's JS bundle in the process. `index.html` was left pointing at a hash that no longer existed in S3 — any browser loading the page got an S3/CloudFront error response (served as HTML) in place of the JS module, so nothing ran at all
