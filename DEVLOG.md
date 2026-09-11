@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Sep 11 2026 (3) — frequency reason text was still frozen at the base constant
+
+- **Even after the entropy fix earlier today, the reading's displayed frequency never budged** — every new-moon/waning-crescent reading's pink-noise reason literally said "136.1 Hz" regardless of what actually played. Root cause: the reason strings are written inline in `buildReading()`'s moon-phase `switch`, using the raw `OM_HZ`/`WU_YIN_HZ.*` constant — but `tideFreqBias` and the jitter added earlier today both run *after* that switch, adjusting the real `noise[k].freq` without ever touching the already-written text
+- Fixed by writing all 8 noise-frequency reason strings with a `{FREQ}` placeholder instead of the literal constant, then substituting in the real post-adjustment frequency in a pass right after the jitter loop. Verified via a Node repro (6 calls, same phase/weather) showing the reason text now reads 127/128/130/131/132/133 Hz instead of a fixed 136.1, and via Playwright against the running app (3 consecutive reveals, reason text tracking the actual number each time)
+- Also confirmed the reported "same 3 sounds nearly every time" (pink/chime/birds) is correct behavior, not a bug — `moonPhase()` currently returns 0.976 (past the >0.97 new-moon threshold) and the test location's weather is genuinely clear, so the grounding logic is accurately reflecting real conditions that just haven't changed much today
+
 ## Sep 11 2026 (2) — confirmed reading-entropy fix live on dev
 
 - **Verified the Sep 11 (1) entropy fix is actually live** on vibe-dev.obfusco.us, not just committed — checked `gh run list`/`gh run view` for the deploy workflow (both the code and doc commits built and deployed successfully, CloudFront invalidation completed), confirmed the deployed JS bundle hash matches a fresh local build, grepped the deployed bundle for the fix's distinctive golden-ratio/√2/√3 constants (present, just minifier-reformatted without the leading `0`), and ran a Playwright pass directly against `https://vibe-dev.obfusco.us` clicking "read your vibe" 4 times in a row — all 4 came back with distinct 3-line combinations. Also confirmed `main`/production is 21 commits behind `dev/v2` and does not have this fix (expected — not merged yet, dev-only so far)
