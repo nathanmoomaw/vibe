@@ -1,5 +1,13 @@
 # DEVLOG — vibe
 
+## Sep 11 2026 — vibe reading entropy fix, astro chart pushed further to edges
+
+- **"Read your vibe" was returning byte-identical readings on immediate repeats** — confirmed via a Node repro calling `buildReading()` 6-8 times back to back with the same phase/weather and diffing output. Two causes: (1) the narrative-line entropy scaled one shared `seed` by three different multipliers instead of using independent randoms, which correlates strongly enough that 3 of 6 repro calls produced an identical 3-line reading; (2) sound settings (volume/freq) had zero per-call variation — 100% deterministic on moon/weather/tide/time-of-day, none of which meaningfully change within minutes
+- Fixed with three fully independent low-discrepancy counters (golden ratio, √2−1, √3−1, each at full per-call weight) for the three narrative lines, plus a ±6%/±3% per-call jitter on active sound volumes/frequencies (mirroring `randomizeActive()`'s existing jitter approach). Re-ran the repro: 8/8 calls now came back with distinct text+number combinations, vs. 3+ duplicates before
+- **Location was never actually a direct entropy input** despite being fetched — it only shaped the reading indirectly through whatever weather numbers came back for that spot. `fetchWeather()` now also returns `lat`/`lon`, folded into all three narrative seeds as `locEntropy`
+- Verified via Playwright against the running app (4 consecutive "read your vibe" opens → 4 distinct line combinations) and `npm run build` (clean, no syntax issues from the rewrite)
+- **Astro chart pushed even closer to the screen edges** per follow-up feedback — `.vas__wheel` grew `96vmin` → `99vmin` (stopped short of 100 so the ring's own stroke never touches the literal viewport edge)
+
 ## Sep 10 2026 (2) — astro chart size + caption placement
 
 - **Astro chart expanded to near screen edges and made deliberately larger than the console** — `.vas__wheel` grew `min(88vw,88vh)` → `min(96vw,96vh)`, per feedback that this is actually *less* obtrusive: pushing the ring further out from center leaves the console less crowded even though the overall chart reads bigger
