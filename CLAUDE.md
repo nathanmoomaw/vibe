@@ -77,6 +77,9 @@ When a user clicks an astro sign and it's isolated (solo'd — see `toggleIsolat
 
 **Halved again per follow-up feedback (Sep 11 2026):** `size = minR * 4.3 + breathe * minR * 0.6` → `minR * 2.15 + breathe * minR * 0.3` (both terms scaled by 0.5, not just the base) — the first pass read as too large once actually seen live. Re-verified via the same bounding-box measurement: 63×63 canvas px → 31×31, essentially exact halving.
 
+## Analytics (`index.html`, Sep 22 2026)
+Google Tag Manager container `GTM-M5GKBML2` installed in `index.html` (head script + body noscript iframe, standard GTM snippet) — present on both `dev/v2` and `main` (applied directly, then cherry-picked across, not a full branch merge, so dev-only in-progress work stayed off production).
+
 ## Git Workflow
 - Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)
