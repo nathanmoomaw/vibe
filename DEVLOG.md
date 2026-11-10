@@ -1,5 +1,15 @@
 # DEVLOG — vibe
 
+## Nov 9 2026 — dev/chingy: hexagram mode from the /dimensionality findings
+
+Branch `dev/chingy` (off `dev/v2`, snapshot tag `dev-v2-snapshot-2026-11-09`). `main.jsx` mounts `src/chingy/ChingyApp.jsx` instead of `App.jsx`; the console stays in the tree, unmounted.
+- **Hexagram = 6-bit vertex of the 6-cube** (`src/chingy/hexagrams.js`, bit 0 = bottom line). King Wen table + Wilhelm titles, verified for all 64 (unique) and spot-checked. 6-cube drawn in the plane with line i pushing along i·30°, so the 64 vertices fill a dodecagon; the current vertex's 6 edges light up, a trail follows the last 18 steps, the cast stays ringed.
+- **Gray-code walk**: every 20 s one line changes (reflected binary Gray code visits all 64 and loops). Tap a line to change it yourself; tap any vertex to travel there edge by edge (1.6 s per edge, Hamming distance = number of steps).
+- **Sound reuses the elemental tones**: each trigram is already one end of a fire/wind/water/earth morph (`typeAngle` 0° or 180°), so the lower and upper trigram each drive one voice. A changed line is heard as that element turning into its pair (`setToneParam`), plus a bell (to yang) or chime (to yin) strike. Added `fadeOutTone` and `strikeTone` to `audio/tones.js` (additive, console untouched).
+- **Reading = the findings, not book text**: images (mountain over lake), which line moved, yang count, Hamming distance from the cast, binary value (Shao Yong / Leibniz reading), King Wen pair.
+- Controls: cast, stop, tap a line, tap a vertex. No knobs.
+- `deploy.yml`'s `deploy-dev` now only runs for `dev/v2`, so this branch never overwrites vibe-dev.obfusco.us.
+
 ## Sep 11 2026 (8) — learn session kicked off: tone/shapes/divination, acoustomancy for VIBE
 
 - Launched a `/learn tone shapes divination` session (background agent) focused on acoustomancy and mood-adjustment — how tone/shape/sound combinations shift mood states, and whether any finding could inform `reading.js`'s `buildReading()` prescription logic or the circle-viz's cymatics/shape visuals. Research only, no code touched. Digest saves to LIFE memory as `learn_digest_2026-09-11b_tone_shapes_divination.md`, emails, and publishes to cat.obfusco.us; its "Worth Saving" items sync into `worth-saving/vibe.md` on a future `/dump` run once the agent finishes

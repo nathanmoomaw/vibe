@@ -41,7 +41,9 @@ jobs:
             --paths "/*"
 
   deploy-dev:
-    if: startsWith(github.ref, 'refs/heads/dev/')
+    # Experimental branches (dev/chingy, dev/penrose) share this file but must
+    # not overwrite vibe-dev.obfusco.us, which belongs to dev/v2.
+    if: github.ref == 'refs/heads/dev/v2'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

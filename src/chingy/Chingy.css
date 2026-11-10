@@ -1,0 +1,198 @@
+.chingy {
+  --up: #c8b8ff;
+  --lo: #8fd8ff;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vmin;
+  padding: 4vmin;
+  background: #02030a;
+  color: #e8e6f2;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (orientation: landscape) {
+  .chingy { flex-direction: row; gap: 6vmin; }
+}
+
+/* Two-colour breathing glow: upper trigram above, lower below */
+.chingy__aura {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 30%, color-mix(in oklch, var(--up) 22%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 50% 75%, color-mix(in oklch, var(--lo) 22%, transparent), transparent 70%);
+  transition: background 4s ease;
+  animation: chingy-breathe 11s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes chingy-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  45% { opacity: 1; transform: scale(1.04); }
+}
+
+/* ---- 6-cube ---- */
+.chingy__cube {
+  position: relative;
+  width: min(92vw, 56vh);
+  height: min(92vw, 56vh);
+  flex: none;
+}
+@media (orientation: landscape) {
+  .chingy__cube { width: min(56vw, 88vh); height: min(56vw, 88vh); }
+}
+.chingy__edge {
+  stroke: rgba(200, 200, 255, 0.07);
+  stroke-width: 0.008;
+  transition: stroke 1.2s, stroke-width 1.2s;
+}
+.chingy__edge--lit { stroke: color-mix(in oklch, var(--up) 60%, var(--lo)); stroke-width: 0.018; opacity: 0.8; }
+.chingy__trail {
+  fill: none;
+  stroke: color-mix(in oklch, var(--up) 50%, white);
+  stroke-width: 0.03;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+  filter: drop-shadow(0 0 0.04px white);
+}
+.chingy__node-g { cursor: pointer; }
+.chingy:not(.chingy--on) .chingy__node-g { cursor: default; }
+.chingy__hit { fill: transparent; }
+.chingy__node {
+  fill: rgba(220, 220, 255, 0.35);
+  transition: r 0.8s, fill 0.8s;
+}
+.chingy__node-g:hover .chingy__node { fill: rgba(255, 255, 255, 0.8); }
+.chingy__node--cast { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 0.012; }
+.chingy__node--here {
+  fill: white;
+  stroke: none;
+  filter: drop-shadow(0 0 0.08px var(--up)) drop-shadow(0 0 0.16px var(--lo));
+  animation: chingy-pulse 3.2s ease-in-out infinite;
+}
+@keyframes chingy-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* ---- panel ---- */
+.chingy__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: min(80vw, 300px);
+}
+
+.chingy__cast {
+  position: relative;
+  width: 34vmin;
+  height: 34vmin;
+  max-width: 220px;
+  max-height: 220px;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.chingy__cast-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 40px rgba(180, 170, 255, 0.35), inset 0 0 30px rgba(140, 200, 255, 0.2);
+  animation: chingy-breathe 6s ease-in-out infinite;
+}
+.chingy__cast-lbl { position: relative; font-size: 20px; letter-spacing: 0.4em; padding-left: 0.4em; }
+
+.chingy__hex {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vmin;
+  width: min(46vmin, 260px);
+  margin-bottom: 2.2vmin;
+}
+.chingy__line {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  height: min(4.6vmin, 26px);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.chingy__line span {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--lo);
+  box-shadow: 0 0 14px color-mix(in oklch, var(--lo) 50%, transparent);
+  transition: width 1.4s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 1.4s, background 2s, box-shadow 2s;
+}
+.chingy__line.is-up span { background: var(--up); box-shadow: 0 0 14px color-mix(in oklch, var(--up) 50%, transparent); }
+/* yang: the left half grows to the full bar and the right one shrinks away,
+   so the line closes (and opens) as one motion with no seam */
+.chingy__line.is-yang span:first-child { width: 100%; }
+.chingy__line.is-yang span:last-child { width: 0; opacity: 0; }
+.chingy__line.is-yin span { width: 40%; }
+.chingy__line.is-moving span { animation: chingy-moving 2.4s ease-out; }
+@keyframes chingy-moving {
+  0% { filter: brightness(2.4); box-shadow: 0 0 34px white; }
+  100% { filter: none; }
+}
+.chingy__line:hover span { filter: brightness(1.25); }
+
+.chingy__num {
+  font-size: min(13vmin, 76px);
+  font-weight: 200;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, var(--up), var(--lo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.chingy__name { font-size: 20px; font-weight: 300; letter-spacing: 0.06em; margin-top: 4px; }
+.chingy__tri { font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.7; margin-top: 6px; }
+.chingy__tri span { text-transform: none; letter-spacing: 0.1em; opacity: 0.7; }
+.chingy__read {
+  list-style: none;
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(232, 230, 242, 0.82);
+}
+.chingy__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: rgba(232, 230, 242, 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+.chingy__stop {
+  position: fixed;
+  top: 16px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 10, 20, 0.5);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chingy__aura, .chingy__cast-ring, .chingy__node--here { animation: none; }
+}

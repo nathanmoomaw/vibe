@@ -80,6 +80,9 @@ When a user clicks an astro sign and it's isolated (solo'd — see `toggleIsolat
 ## Analytics (`index.html`, Sep 22 2026)
 Google Tag Manager container `GTM-M5GKBML2` installed in `index.html` (head script + body noscript iframe, standard GTM snippet) — present on both `dev/v2` and `main` (applied directly, then cherry-picked across, not a full branch merge, so dev-only in-progress work stayed off production).
 
+## dev/chingy (Nov 9 2026)
+Hexagram-only mode: `main.jsx` mounts `src/chingy/ChingyApp.jsx`, not `App.jsx` (kept in the tree for its audio/util modules, same pattern as NOW's v2). Hexagram math in `src/chingy/hexagrams.js` (6-bit, bit 0 = bottom line; trigram values Kun 0 … Qian 7). Trigram → voice is `TRIGRAM_VOICE` (elemental tone + typeAngle 0/180, mirroring `TONES` in App.jsx — keep in sync if those pairings change). Timer re-arms through `tickRef` because the React Compiler rejects a callback that names itself. Not deployed: `deploy-dev` only runs for `dev/v2`.
+
 ## Git Workflow
 - Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)

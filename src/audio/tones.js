@@ -608,3 +608,22 @@ export function setToneVolume(id, v) {
   if (activeIntervals[id]) activeIntervals[id].volume = v
   if (activeContinuous[id]) activeContinuous[id].gain.gain.value = v
 }
+
+// Ramp a playing tone to silence, then stop it — for modes that swap voices
+// while playing (chingy), where stopTone()'s instant cut would click.
+export function fadeOutTone(id, sec = 1.5) {
+  const src = activeContinuous[id]
+  if (!src) { stopTone(id); return }
+  const ctx = getContext()
+  src.gain.gain.cancelScheduledValues(ctx.currentTime)
+  src.gain.gain.setTargetAtTime(0, ctx.currentTime, sec / 4)
+  delete activeContinuous[id]
+  setTimeout(() => { src.stop(); try { src.gain.disconnect() } catch (_) {} }, sec * 1000)
+}
+
+// One strike of a periodic tone (bell/chime/gong/birds) without leaving it
+// scheduled to repeat.
+export function strikeTone(id, volume = 0.4) {
+  startTone(id, volume, 1e6)
+  if (activeIntervals[id]) { clearTimeout(activeIntervals[id].timer); delete activeIntervals[id] }
+}

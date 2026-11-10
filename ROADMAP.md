@@ -7,6 +7,7 @@
   - Use: animate trigram morphs as edge walks, one line flipping at a time, instead of jumping straight to the paired complement. A complement is the opposite corner, 3 edges away, so a morph becomes a 3-step path through neighbors.
   - Optionally draw the cube (or a projected 6-cube for the Hexagram divination mode below) faintly behind the circle viz, with the current trigram/hexagram lit as a vertex.
   - Ties into the Backlog's Hexagram divination mode, where moving lines are exactly these edges.
+  - **Nov 9 2026: prototyped as its own mode on `dev/chingy`** (projected 6-cube + Gray-code walk + tap-a-line / tap-a-vertex travel). Folding it back into the console is still open.
 - [ ] **Mood map on valence × arousal (Russell's circumplex, 1980).**
   - Place presets as points on two axes: pleasant↔unpleasant (valence) and calm↔activated (arousal). Calming = low arousal and positive valence; focussing = mid-high arousal.
   - A preset is a point and a transition is a straight-line path between points, so crossfades interpolate knob settings along that path.
