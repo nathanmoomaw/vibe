@@ -1,5 +1,20 @@
 # ROADMAP — vibe
 
+## Priority
+- [ ] **Hypercube trigram/hexagram changes (from the Nov 9 2026 `/dimensionality` digest).**
+  - A trigram is one vertex of a 3-D cube (2³ = 8); a hexagram is one vertex of a 6-D cube (2⁶ = 64). Each line is one axis (yin = 0, yang = 1).
+  - A changing line is a step along exactly one edge, so every trigram has 3 neighbors and every hexagram has 6. Leibniz noted the binary structure in 1703.
+  - Use: animate trigram morphs as edge walks, one line flipping at a time, instead of jumping straight to the paired complement. A complement is the opposite corner, 3 edges away, so a morph becomes a 3-step path through neighbors.
+  - Optionally draw the cube (or a projected 6-cube for the Hexagram divination mode below) faintly behind the circle viz, with the current trigram/hexagram lit as a vertex.
+  - Ties into the Backlog's Hexagram divination mode, where moving lines are exactly these edges.
+- [ ] **Mood map on valence × arousal (Russell's circumplex, 1980).**
+  - Place presets as points on two axes: pleasant↔unpleasant (valence) and calm↔activated (arousal). Calming = low arousal and positive valence; focussing = mid-high arousal.
+  - A preset is a point and a transition is a straight-line path between points, so crossfades interpolate knob settings along that path.
+  - Map color to valence and tempo/brightness/pulse rate to arousal.
+  - A 2-D picker would let users choose any point between presets, not just the named ones.
+  - Osgood's cross-cultural evaluation/potency/activity factors line up with valence/dominance/arousal, so a third "dominance" axis (intensity/density) is a possible later step.
+  - Reference: `~/Sites/LIFE/learn/reference/dimensionality.md`.
+
 ## In Progress
 - [ ] Enjoyable frequency filtering (harmonic masking of harsh ranges)
 - [ ] Astro/divination UI layer (tie into now/moveloose aesthetic)
