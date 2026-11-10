@@ -1,6 +1,7 @@
 # ROADMAP — vibe
 
 ## Priority
+- [ ] **Penrose mode (`dev/penrose`, prototyped Nov 9 2026)**: de Bruijn pentagrid tiling drifting through 5-D, five families = five phases. Next: decide whether it ships as its own page or a console mode.
 - [ ] **Hypercube trigram/hexagram changes (from the Nov 9 2026 `/dimensionality` digest).**
   - A trigram is one vertex of a 3-D cube (2³ = 8); a hexagram is one vertex of a 6-D cube (2⁶ = 64). Each line is one axis (yin = 0, yang = 1).
   - A changing line is a step along exactly one edge, so every trigram has 3 neighbors and every hexagram has 6. Leibniz noted the binary structure in 1703.

@@ -80,6 +80,9 @@ When a user clicks an astro sign and it's isolated (solo'd — see `toggleIsolat
 ## Analytics (`index.html`, Sep 22 2026)
 Google Tag Manager container `GTM-M5GKBML2` installed in `index.html` (head script + body noscript iframe, standard GTM snippet) — present on both `dev/v2` and `main` (applied directly, then cherry-picked across, not a full branch merge, so dev-only in-progress work stayed off production).
 
+## dev/penrose (Nov 9 2026)
+Penrose-tiling mode: `main.jsx` mounts `src/penrose/PenroseApp.jsx`, not `App.jsx` (kept in the tree for its audio/util modules). Tiling from `src/penrose/pentagrid.js` (de Bruijn pentagrid; keep Σγ = 0 or it stops being Penrose; pushes go along `E_PERP`). Picture and sound share one clock: `swellRef` is written by the draw loop from the same sines as the γ drift and read by the 400 ms audio interval. Don't call `setToneParam('wind', …)` for level changes: wind's setParam sets its own gain. Not deployed: `deploy-dev` only runs for `dev/v2`.
+
 ## Git Workflow
 - Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)

@@ -1,5 +1,16 @@
 # DEVLOG — vibe
 
+## Nov 9 2026 — dev/penrose: Penrose tiling as a slice of 5-D, drawn and heard
+
+Branch `dev/penrose` (off `dev/v2`, snapshot tag `dev-v2-snapshot-2026-11-09`). `main.jsx` mounts `src/penrose/PenroseApp.jsx` instead of `App.jsx`; the console stays in the tree, unmounted.
+- **de Bruijn pentagrid** (`src/penrose/pentagrid.js`): five families of grid lines, each crossing becomes a rhombus whose corners are 5-D lattice points projected down. Offsets γ keep Σγ = 0 so it's always a true Penrose tiling. Verified in node: 2000 random points each lie in exactly one rhomb, thick/thin ratio 1.61 (φ), all 10 orientations balanced, vertex configurations of 3–7 tiles (a periodic cube pattern would only give 3 and 6).
+- **Walk through the hidden dimensions**: each family's γ drifts on its own slow sine (periods ~7–15 min, never repeating), so tiles flip in place while it stays Penrose. Drag pushes the slice along the perpendicular-space directions (doubled angles, which keep Σγ = 0).
+- **Five families = five phases** (wood→wind, fire, earth, metal→bell, water, in generating-cycle order). Neighbouring families make the thick rhombs (generating cycle), families two apart the thin ones (controlling cycle). Each family's drift sine also sets its voice's volume (and fire/water/earth texture via `setToneParam`; wind skipped because its setParam drives its gain), and the bell's strike rate. A row of five dots shows the swells. Tiles brighten with their two phases' swell and with the analyser level.
+- Colour: one hue per rhomb orientation (10, spread round the wheel, slowly turning), muted, dark grout lines.
+- Controls: start (pentagon), stop, drag. Nothing else.
+- Added `fadeOutTone` to `audio/tones.js` (additive). Canvas 2D at ~30 fps, ~1–2k rhombi per frame.
+- `deploy.yml`'s `deploy-dev` now only runs for `dev/v2`, so this branch never overwrites vibe-dev.obfusco.us.
+
 ## Sep 11 2026 (8) — learn session kicked off: tone/shapes/divination, acoustomancy for VIBE
 
 - Launched a `/learn tone shapes divination` session (background agent) focused on acoustomancy and mood-adjustment — how tone/shape/sound combinations shift mood states, and whether any finding could inform `reading.js`'s `buildReading()` prescription logic or the circle-viz's cymatics/shape visuals. Research only, no code touched. Digest saves to LIFE memory as `learn_digest_2026-09-11b_tone_shapes_divination.md`, emails, and publishes to cat.obfusco.us; its "Worth Saving" items sync into `worth-saving/vibe.md` on a future `/dump` run once the agent finishes
