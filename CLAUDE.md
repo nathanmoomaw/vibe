@@ -83,6 +83,9 @@ Google Tag Manager container `GTM-M5GKBML2` installed in `index.html` (head scri
 ## dev/penrose (Nov 9 2026)
 Penrose-tiling mode: `main.jsx` mounts `src/penrose/PenroseApp.jsx`, not `App.jsx` (kept in the tree for its audio/util modules). Tiling from `src/penrose/pentagrid.js` (de Bruijn pentagrid; keep Σγ = 0 or it stops being Penrose; pushes go along `E_PERP`). Picture and sound share one clock: `swellRef` is written by the draw loop from the same sines as the γ drift and read by the 400 ms audio interval. Don't call `setToneParam('wind', …)` for level changes: wind's setParam sets its own gain. Not deployed: `deploy-dev` only runs for `dev/v2`.
 
+## Per-branch dev sites (Nov 9 2026)
+Each `dev/<name>` branch except `dev/v2` deploys to its own site, **vibe-dev-<name>.obfusco.us** (`deploy-branch` job in `deploy.yml`; `dev/v2` keeps vibe-dev.obfusco.us via `deploy-dev`). One-time infra per branch: `AWS_PROFILE=<admin> bash scripts/setup-branch-site.sh <name> [...]` (bucket + CloudFront/OAC + `*.obfusco.us` cert + Route 53 + the shared `vibe-branch-deploy` IAM user, whose keys go in the `BRANCH_AWS_*` repo secrets; then it dispatches the first deploy). Needs admin creds; the local `local-deploy` user can't create any of it. Until the secrets exist the job's steps skip, so pushes stay green. The workflow file that runs is the pushed branch's own, so a new branch needs this version of `deploy.yml`.
+
 ## Git Workflow
 - Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)
