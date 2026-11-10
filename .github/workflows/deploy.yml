@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: [main, 'dev/**']
+  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -72,3 +73,49 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ vars.DEV_CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
+
+  # Every other dev/<name> branch gets its own site, vibe-dev-<name>.obfusco.us
+  # (one-time infra: scripts/setup-branch-site.sh <name>). Skips quietly until
+  # that bucket and the BRANCH_AWS_* secrets exist.
+  deploy-branch:
+    if: startsWith(github.ref, 'refs/heads/dev/') && github.ref != 'refs/heads/dev/v2'
+    runs-on: ubuntu-latest
+    env:
+      READY: ${{ secrets.BRANCH_AWS_ACCESS_KEY_ID != '' }}
+    steps:
+      - name: Site name
+        id: site
+        run: echo "host=vibe-dev-${GITHUB_REF_NAME#dev/}.obfusco.us" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: env.READY == 'true'
+
+      - uses: actions/setup-node@v4
+        if: env.READY == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+        if: env.READY == 'true'
+
+      - run: npm run build
+        if: env.READY == 'true'
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: env.READY == 'true'
+        with:
+          aws-access-key-id: ${{ secrets.BRANCH_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.BRANCH_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to ${{ steps.site.outputs.host }}
+        if: env.READY == 'true'
+        run: aws s3 sync dist/ "s3://${{ steps.site.outputs.host }}/" --delete
+
+      - name: Invalidate CloudFront cache
+        if: env.READY == 'true'
+        run: |
+          DID=$(aws cloudfront list-distributions --output text \
+            --query "DistributionList.Items[?Aliases.Items[0]=='${{ steps.site.outputs.host }}'].Id | [0]")
+          if [ "$DID" != "None" ]; then aws cloudfront create-invalidation --distribution-id "$DID" --paths "/*"; fi
