@@ -79,6 +79,57 @@
   cursor: pointer;
 }
 
+/* mood: the current state's name, tap to move to the next */
+.penrose__mood {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(10, 10, 20, 0.5);
+  color: rgba(255, 255, 255, 0.82);
+  font: 300 13px/1 system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition: border-color 0.3s, color 0.3s;
+}
+.penrose__mood:hover { border-color: rgba(255, 255, 255, 0.5); color: #fff; }
+
+/* volume: a thin line, bottom right */
+.penrose__volume {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  width: min(140px, 30vw);
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.penrose__volume::-webkit-slider-runnable-track { height: 2px; background: rgba(255, 255, 255, 0.28); border-radius: 1px; }
+.penrose__volume::-moz-range-track { height: 2px; background: rgba(255, 255, 255, 0.28); border-radius: 1px; }
+.penrose__volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px; margin-top: -6px;
+  border-radius: 50%; border: none;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 8px rgba(160, 200, 255, 0.7);
+}
+.penrose__volume::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%; border: none;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 8px rgba(160, 200, 255, 0.7);
+}
+.penrose__volume:focus-visible, .penrose__mood:focus-visible { outline: 1px solid rgba(255, 255, 255, 0.6); outline-offset: 3px; }
+
+@media (max-width: 480px) {
+  .penrose__phases { bottom: 52px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .penrose__start { animation: none; }
 }

@@ -1,5 +1,14 @@
 # DEVLOG — vibe
 
+## Nov 14 2026 (2) — penrose: tuned sound, drag plays, moods, volume
+
+Feedback: not enough variation, sound not pleasant, hard to control.
+- **Sound**: replaced the five always-on noise textures with `src/penrose/voices.js`: five families = five notes of a just-tuned pentatonic, so any mix is consonant. Soft pads swell with each family's drift; soft FM bells ring when that family's tiles flip, panned by screen position, louder near the centre.
+- **Drag plays it**: drag pushes the slice (gentler now, `PUSH` 0.004 → 0.0025), tiles flip under it and play their notes; capped per mood (2–4 notes/s) so a fast drag is a steady arpeggio, not a wall. Flipped tiles flash briefly so you see what you hear.
+- **Moods** (`moods.js`): calming, relaxing, focussing, meditating, dreaming, floating. Each sets key/scale (major, minor, sus pentatonic), brightness, reverb, drift speed, tile size, spin, palette. Button top-left cycles; changes ease in.
+- **Volume** slider bottom-right (squared for perceived loudness). Mood + volume remembered.
+- Verified with Playwright: no console errors; ~0.5 bells/s idle, steady capped stream while dragging; all six moods cycle and look distinct; levels peak ~0.13 idle / ~0.21 dragging, volume 0.2 drops it ~10×.
+
 ## Nov 14 2026 — penrose + chingy branch sites live
 
 - Ran `scripts/setup-branch-site.sh chingy penrose` with admin creds. It died on penrose's Route 53 step: obfusco.us zone has a per-zone 50-record cap and was at 49. Because the script is `set -e`, the deploy user + `BRANCH_AWS_*` secrets never got made, so both buckets were empty and pushes kept skipping as "success".
