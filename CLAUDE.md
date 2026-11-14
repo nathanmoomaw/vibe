@@ -4,7 +4,7 @@
 VIBE — ambient noise synthesizer. Part of the audness lineage (ribbon, puddle). Colored sounds (blue, white, pink noise) with frequency control, plus synthesized ambient tones evoking bells, chimes, gongs, birds, wind, water, earth. No samples — pure synthesis.
 
 GitHub: nathanmoomaw/vibe (public)
-Domain: vibe.obfusco.us (main) / vibe-dev.obfusco.us (dev/v1)
+Domain: vibe.obfusco.us (main) / vibe-dev.obfusco.us (dev/v2) / vibe-dev-penrose.obfusco.us (dev/penrose)
 
 ## Stack
 - Vite + React
@@ -81,10 +81,12 @@ When a user clicks an astro sign and it's isolated (solo'd — see `toggleIsolat
 Google Tag Manager container `GTM-M5GKBML2` installed in `index.html` (head script + body noscript iframe, standard GTM snippet) — present on both `dev/v2` and `main` (applied directly, then cherry-picked across, not a full branch merge, so dev-only in-progress work stayed off production).
 
 ## dev/penrose (Nov 9 2026)
-Penrose-tiling mode: `main.jsx` mounts `src/penrose/PenroseApp.jsx`, not `App.jsx` (kept in the tree for its audio/util modules). Tiling from `src/penrose/pentagrid.js` (de Bruijn pentagrid; keep Σγ = 0 or it stops being Penrose; pushes go along `E_PERP`). Picture and sound share one clock: `swellRef` is written by the draw loop from the same sines as the γ drift and read by the 400 ms audio interval. Don't call `setToneParam('wind', …)` for level changes: wind's setParam sets its own gain. Not deployed: `deploy-dev` only runs for `dev/v2`.
+Penrose-tiling mode: `main.jsx` mounts `src/penrose/PenroseApp.jsx`, not `App.jsx` (kept in the tree for its audio/util modules). Tiling from `src/penrose/pentagrid.js` (de Bruijn pentagrid; keep Σγ = 0 or it stops being Penrose; pushes go along `E_PERP`). Picture and sound share one clock: `swellRef` is written by the draw loop from the same sines as the γ drift and read by the 400 ms audio interval. Don't call `setToneParam('wind', …)` for level changes: wind's setParam sets its own gain. Live at **https://vibe-dev-penrose.obfusco.us** (every push to `dev/penrose` deploys there via `deploy-branch`; `deploy-dev` only runs for `dev/v2`).
 
 ## Per-branch dev sites (Nov 9 2026)
 Each `dev/<name>` branch except `dev/v2` deploys to its own site, **vibe-dev-<name>.obfusco.us** (`deploy-branch` job in `deploy.yml`; `dev/v2` keeps vibe-dev.obfusco.us via `deploy-dev`). One-time infra per branch: `AWS_PROFILE=<admin> bash scripts/setup-branch-site.sh <name> [...]` (bucket + CloudFront/OAC + `*.obfusco.us` cert + Route 53 + the shared `vibe-branch-deploy` IAM user, whose keys go in the `BRANCH_AWS_*` repo secrets; then it dispatches the first deploy). Needs admin creds; the local `local-deploy` user can't create any of it. Until the secrets exist the job's steps skip, so pushes stay green. The workflow file that runs is the pushed branch's own, so a new branch needs this version of `deploy.yml`.
+
+**Set up Nov 14 2026 for chingy + penrose. Gotchas from that run:** the obfusco.us hosted zone (`Z2YGI1EJ2R4PG0`) has a **per-zone cap of 50 records**, separate from the account's 10,000 "Records per hosted zone" quota and not raisable in Service Quotas (needs a support case). Each branch site takes 2 (A + AAAA). The first run hit the cap on penrose's DNS step, and `set -e` killed the script before the IAM user/secrets section, so both sites sat with empty buckets while deploys skipped "green". Freed space by deleting stale records (old web-host mail/cPanel records, a dead flyerz-staging A, an unused cert-validation CNAME); zone was 42/50 after. Check `aws route53 get-hosted-zone --id Z2YGI1EJ2R4PG0 --query HostedZone.ResourceRecordSetCount` before adding a site. obfusco.us now also has `v=spf1 -all`, `_dmarc` `p=reject`, and a null MX (`0 .`): the domain sends and receives no mail (`in.obfusco.us` SES inbound and `flyerz-staging` SendGrid have their own records and are unaffected).
 
 ## Git Workflow
 - Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired

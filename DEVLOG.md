@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Nov 14 2026 — penrose + chingy branch sites live
+
+- Ran `scripts/setup-branch-site.sh chingy penrose` with admin creds. It died on penrose's Route 53 step: obfusco.us zone has a per-zone 50-record cap and was at 49. Because the script is `set -e`, the deploy user + `BRANCH_AWS_*` secrets never got made, so both buckets were empty and pushes kept skipping as "success".
+- Freed records: deleted the old web host's mail records (MX, SPF, `mail`, `imap`, `pop`, `smtp`), `autoconfig`/`autodiscover`, `localhost`, a broken `@` subdomain, dead `flyerz-staging` A, and an unused `www` cert-validation CNAME. Added penrose A + AAAA. Ran the IAM/secrets tail by hand, dispatched both deploys (green).
+- Locked down obfusco.us email: `v=spf1 -all`, `_dmarc` `p=reject; sp=reject`, null MX.
+- Live: https://vibe-dev-penrose.obfusco.us, https://vibe-dev-chingy.obfusco.us. Zone at 42/50.
+
 ## Nov 9 2026 — dev/penrose: Penrose tiling as a slice of 5-D, drawn and heard
 
 Branch `dev/penrose` (off `dev/v2`, snapshot tag `dev-v2-snapshot-2026-11-09`). `main.jsx` mounts `src/penrose/PenroseApp.jsx` instead of `App.jsx`; the console stays in the tree, unmounted.
