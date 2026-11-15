@@ -5,6 +5,7 @@
 - Connected Wolfram|Alpha (user-scope MCP `wolfram`; its server needed a User-Agent fix, Wolfram 403s httpx's default). Audited the sky star's inputs: `eclipticLon` was 121–138° off for Mercury/Venus, 47° for Mars (heliocentric mean longitudes used as geocentric). Rewrote with JPL elements + Meeus lunar terms; now within 0.07° (planets) / 0.06° (Moon) of Wolfram today, 0.01° / 0.36° in 1985. Today's sky star is now ☉☽☿♀♂♄♅ (Jupiter sits 0.6° from Mars, Neptune 7° from Saturn, so both drop).
 - Same broken function is live on dev/v2 + main (circle-viz planets, astro chart, aspects). Not ported yet.
 - 5-star: Σγ now held at 0.23 (drift around the mean), so it never passes through Penrose's tiling.
+- **Natal star**: star button now cycles sky/5/7/8/natal. Natal = the sky at your birth (planets folded to line directions, near-duplicates dropped). Birth time entered once on the page, stored in the browser only (never in the repo). Playwright: form → set → 7 natal dots, survives reload, ✎ edits, forget clears.
 
 ## Nov 14 2026 (3) — own tiling from the sky, wider colour, gestures
 

@@ -64,11 +64,17 @@ export default function PenroseApp() {
     const v = load('penrose.volume', 0.7)
     return typeof v === 'number' && v >= 0 && v <= 1 ? v : 0.7
   })
+  // birth moment for the natal star: ISO UTC, this browser only
+  const [born, setBorn] = useState(() => {
+    const b = load('penrose.born', null)
+    return typeof b === 'string' && !Number.isNaN(Date.parse(b)) ? b : null
+  })
   const [starId, setStarId] = useState(() => {
     const s = load('penrose.star', 'sky')
-    return STAR_IDS.includes(s) ? s : 'sky'
+    return STAR_IDS.includes(s) && (s !== 'natal' || born) ? s : 'sky'
   })
-  const [star, setStar] = useState(() => starById(starId))
+  const [star, setStar] = useState(() => starById(starId, born))
+  const [birthForm, setBirthForm] = useState(false)
   const starRef = useRef(star)
   const [muted, setMutedState] = useState(() => Array(star.n).fill(false))
   const mutedRef = useRef(muted)
@@ -260,9 +266,8 @@ export default function PenroseApp() {
   useEffect(() => () => stopVoices(0.2), [])
 
   const nextMood = () => setMoodIdx(i => (i + 1) % MOODS.length)
-  const nextStar = () => {
-    const id = STAR_IDS[(STAR_IDS.indexOf(starId) + 1) % STAR_IDS.length]
-    const st = starById(id)
+  const switchStar = (id, b = born) => {
+    const st = starById(id, b)
     const m = Array(st.n).fill(false)
     starRef.current = st
     mutedRef.current = m
@@ -272,6 +277,32 @@ export default function PenroseApp() {
     setFamilies(st.n)
     m.forEach((_, k) => setVoiceMuted(k, false))
     save('penrose.star', id)
+  }
+  const nextStar = () => {
+    const id = STAR_IDS[(STAR_IDS.indexOf(starId) + 1) % STAR_IDS.length]
+    if (id === 'natal' && !born) { setBirthForm(true); return }
+    switchStar(id)
+  }
+  // datetime-local is wall-clock time; the offset says where that clock was
+  const saveBirth = (e) => {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    const [d, t] = String(f.get('when')).split('T')
+    if (!d || !t) return
+    const [Y, M, D] = d.split('-').map(Number)
+    const [h, mi] = t.split(':').map(Number)
+    const off = Number(f.get('offset')) || 0
+    const iso = new Date(Date.UTC(Y, M - 1, D, h, mi) - off * 3600000).toISOString()
+    save('penrose.born', iso)
+    setBorn(iso)
+    setBirthForm(false)
+    switchStar('natal', iso)
+  }
+  const forgetBirth = () => {
+    try { localStorage.removeItem('penrose.born') } catch { /* private mode */ }
+    setBorn(null)
+    setBirthForm(false)
+    if (starId === 'natal') switchStar('sky', null)
   }
   const toggleMute = (k) => {
     const m = mutedRef.current.slice()
@@ -364,10 +395,28 @@ export default function PenroseApp() {
           {mood.id}
         </button>
         <button className="penrose__pill" onClick={nextStar}
-          aria-label={`star: ${starId === 'sky' ? "today's sky" : `${starId} directions`}, tap for next`}>
-          ✶ {starId === 'sky' ? 'sky' : starId}
+          aria-label={`star: ${starId === 'sky' ? "today's sky" : starId === 'natal' ? 'your birth sky' : `${starId} directions`}, tap for next`}>
+          ✶ {starId}
         </button>
+        {starId === 'natal' && (
+          <button className="penrose__pill penrose__pill--small" onClick={() => setBirthForm(true)} aria-label="change birth time">✎</button>
+        )}
       </div>
+
+      {birthForm && (
+        <form className="penrose__birth" onSubmit={saveBirth}>
+          <p>your birth sky: each planet where it stood when you were born becomes one line of the tiling. saved in this browser only.</p>
+          <label>born <input type="datetime-local" name="when" required
+            defaultValue={born ? new Date(born).toISOString().slice(0, 16) : ''} /></label>
+          <label>UTC offset there (hours) <input type="number" name="offset" step="0.25" min="-12" max="14"
+            defaultValue={born ? 0 : -new Date().getTimezoneOffset() / 60} /></label>
+          <div className="penrose__birth-actions">
+            <button type="submit">set</button>
+            <button type="button" onClick={() => setBirthForm(false)}>cancel</button>
+            {born && <button type="button" onClick={forgetBirth}>forget</button>}
+          </div>
+        </form>
+      )}
 
       <div className="penrose__voices">
         {Array.from({ length: star.n }, (_, k) => {

@@ -37,7 +37,7 @@ export function regularStar(n) {
 // is the same for θ and θ+180°, so fold longitudes onto a half turn, then
 // drop any that sit too close to one already taken (it would only make
 // slivers).
-export function skyStar(date = new Date()) {
+export function skyStar(date = new Date(), id = 'sky') {
   const picks = []
   for (const p of PLANETS) {
     const a = ((eclipticLon(p.name, date) * Math.PI) / 180) % Math.PI
@@ -48,11 +48,16 @@ export function skyStar(date = new Date()) {
     })
     if (!near) picks.push({ a: aa, name: p.name, symbol: p.symbol })
   }
-  return makeStar('sky', picks.map(p => p.a), picks.map(p => p.symbol))
+  return makeStar(id, picks.map(p => p.a), picks.map(p => p.symbol))
 }
 
-export const STAR_IDS = ['sky', '5', '7', '8']
-export const starById = (id) => (id === 'sky' ? skyStar() : regularStar(Number(id)))
+// 'natal' = the sky at a birth moment (ISO UTC string, kept in the viewer's
+// browser only, never in the code); the person's own tiling
+export const STAR_IDS = ['sky', '5', '7', '8', 'natal']
+export const starById = (id, born) =>
+  id === 'sky' ? skyStar()
+    : id === 'natal' ? (born ? skyStar(new Date(born), 'natal') : null)
+      : regularStar(Number(id))
 
 // Base offsets: spread, deliberately not summing to 0
 export const baseGamma = (n) => Array.from({ length: n }, (_, k) => ((k * 0.618034 + 0.31) % 1) - 0.5)
