@@ -6,11 +6,8 @@ function angDiff(a, b) {
   return ((((a - b) % 360) + 540) % 360) - 180
 }
 
-function tolFor(name) {
-  if (name === 'Sun') return 0.05
-  if (name === 'Moon') return 0.75
-  return 0.15
-}
+const TOL = { Sun: 0.05, Moon: 0.75 }   // degrees; every planet 0.15
+const tolFor = (name) => TOL[name] ?? 0.15
 
 const REFERENCE_CASES = [
   {
@@ -50,9 +47,9 @@ for (const { iso, bodies } of REFERENCE_CASES) {
   })
 }
 
-// Deterministic 2000 dates via LCG (seed 12345) between 1900-01-01 and 2100-01-01 UTC
+// Deterministic 2000 dates via LCG (seed 12345) between 1900-01-01 and 2050-01-01 UTC (the JPL table is valid 1800-2050)
 const T_START = Date.UTC(1900, 0, 1)
-const T_SPAN = Date.UTC(2100, 0, 1) - T_START
+const T_SPAN = Date.UTC(2050, 0, 1) - T_START
 const SAMPLE_DATES = []
 let state = 12345
 for (let i = 0; i < 2000; i++) {

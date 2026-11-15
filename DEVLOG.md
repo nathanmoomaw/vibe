@@ -1,5 +1,11 @@
 # DEVLOG — vibe
 
+## Nov 14 2026 — planet positions were heliocentric (circle-viz, astro wheel, aspects)
+
+- Found while building penrose's sky star and auditing it with Wolfram|Alpha: `eclipticLon` returned heliocentric mean longitudes (Venus 138° off, Mercury 121°, Mars 47°). Rewrote with JPL elements + Meeus lunar terms; Wolfram-checked to ≤0.11° (planets), ≤0.6° (Moon) on 1985/2026/2040 dates.
+- New `tests/planets.test.mjs` (Argon-written from a Wolfram-backed spec; added to `npm test`); 5 of 7 tests fail on the old code.
+- Review pass with the-switch tools: Jev flagged both files (0.51/0.56, weak signal on JS); Haiku 3 findings, 0 real (equinox-time + Venus-elongation claims refuted with Wolfram + a 200-year sweep; `node_modules` = local symlink, not committed); `/code-review` 5 findings, 4 fixed (docs, stale header, test date range, ΔT note), Earth cache added then removed on `/simplify` (cache missed in App's draw loop; ~25 µs/frame either way).
+
 ## Sep 11 2026 (8) — learn session kicked off: tone/shapes/divination, acoustomancy for VIBE
 
 - Launched a `/learn tone shapes divination` session (background agent) focused on acoustomancy and mood-adjustment — how tone/shape/sound combinations shift mood states, and whether any finding could inform `reading.js`'s `buildReading()` prescription logic or the circle-viz's cymatics/shape visuals. Research only, no code touched. Digest saves to LIFE memory as `learn_digest_2026-09-11b_tone_shapes_divination.md`, emails, and publishes to cat.obfusco.us; its "Worth Saving" items sync into `worth-saving/vibe.md` on a future `/dump` run once the agent finishes
