@@ -127,7 +127,12 @@ export default function PenroseApp() {
       const scale = PX_PER_UNIT * view.zoom * user.zoom * Math.max(0.8, Math.min(w, h) / 700)
       const radius = Math.hypot(w, h) / 2 / scale + 1.5
       const push = pushRef.current
-      const gamma = gamma0.map((g, k) => g + drift[k].a * Math.sin(drift[k].w * vt + drift[k].p) + push[0] * st.P[k][0] + push[1] * st.P[k][1])
+      // Drift around the mean so Σγ stays at baseGamma's sum: on the 5-star a
+      // whole-number Σγ is exactly Penrose's tiling, so it must never get there.
+      // (Pushes keep Σγ too: Σ P_k = 0 on the evenly spaced stars.)
+      const dr = drift.map(d => d.a * Math.sin(d.w * vt + d.p))
+      const drMean = dr.reduce((a, b) => a + b, 0) / dr.length
+      const gamma = gamma0.map((g, k) => g + dr[k] - drMean + push[0] * st.P[k][0] + push[1] * st.P[k][1])
       const tiles = rhombi(st, gamma, radius)
       const angle = vt * view.spin
       frameRef.current = { tiles, scale, angle, w, h }
