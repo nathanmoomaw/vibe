@@ -1,8 +1,9 @@
-// penrose voices: five families, five notes of a pentatonic scale.
+// Tiling voices: each line family is one note of a just-tuned pentatonic
+// scale (families past the fifth wrap into the octave below, then above).
 // Each family has a soft pad that swells with its drift, and a soft bell on
-// the same note (two octaves up) that strikes when that family's tiles flip.
-// Every note is in the same just-tuned pentatonic scale, so any mix of them
-// is consonant: nothing the tiling does can play a wrong note.
+// its note (two octaves up) that strikes when that family's tiles flip.
+// Every note is in the same pentatonic, so any mix of them is consonant:
+// nothing the tiling does can play a wrong note.
 import { getContext, getMaster } from '../audio/engine.js'
 
 let ctx = null
@@ -11,10 +12,14 @@ let bus = null        // pads + bells → out
 let send = null       // → reverb
 let wet = null        // reverb return
 let pads = []         // [{ oscs, filter, gain }]
-let notes = [0, 0, 0, 0, 0]
-let lastStrike = [0, 0, 0, 0, 0]
+let mood = null
+let notes = []
+let muted = []
+let lastStrike = []
 let strikeTimes = []  // recent strikes (ctx time), for the rate cap
-let maxRate = 3       // strikes per second, across all families
+
+const OCTAVE = [1, 0.5, 2]   // family k → octave of its scale degree
+const noteFor = (m, k) => m.root * m.scale[k % 5] * OCTAVE[Math.floor(k / 5) % 3]
 
 function makeImpulse(sec, decay) {
   const len = Math.round(ctx.sampleRate * sec)
@@ -26,11 +31,53 @@ function makeImpulse(sec, decay) {
   return buf
 }
 
-export const isRunning = () => !!out
+function makePad(f, cutoff, at) {
+  const gain = ctx.createGain()
+  gain.gain.value = 0
+  const filter = ctx.createBiquadFilter()
+  filter.type = 'lowpass'
+  filter.frequency.value = cutoff
+  filter.Q.value = 0.3
+  filter.connect(gain)
+  gain.connect(bus)
+  // a sine, a slightly detuned triangle (slow beating = gentle motion),
+  // and a quiet octave for air
+  const oscs = [['sine', 1, 1, 0.55], ['triangle', 1, 1.0035, 0.3], ['sine', 2, 1, 0.08]].map(([type, mult, det, lvl]) => {
+    const o = ctx.createOscillator()
+    o.type = type
+    o.frequency.value = f * mult * det
+    const g = ctx.createGain()
+    g.gain.value = lvl
+    o.connect(g)
+    g.connect(filter)
+    o.start(at)
+    return { o, mult, det }
+  })
+  return { oscs, filter, gain }
+}
 
-export function startVoices(mood, volume) {
+function dropPad(p, sec) {
+  const now = ctx.currentTime
+  p.gain.gain.cancelScheduledValues(now)
+  p.gain.gain.setTargetAtTime(0, now, sec / 4)
+  p.oscs.forEach(({ o }) => o.stop(now + sec + 0.1))
+  setTimeout(() => p.gain.disconnect(), (sec + 0.3) * 1000)
+}
+
+// (Re)build one pad per family; old pads fade out as the new ones swell in
+function buildPads(n) {
+  pads.forEach(p => dropPad(p, 1.5))
+  const now = ctx.currentTime
+  notes = Array.from({ length: n }, (_, k) => noteFor(mood, k))
+  pads = notes.map(f => makePad(f, mood.cutoff, now))
+  muted = Array.from({ length: n }, (_, k) => muted[k] ?? false)
+  lastStrike = Array(n).fill(0)
+}
+
+export function startVoices(m, volume, n) {
   if (out) return
   ctx = getContext()
+  mood = m
   const now = ctx.currentTime
   out = ctx.createGain()
   out.gain.setValueAtTime(0.0001, now)
@@ -38,9 +85,7 @@ export function startVoices(mood, volume) {
   out.connect(getMaster())
 
   bus = ctx.createGain()
-  bus.gain.value = 1
   bus.connect(out)
-
   const verb = ctx.createConvolver()
   verb.buffer = makeImpulse(4, 2.6)
   send = ctx.createGain()
@@ -50,57 +95,42 @@ export function startVoices(mood, volume) {
   verb.connect(wet)
   wet.connect(out)
 
-  notes = mood.scale.map(r => mood.root * r)
-  pads = notes.map((f) => {
-    const gain = ctx.createGain()
-    gain.gain.value = 0
-    const filter = ctx.createBiquadFilter()
-    filter.type = 'lowpass'
-    filter.frequency.value = mood.cutoff
-    filter.Q.value = 0.3
-    filter.connect(gain)
-    gain.connect(bus)
-    // a sine, a slightly detuned triangle (slow beating = gentle motion),
-    // and a quiet octave for air
-    const oscs = [['sine', 1, 1, 0.55], ['triangle', 1, 1.0035, 0.3], ['sine', 2, 1, 0.08]].map(([type, mult, det, lvl]) => {
-      const o = ctx.createOscillator()
-      o.type = type
-      o.frequency.value = f * mult * det
-      const g = ctx.createGain()
-      g.gain.value = lvl
-      o.connect(g)
-      g.connect(filter)
-      o.start(now)
-      return { o, mult, det }
-    })
-    return { oscs, filter, gain }
-  })
-  setMood(mood, 0)
+  buildPads(n)
+  setMood(m, 0)
+}
+
+export function setFamilies(n) {
+  if (!out || n === pads.length) return
+  buildPads(n)
 }
 
 // Glide every pad to the new mood's notes and tone colour
-export function setMood(mood, glideSec = 1.2) {
-  maxRate = mood.maxRate
+export function setMood(m, glideSec = 1.2) {
+  mood = m
   if (!out) return
   const now = ctx.currentTime
   const tc = Math.max(0.01, glideSec / 3)
-  notes = mood.scale.map(r => mood.root * r)
+  notes = pads.map((_, k) => noteFor(m, k))
   pads.forEach((p, k) => {
     p.oscs.forEach(({ o, mult, det }) => o.frequency.setTargetAtTime(notes[k] * mult * det, now, tc))
-    p.filter.frequency.setTargetAtTime(mood.cutoff, now, tc)
+    p.filter.frequency.setTargetAtTime(m.cutoff, now, tc)
   })
-  send.gain.setTargetAtTime(mood.wet, now, tc)
+  send.gain.setTargetAtTime(m.wet, now, tc)
   wet.gain.setTargetAtTime(1, now, tc)
-  bus.gain.setTargetAtTime(1 - mood.wet * 0.4, now, tc)
+  bus.gain.setTargetAtTime(1 - m.wet * 0.4, now, tc)
 }
 
-// levels: 0..1 per family (its drift swell); padLevel: the mood's pad loudness
-export function setPads(levels, padLevel) {
+export function setMuted(k, on) { muted[k] = on }
+
+// levels: 0..1 per family (its drift swell)
+export function setPads(levels) {
   if (!out) return
   const now = ctx.currentTime
+  // more families → each a little quieter, so the sum stays even
+  const share = Math.sqrt(5 / Math.max(5, pads.length))
   pads.forEach((p, k) => {
-    const l = levels[k]
-    p.gain.gain.setTargetAtTime(padLevel * (0.04 + 0.96 * l * l) * 0.3, now, 0.6)
+    const l = muted[k] ? 0 : levels[k] ?? 0
+    p.gain.gain.setTargetAtTime(mood.pad * share * (muted[k] ? 0 : 0.04 + 0.96 * l * l) * 0.3, now, 0.6)
   })
 }
 
@@ -109,13 +139,13 @@ export function setVolume(v) {
   out.gain.setTargetAtTime(Math.max(0.0001, v), ctx.currentTime, 0.08)
 }
 
-// A soft bell on family k's note. vel 0..1, pan -1..1.
-// Returns false when the rate cap or per-family gap swallowed it.
-export function strike(k, vel, pan = 0) {
-  if (!out) return false
+// A soft bell on family k's note. vel 0..1, pan -1..1. `force` (a tap)
+// skips the rate cap. Returns false when muted or capped.
+export function strike(k, vel, pan = 0, force = false) {
+  if (!out || muted[k] || notes[k] === undefined) return false
   const now = ctx.currentTime
   strikeTimes = strikeTimes.filter(t => now - t < 1)
-  if (strikeTimes.length >= maxRate || now - lastStrike[k] < 0.22) return false
+  if (!force && (strikeTimes.length >= mood.maxRate || now - lastStrike[k] < 0.22)) return false
   strikeTimes.push(now)
   lastStrike[k] = now
 
@@ -151,12 +181,12 @@ export function strike(k, vel, pan = 0) {
 
 export function stopVoices(fadeSec = 1.2) {
   if (!out) return
-  const o = out, ps = pads, c = ctx
+  const o = out, c = ctx
   const now = c.currentTime
   o.gain.cancelScheduledValues(now)
   o.gain.setValueAtTime(Math.max(0.0001, o.gain.value), now)
   o.gain.exponentialRampToValueAtTime(0.0001, now + fadeSec)
-  ps.forEach(p => p.oscs.forEach(({ o: osc }) => osc.stop(now + fadeSec + 0.1)))
+  pads.forEach(p => p.oscs.forEach(({ o: osc }) => osc.stop(now + fadeSec + 0.1)))
   setTimeout(() => o.disconnect(), (fadeSec + 0.3) * 1000)
   out = null; pads = []; strikeTimes = []
 }

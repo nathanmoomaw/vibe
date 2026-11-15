@@ -44,25 +44,52 @@
   50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
 }
 
-/* five phases, one dot each, swelling with their voice */
-.penrose__phases {
+/* one dot per voice (line family), swelling with it; tap to mute */
+.penrose__voices {
   position: absolute;
   left: 50%;
-  bottom: 22px;
+  bottom: 14px;
   transform: translateX(-50%);
   display: flex;
-  gap: 14px;
-  pointer-events: none;
+  gap: 4px;
 }
-.penrose__phases span {
+.penrose__voice {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.penrose__voice::before {
+  content: '';
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: var(--c);
-  opacity: calc(0.3 + 0.7 * var(--l));
-  transform: scale(calc(0.7 + 0.8 * var(--l)));
+  opacity: calc(0.35 + 0.65 * var(--l));
+  transform: scale(calc(0.75 + 0.75 * var(--l)));
   box-shadow: 0 0 calc(4px + 14px * var(--l)) var(--c);
-  transition: opacity 0.4s linear, transform 0.4s linear, box-shadow 0.4s linear;
+  transition: opacity 0.4s linear, transform 0.4s linear, box-shadow 0.4s linear, background 0.3s;
+}
+.penrose__voice.is-muted::before {
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid var(--c);
+  opacity: 0.45;
+  transform: none;
+}
+.penrose__voice:hover::before { opacity: 1; }
+.penrose__glyph {
+  position: absolute;
+  bottom: 100%;
+  font: 12px/1 'Apple Symbols', 'Noto Sans Symbols', 'Segoe UI Symbol', sans-serif;
+  color: var(--c);
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .penrose__stop {
@@ -79,11 +106,15 @@
   cursor: pointer;
 }
 
-/* mood: the current state's name, tap to move to the next */
-.penrose__mood {
+/* mood + star: tap to move to the next */
+.penrose__top {
   position: absolute;
   top: 16px;
   left: 18px;
+  display: flex;
+  gap: 8px;
+}
+.penrose__pill {
   height: 40px;
   padding: 0 16px;
   border-radius: 20px;
@@ -95,7 +126,7 @@
   cursor: pointer;
   transition: border-color 0.3s, color 0.3s;
 }
-.penrose__mood:hover { border-color: rgba(255, 255, 255, 0.5); color: #fff; }
+.penrose__pill:hover { border-color: rgba(255, 255, 255, 0.5); color: #fff; }
 
 /* volume: a thin line, bottom right */
 .penrose__volume {
@@ -124,10 +155,11 @@
   background: rgba(255, 255, 255, 0.85);
   box-shadow: 0 0 8px rgba(160, 200, 255, 0.7);
 }
-.penrose__volume:focus-visible, .penrose__mood:focus-visible { outline: 1px solid rgba(255, 255, 255, 0.6); outline-offset: 3px; }
+.penrose__volume:focus-visible, .penrose__pill:focus-visible, .penrose__voice:focus-visible { outline: 1px solid rgba(255, 255, 255, 0.6); outline-offset: 3px; }
 
 @media (max-width: 480px) {
-  .penrose__phases { bottom: 52px; }
+  .penrose__voices { bottom: 48px; }
+  .penrose__pill { padding: 0 12px; letter-spacing: 0.08em; }
 }
 
 @media (prefers-reduced-motion: reduce) {

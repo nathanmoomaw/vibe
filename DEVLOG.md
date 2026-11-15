@@ -1,5 +1,13 @@
 # DEVLOG — vibe
 
+## Nov 14 2026 (3) — own tiling from the sky, wider colour, gestures
+
+From /dump (3 items):
+- **Own tiling scheme**: `multigrid.js` generalises de Bruijn's method to any star of line directions. Default star = today's planets (each planet's longitude is one line family; near-duplicates dropped), so the tiling is the sky's and changes with it. Also 5/7/8 evenly spaced, offsets chosen so none is Penrose's tiling. Star button cycles them. Old `pentagrid.js` moved to `~/.claude/.trash/20261114/vibe-penrose/src/penrose/`. (Wolfram MCP not connected this session; math checked numerically in node: every star tiles the plane exactly.)
+- **Colour**: palettes widened (130–360° spread), more saturated and brighter, and the wheel slowly circles over time. Twist / sideways scroll turns it by hand.
+- **Controls via gestures, not knobs**: dots are now per-voice mute toggles (planet glyphs on the sky star); tap a tile to ring its notes; pinch/scroll zoom; twist/sideways scroll colour; drag still plays. Three buttons total (mood, star, volume).
+- Playwright: no errors; sky star = 7 dots ☉☽☿♀♃♄♆; tile tap = 2 bells; dot mute toggles; stars cycle 5/7/8/sky with matching dot counts; phone layout OK. Levels peak ~0.22 at default volume.
+
 ## Nov 14 2026 (2) — penrose: tuned sound, drag plays, moods, volume
 
 Feedback: not enough variation, sound not pleasant, hard to control.
