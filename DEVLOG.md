@@ -7,6 +7,7 @@ From /dump (5 items):
 - **Drag pans**: tiles follow the finger 1:1 and glide after release, still flipping/playing as they go.
 - **Less tonal**: bells sometimes ring a passing note from a 7-note just mode (semitones like 16/15 ≈ 112 cents, per Wolfram), pads stay pentatonic; key glides up a fifth and back every 2.5–5 min (not in relaxing).
 - **Natal privacy line** under the pills.
+- **Spacebar** stops / starts again (same mood + star), like the main console; ignored while typing in the birth form. Playwright: stop → resume → stop, no double-fire on a focused button.
 - `tests/multigrid.test.mjs` by Argon ($0.0212; 2 test-side bugs fixed: on-edge sample points, missing ♅♆ glyphs). Jev flagged all 4 changed files (0.31–0.75): noise.
 
 ## Nov 14 2026 (4) — Wolfram audit: planet positions were heliocentric

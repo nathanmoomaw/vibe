@@ -281,6 +281,21 @@ export default function PenroseApp() {
     stopVoices(1.2)
   }, [])
 
+  // Spacebar stops the sound, or starts it again (same mood/star), like the
+  // main console. Not while typing in the birth-time form.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.code !== 'Space') return
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
+      e.preventDefault()
+      if (playingRef.current) stop()
+      else begin()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [begin, stop])
+
   useEffect(() => { setPlaybackActive(playing) }, [playing])
   useEffect(() => { registerMediaSessionStop(stop) }, [stop])
   useEffect(() => () => stopVoices(0.2), [])
