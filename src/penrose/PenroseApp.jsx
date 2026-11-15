@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getAnalyser, setPlaybackActive, registerMediaSessionStop } from '../audio/engine.js'
 import { rhombi, inRhomb, starById, baseGamma, STAR_IDS } from './multigrid.js'
 import { MOODS, lerpMood } from './moods.js'
-import { startVoices, stopVoices, setMood as setVoiceMood, setPads, setVolume as setVoiceVolume, setFamilies, setMuted as setVoiceMuted, strike } from './voices.js'
+import { startVoices, stopVoices, setMood as setVoiceMood, setPads, setVolume as setVoiceVolume, setFamilies, setMuted as setVoiceMuted, setKey, strike } from './voices.js'
 import './Penrose.css'
 
 // A multigrid tiling, drawn and heard. Each family of grid lines is one note
@@ -81,6 +81,8 @@ export default function PenroseApp() {
   const swellRef = useRef([])
   const pushRef = useRef([0, 0])
   const userRef = useRef({ zoom: 1, hue: 0 })    // pinch/scroll zoom, twist hue
+  // view centre in tiling units; drag moves it 1:1, release keeps gliding
+  const panRef = useRef({ x: 0, y: 0, vx: 0, vy: 0, held: false, t: 0 })
   const frameRef = useRef(null)                  // last frame's geometry, for taps
   const flashRef = useRef(new Map())             // tile key → flash time (ms)
   const pointersRef = useRef(new Map())
@@ -115,6 +117,12 @@ export default function PenroseApp() {
       }
       view = lerpMood(view, moodRef.current, Math.min(1, dt * 0.6))
       vt += dt * view.speed
+      const pan = panRef.current
+      if (!pan.held) {
+        pan.x += pan.vx * dt; pan.y += pan.vy * dt
+        const k = Math.exp(-dt * 2.2)
+        pan.vx *= k; pan.vy *= k
+      }
       const sw = drift.map(d => swell(d, vt))
       swellRef.current = sw
 
@@ -139,9 +147,9 @@ export default function PenroseApp() {
       const dr = drift.map(d => d.a * Math.sin(d.w * vt + d.p))
       const drMean = dr.reduce((a, b) => a + b, 0) / dr.length
       const gamma = gamma0.map((g, k) => g + dr[k] - drMean + push[0] * st.P[k][0] + push[1] * st.P[k][1])
-      const tiles = rhombi(st, gamma, radius)
+      const tiles = rhombi(st, gamma, radius, pan.x, pan.y)
       const angle = vt * view.spin
-      frameRef.current = { tiles, scale, angle, w, h }
+      frameRef.current = { tiles, scale, angle, w, h, px: pan.x, py: pan.y }
 
       // Flips: tiles near the middle that weren't anywhere on screen last
       // frame, so scrolling or zooming into the middle doesn't count
@@ -152,7 +160,7 @@ export default function PenroseApp() {
         const key = tileKey(tile)
         tile.key = key
         keys.add(key)
-        if (prevKeys && !prevKeys.has(key) && Math.hypot(tile.cx, tile.cy) < inner) {
+        if (prevKeys && !prevKeys.has(key) && Math.hypot(tile.cx - pan.x, tile.cy - pan.y) < inner) {
           flashes.set(key, now)
           fresh.push(tile)
         }
@@ -166,8 +174,9 @@ export default function PenroseApp() {
         for (let i = 0; i < Math.min(MAX_STRIKE_TRIES, fresh.length); i++) {
           const tile = fresh[(Math.random() * fresh.length) | 0]
           const k = Math.random() < 0.5 ? tile.r : tile.s
-          const d = Math.hypot(tile.cx, tile.cy) / inner
-          strike(k, 0.35 + 0.65 * (1 - d), (tile.cx * cos - tile.cy * sin) / halfW)
+          const rx = tile.cx - pan.x, ry = tile.cy - pan.y
+          const d = Math.hypot(rx, ry) / inner
+          strike(k, 0.35 + 0.65 * (1 - d), (rx * cos - ry * sin) / halfW)
         }
       }
 
@@ -177,6 +186,7 @@ export default function PenroseApp() {
       ctx.translate(w / 2, h / 2)
       ctx.rotate(angle)
       ctx.scale(scale, scale)
+      ctx.translate(-pan.x, -pan.y)
       ctx.lineJoin = 'round'
       ctx.lineWidth = 2 / scale
 
@@ -192,7 +202,7 @@ export default function PenroseApp() {
         const glow = 0.5 * (sw[r] + sw[s])
         const born = flashes.get(key)
         const flash = born === undefined ? 0 : 1 - (now - born) / FLASH_MS
-        const dist = Math.hypot(cx, cy) / radius
+        const dist = Math.hypot(cx - pan.x, cy - pan.y) / radius
         const fade = Math.max(0, 1 - dist * dist)
         const quiet = mute[r] || mute[s] ? 0.35 : 1
         const a = Math.min(0.95, ((0.66 - 0.3 * open) * (0.45 + 0.55 * glow) * (1 + level * 0.6) * quiet + flash * 0.4) * fade)
@@ -221,6 +231,16 @@ export default function PenroseApp() {
     }, AUDIO_EVERY_MS)
     return () => clearInterval(id)
   }, [playing])
+
+  // Slow key glides: every `modulate` seconds the harmony moves up a fifth,
+  // then home again next time, so long listens don't sit in one key
+  useEffect(() => {
+    const secs = MOODS[moodIdx].modulate
+    if (!playing || !secs) return
+    let up = false
+    const id = setInterval(() => { up = !up; setKey(up ? 3 / 2 : 1) }, secs * 1000)
+    return () => { clearInterval(id); setKey(1, 3) }
+  }, [playing, moodIdx])
 
   useEffect(() => {
     moodRef.current = MOODS[moodIdx]
@@ -319,7 +339,7 @@ export default function PenroseApp() {
     const rect = canvasRef.current.getBoundingClientRect()
     const dx = clientX - rect.left - f.w / 2, dy = clientY - rect.top - f.h / 2
     const c = Math.cos(f.angle), s = Math.sin(f.angle)
-    const x = (dx * c + dy * s) / f.scale, y = (-dx * s + dy * c) / f.scale
+    const x = (dx * c + dy * s) / f.scale + f.px, y = (-dx * s + dy * c) / f.scale + f.py
     const tile = f.tiles.find(t => inRhomb(t.pts, x, y))
     if (!tile) return
     flashRef.current.set(tile.key, performance.now())
@@ -330,6 +350,7 @@ export default function PenroseApp() {
 
   const onDown = (e) => {
     e.currentTarget.setPointerCapture(e.pointerId)
+    Object.assign(panRef.current, { held: true, vx: 0, vy: 0, t: performance.now() })
     const ps = pointersRef.current
     ps.set(e.pointerId, [e.clientX, e.clientY])
     if (ps.size === 1) {
@@ -356,7 +377,20 @@ export default function PenroseApp() {
       u.hue = g.hue0 + (da * 180) / Math.PI * 1.5
     } else if (g.kind === 'drag') {
       const [x, y] = g.last
-      pushRef.current = [pushRef.current[0] + (e.clientX - x) * PUSH, pushRef.current[1] + (e.clientY - y) * PUSH]
+      const ddx = e.clientX - x, ddy = e.clientY - y
+      pushRef.current = [pushRef.current[0] + ddx * PUSH, pushRef.current[1] + ddy * PUSH]
+      // slide the tiles with the finger: screen delta → tiling units (undo
+      // the view's spin and scale), and track velocity for the glide
+      const f = frameRef.current
+      if (f) {
+        const c = Math.cos(f.angle), sn = Math.sin(f.angle)
+        const tx = (ddx * c + ddy * sn) / f.scale, ty = (-ddx * sn + ddy * c) / f.scale
+        const pan = panRef.current
+        pan.x -= tx; pan.y -= ty
+        const now = performance.now(), dts = Math.max(0.008, (now - pan.t) / 1000)
+        pan.vx = 0.7 * pan.vx + 0.3 * (-tx / dts); pan.vy = 0.7 * pan.vy + 0.3 * (-ty / dts)
+        pan.t = now
+      }
       g.last = [e.clientX, e.clientY]
       if (Math.hypot(e.clientX - g.start[0], e.clientY - g.start[1]) > TAP_PX) g.moved = true
     }
@@ -370,7 +404,13 @@ export default function PenroseApp() {
     if (ps.size === 1) {
       const [p] = ps.values()
       gestureRef.current = { kind: 'drag', last: p, start: p, t0: 0, moved: true }
-    } else if (ps.size === 0) gestureRef.current = null
+    } else if (ps.size === 0) {
+      gestureRef.current = null
+      const pan = panRef.current
+      pan.held = false
+      // a pause before letting go means no glide
+      if (performance.now() - pan.t > 80) { pan.vx = 0; pan.vy = 0 }
+    }
   }
 
   const mood = MOODS[moodIdx]
@@ -402,10 +442,11 @@ export default function PenroseApp() {
           <button className="penrose__pill penrose__pill--small" onClick={() => setBirthForm(true)} aria-label="change birth time">✎</button>
         )}
       </div>
+      {starId === 'natal' && <p className="penrose__note">your birth time stays in this browser, never sent anywhere.</p>}
 
       {birthForm && (
         <form className="penrose__birth" onSubmit={saveBirth}>
-          <p>your birth sky: each planet where it stood when you were born becomes one line of the tiling. saved in this browser only.</p>
+          <p>your birth sky: each planet where it stood when you were born becomes one line of the tiling. kept in this browser only, never sent anywhere.</p>
           <label>born <input type="datetime-local" name="when" required
             defaultValue={born ? new Date(born).toISOString().slice(0, 16) : ''} /></label>
           <label>UTC offset there (hours) <input type="number" name="offset" step="0.25" min="-12" max="14"

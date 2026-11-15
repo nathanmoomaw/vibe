@@ -1,5 +1,14 @@
 # DEVLOG — vibe
 
+## Nov 14 2026 (5) — black wedge fixed, drag pans, passing notes + key glides, natal privacy line
+
+From /dump (5 items):
+- **Black area** (screenshot, meditating + sky): tile generation assumed evenly spaced directions; the sky star's uneven ones left a wedge uncovered (36/216 sample points). Now sized from the star's smallest eigenvalue (Wolfram-checked: 2.3759) with a proven margin. Haiku (review-haiku) then flagged bunched skies: real — 1990-01-24 had λmin 0.17 and 16 ms frames. Quiet '·' fill lines in gaps over 75° (23% of days) → worst 2.6 ms, full coverage.
+- **Drag pans**: tiles follow the finger 1:1 and glide after release, still flipping/playing as they go.
+- **Less tonal**: bells sometimes ring a passing note from a 7-note just mode (semitones like 16/15 ≈ 112 cents, per Wolfram), pads stay pentatonic; key glides up a fifth and back every 2.5–5 min (not in relaxing).
+- **Natal privacy line** under the pills.
+- `tests/multigrid.test.mjs` by Argon ($0.0212; 2 test-side bugs fixed: on-edge sample points, missing ♅♆ glyphs). Jev flagged all 4 changed files (0.31–0.75): noise.
+
 ## Nov 14 2026 (4) — Wolfram audit: planet positions were heliocentric
 
 - Connected Wolfram|Alpha (user-scope MCP `wolfram`; its server needed a User-Agent fix, Wolfram 403s httpx's default). Audited the sky star's inputs: `eclipticLon` was 121–138° off for Mercury/Venus, 47° for Mars (heliocentric mean longitudes used as geocentric). Rewrote with JPL elements + Meeus lunar terms; now within 0.07° (planets) / 0.06° (Moon) of Wolfram today, 0.01° / 0.36° in 1985. Today's sky star is now ☉☽☿♀♂♄♅ (Jupiter sits 0.6° from Mars, Neptune 7° from Saturn, so both drop).

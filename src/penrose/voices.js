@@ -14,12 +14,13 @@ let wet = null        // reverb return
 let pads = []         // [{ oscs, filter, gain }]
 let mood = null
 let notes = []
+let keyRatio = 1    // 1 = home key, 3/2 = a fifth up (slow key glides)
 let muted = []
 let lastStrike = []
 let strikeTimes = []  // recent strikes (ctx time), for the rate cap
 
 const OCTAVE = [1, 0.5, 2]   // family k → octave of its scale degree
-const noteFor = (m, k) => m.root * m.scale[k % 5] * OCTAVE[Math.floor(k / 5) % 3]
+const noteFor = (m, k) => m.root * keyRatio * m.scale[k % 5] * OCTAVE[Math.floor(k / 5) % 3]
 
 function makeImpulse(sec, decay) {
   const len = Math.round(ctx.sampleRate * sec)
@@ -141,6 +142,18 @@ export function setVolume(v) {
 
 // A soft bell on family k's note. vel 0..1, pan -1..1. `force` (a tap)
 // skips the rate cap. Returns false when muted or capped.
+// The mode note just above or below f (same octave register), from the
+// current key (keyRatio moves the whole mode when the key glides)
+function passingNote(f) {
+  const base = mood.root * keyRatio
+  const cands = []
+  for (const oct of [1, 2, 4, 8]) for (const r of mood.mode) cands.push(base * r * oct)
+  const above = cands.filter(c => c > f * 1.01).sort((a, b) => a - b)[0]
+  const below = cands.filter(c => c < f * 0.99).sort((a, b) => b - a)[0]
+  const pick = Math.random() < 0.5 ? above ?? below : below ?? above
+  return pick ?? f
+}
+
 export function strike(k, vel, pan = 0, force = false) {
   if (!out || muted[k] || notes[k] === undefined) return false
   const now = ctx.currentTime
@@ -149,7 +162,10 @@ export function strike(k, vel, pan = 0, force = false) {
   strikeTimes.push(now)
   lastStrike[k] = now
 
-  const f = notes[k] * 4
+  // Sometimes ring a neighbouring note of the mood's 7-note mode instead (a
+  // semitone or tone away): a passing note, gone before it can clash
+  let f = notes[k] * 4
+  if (!force && Math.random() < (mood.color ?? 0)) f = passingNote(f)
   const v = 0.09 + 0.22 * Math.min(1, vel)
   const car = ctx.createOscillator()
   const mod = ctx.createOscillator()
@@ -189,4 +205,11 @@ export function stopVoices(fadeSec = 1.2) {
   pads.forEach(p => p.oscs.forEach(({ o: osc }) => osc.stop(now + fadeSec + 0.1)))
   setTimeout(() => o.disconnect(), (fadeSec + 0.3) * 1000)
   out = null; pads = []; strikeTimes = []
+}
+
+// Glide the whole key (pads now, bells from here on) to `ratio` × the mood's
+// root, slowly so it reads as the harmony moving, not a jump
+export function setKey(ratio, glideSec = 8) {
+  keyRatio = ratio
+  if (out && mood) setMood(mood, glideSec)
 }
