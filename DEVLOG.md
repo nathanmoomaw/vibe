@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Nov 15 2026 — planets.js synced with dev/v2
+
+Took dev/v2's reviewed `src/utils/planets.js` (the 3-D z term was dead code: the tiling only uses longitude; doc comment now cites the Wolfram reference ranges) and `tests/planets.test.mjs` (23 Wolfram|Alpha refs + property checks), now in `npm test`. Output unchanged: 13/13 pass, build OK.
+
 ## Nov 14 2026 (5) — black wedge fixed, drag pans, passing notes + key glides, natal privacy line
 
 From /dump (5 items):

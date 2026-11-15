@@ -1,6 +1,6 @@
 // Shared planetary-position math — used by both the circle-viz (App.jsx) and
 // the astro chart overlay (VibeAstro.jsx) so the two stay in sync rather than
-// carrying two copies of the same mean-orbit constants.
+// carrying two copies of the orbit math.
 
 // ── Planetary Cousto frequencies (Cosmic Octave, orbital period → Hz via 2ⁿ) ──
 export const PLANETS = [
@@ -34,12 +34,10 @@ export const PLANET_QUALITY = {
 // the planet and for Earth, subtract to get the view from Earth, then add
 // precession since J2000. Sun = Earth's heliocentric direction + 180°. Moon:
 // mean longitude plus its six largest periodic terms (Meeus, low precision).
-// Accurate to well under a degree against Wolfram|Alpha (checked Nov 14
-// 2026), plenty for signs, aspects and directions. No observer location:
-// geocentric, so not good enough for houses.
-//
-// Before Nov 14 2026 this returned *heliocentric* mean longitudes for
-// Mercury-Neptune (as seen from the Sun), up to 138° off for Venus.
+// Against Wolfram|Alpha (Nov 14 2026; 1985, 2026, 2040 dates): planets within
+// 0.11°, Sun 0.01°, Moon within 0.6°. Plenty for signs, aspects and
+// directions; tests/planets.test.mjs holds the reference values. No observer
+// location: geocentric, so not good enough for houses.
 const D2R = Math.PI / 180
 // a (AU), e, I, L, long. perihelion, long. node; then rates per century
 const ELEMENTS = {
@@ -61,7 +59,7 @@ const ELEMENTS = {
             [0.00026291, 0.00005105, 0.00035372, 218.45945325, -0.32241464, -0.00508664]],
 }
 
-// Heliocentric ecliptic (J2000) x, y, z in AU, T in centuries since J2000
+// Heliocentric ecliptic (J2000) x, y in AU, T in centuries since J2000
 function helio(name, T) {
   const [e0, rate] = ELEMENTS[name]
   const [a, e, I, L, wbar, node] = e0.map((v, i) => v + rate[i] * T)
@@ -70,11 +68,10 @@ function helio(name, T) {
   let E = M + e * Math.sin(M)
   for (let i = 0; i < 6; i++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E))
   const xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E)
-  const cw = Math.cos(w), sw = Math.sin(w), cO = Math.cos(O), sO = Math.sin(O), cI = Math.cos(inc), sI = Math.sin(inc)
+  const cw = Math.cos(w), sw = Math.sin(w), cO = Math.cos(O), sO = Math.sin(O), cI = Math.cos(inc)
   return [
     (cw * cO - sw * sO * cI) * xp + (-sw * cO - cw * sO * cI) * yp,
     (cw * sO + sw * cO * cI) * xp + (-sw * sO + cw * cO * cI) * yp,
-    sw * sI * xp + cw * sI * yp,
   ]
 }
 
@@ -88,6 +85,8 @@ function moonLon(d) {
     + 0.214 * Math.sin(2 * Mm) - 0.186 * Math.sin(Ms) - 0.114 * Math.sin(2 * F)
 }
 
+// Uses UT as if it were TT (ΔT ≈ 69 s) and skips aberration (20″): ~0.01°,
+// below what the ring or the tiling can show.
 export function eclipticLon(name, date = new Date()) {
   const d = date.getTime() / 86400000 - 10957.5  // days since J2000.0
   const T = d / 36525
