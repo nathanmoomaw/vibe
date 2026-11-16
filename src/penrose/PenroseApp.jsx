@@ -48,6 +48,20 @@ const familyHue = (k, n, hue, spread) => (((hue + (n > 1 ? k / (n - 1) - 0.5 : 0
 // phason flip changes the corner, so a flipped tile is a new key
 const tileKey = (t) => `${t.r},${t.s}:${Math.round(t.pts[0] * 1e4)},${Math.round(t.pts[1] * 1e4)}`
 
+// Spectre-style curved edges. Every edge becomes an S-curve that is
+// point-symmetric about its midpoint, so it is the same curve whichever way
+// it is traversed: the two tiles that share an edge share the curve exactly
+// (no gaps or overlaps), and opposite edges of a rhombus are translates of
+// each other, so they never cross. Bend is per line family, so it can move.
+const CURVE = 0.2  // control-point offset, × edge length
+function sEdge(ctx, pts, i, k) {
+  const x0 = pts[i * 2], y0 = pts[i * 2 + 1]
+  const j = ((i + 1) % 4) * 2
+  const dx = pts[j] - x0, dy = pts[j + 1] - y0
+  ctx.bezierCurveTo(x0 + dx / 3 - dy * k, y0 + dy / 3 + dx * k,
+    x0 + dx * 2 / 3 + dy * k, y0 + dy * 2 / 3 - dx * k, pts[j], pts[j + 1])
+}
+
 const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v) } catch { return d } }
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch { /* private mode */ } }
 
@@ -74,6 +88,8 @@ export default function PenroseApp() {
     return STAR_IDS.includes(s) && (s !== 'natal' || born) ? s : 'sky'
   })
   const [star, setStar] = useState(() => starById(starId, born))
+  const [curved, setCurved] = useState(() => load('penrose.curved', true) !== false)
+  const curvedRef = useRef(curved)
   const [birthForm, setBirthForm] = useState(false)
   const starRef = useRef(star)
   const [muted, setMutedState] = useState(() => Array(star.n).fill(false))
@@ -195,6 +211,8 @@ export default function PenroseApp() {
       // flashes when it has just flipped, and dims if a family is muted
       const baseHue = view.hue + user.hue + vt * 0.3
       const mute = mutedRef.current
+      // Curved edges: each family's S-bend breathes with its swell
+      const bend = curvedRef.current ? sw.map(v => CURVE * (0.65 + 0.35 * v)) : null
       for (const tile of tiles) {
         const { r, s, pts, cx, cy, key } = tile
         const open = st.open[r][s]
@@ -209,8 +227,14 @@ export default function PenroseApp() {
         const sat = view.sat * (1.35 - 0.4 * open)
         const light = view.light + 12 - 14 * open + flash * 16
         ctx.beginPath()
-        ctx.moveTo(pts[0], pts[1]); ctx.lineTo(pts[2], pts[3])
-        ctx.lineTo(pts[4], pts[5]); ctx.lineTo(pts[6], pts[7]); ctx.closePath()
+        ctx.moveTo(pts[0], pts[1])
+        if (bend) {
+          // edges 0 and 2 run along family r, 1 and 3 along family s
+          for (let i = 0; i < 4; i++) sEdge(ctx, pts, i, bend[i % 2 ? s : r])
+        } else {
+          ctx.lineTo(pts[2], pts[3]); ctx.lineTo(pts[4], pts[5]); ctx.lineTo(pts[6], pts[7])
+        }
+        ctx.closePath()
         ctx.fillStyle = `hsla(${hue.toFixed(0)},${Math.min(95, sat).toFixed(0)}%,${Math.min(92, light).toFixed(0)}%,${a.toFixed(3)})`
         ctx.fill()
         ctx.strokeStyle = `rgba(3,3,10,${(0.55 * fade + 0.2).toFixed(3)})`
@@ -313,6 +337,13 @@ export default function PenroseApp() {
     m.forEach((_, k) => setVoiceMuted(k, false))
     save('penrose.star', id)
   }
+  const toggleCurved = () => {
+    const v = !curved
+    curvedRef.current = v
+    setCurved(v)
+    save('penrose.curved', v)
+  }
+
   const nextStar = () => {
     const id = STAR_IDS[(STAR_IDS.indexOf(starId) + 1) % STAR_IDS.length]
     if (id === 'natal' && !born) { setBirthForm(true); return }
@@ -452,6 +483,10 @@ export default function PenroseApp() {
         <button className="penrose__pill" onClick={nextStar}
           aria-label={`star: ${starId === 'sky' ? "today's sky" : starId === 'natal' ? 'your birth sky' : `${starId} directions`}, tap for next`}>
           ✶ {starId}
+        </button>
+        <button className="penrose__pill penrose__pill--small" onClick={toggleCurved}
+          aria-label={curved ? 'curved edges on, tap for straight' : 'straight edges, tap for curved'}>
+          {curved ? '∿' : '◇'}
         </button>
         {starId === 'natal' && (
           <button className="penrose__pill penrose__pill--small" onClick={() => setBirthForm(true)} aria-label="change birth time">✎</button>

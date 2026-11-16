@@ -1,5 +1,9 @@
 # DEVLOG — vibe
 
+## Nov 15 2026 (2) — spectre-style curved edges
+
+Asked "what happened to the spectre tile?" (dump item 358 offered Penrose-derived *or* spectre; only the first got built, spectre was parked). Chose the hybrid: multigrid stays, every rhombus edge is drawn as an S-curve point-symmetric about its midpoint, so both tiles sharing an edge share the exact curve (no gaps) and opposite edges are translates (never cross). Bend is per line family and breathes with that family's swell. `∿`/`◇` pill toggles it, saved in localStorage, on by default. Checked by screenshot on sky and 7 stars: seamless, no page errors.
+
 ## Nov 15 2026 — planets.js synced with dev/v2
 
 Took dev/v2's reviewed `src/utils/planets.js` (the 3-D z term was dead code: the tiling only uses longitude; doc comment now cites the Wolfram reference ranges) and `tests/planets.test.mjs` (23 Wolfram|Alpha refs + property checks), now in `npm test`. Output unchanged: 13/13 pass, build OK.
