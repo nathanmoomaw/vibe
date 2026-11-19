@@ -1,15 +1,21 @@
 import { getContext, getMaster } from './engine.js'
 import { getDriftDepthMult, getDriftRateMult } from './driftSettings.js'
 
-// Shared reverb tail
+// Shared reverb tail: exponentially decaying noise, lowpassed harder as it
+// decays (Moorer-style: real rooms swallow highs first), so the tail darkens
+// instead of hissing evenly. One-pole lowpass, coefficient sweeps 1 → ~0.04.
 function makeReverb(ctx, sec = 2.5, decay = 2) {
   const conv = ctx.createConvolver()
   const len = Math.floor(ctx.sampleRate * sec)
   const buf = ctx.createBuffer(2, len, ctx.sampleRate)
   for (let ch = 0; ch < 2; ch++) {
     const d = buf.getChannelData(ch)
-    for (let i = 0; i < len; i++)
-      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay)
+    let lp = 0
+    for (let i = 0; i < len; i++) {
+      const t = i / len
+      lp += Math.pow(0.04, t) * ((Math.random() * 2 - 1) - lp)
+      d[i] = lp * Math.pow(1 - t, decay) * (1 + 2 * t)  // ×(1+2t): make up the level the lowpass takes
+    }
   }
   conv.buffer = buf
   return conv
@@ -17,35 +23,54 @@ function makeReverb(ctx, sec = 2.5, decay = 2) {
 
 // --- Periodic triggers (bell, chime, gong, birds) ---
 
+// Modal synthesis: a struck object rings as a set of modes, each its own
+// frequency, level, decay (T60, seconds) and onset. Summing exponentially
+// decaying sines is the same signal a bandpass-filter bank gives when hit
+// with an impulse, without the very-high-Q filters (Q ≈ 800 for a 4 s bell
+// at 440 Hz) whose precision varies across browsers. Mode tables replace the
+// old hand-tuned FM bell/gong.
+function ringModes(ctx, out, f, vol, modes) {
+  const now = ctx.currentTime
+  const total = modes.reduce((s, m) => s + m.amp, 0)
+  for (const { ratio, amp, t60, rise = 0.004 } of modes) {
+    const hz = f * ratio
+    if (hz > 9000) continue  // keep it soft: nothing up where it turns to glass
+    const osc = ctx.createOscillator()
+    const env = ctx.createGain()
+    osc.frequency.value = hz
+    const peak = vol * amp / total
+    env.gain.setValueAtTime(0.0001, now)
+    env.gain.linearRampToValueAtTime(peak, now + rise)
+    // −60 dB over t60: exponential approach, time constant t60 / ln(1000)
+    env.gain.setTargetAtTime(0, now + rise, t60 / 6.91)
+    osc.connect(env)
+    env.connect(out)
+    osc.start(now)
+    osc.stop(now + rise + t60 + 0.1)
+    osc.onended = () => env.disconnect()
+  }
+}
+
+// Church-bell partials (Rossing), relative to the strike note f: hum, prime,
+// tierce (the minor third that makes it a bell), quint, nominal, superquint,
+// octave nominal. Low partials hang on, high ones flash and go.
+const BELL_MODES = [
+  { ratio: 0.25, amp: 0.35, t60: 7 },
+  { ratio: 0.5,  amp: 0.55, t60: 5 },
+  { ratio: 0.6,  amp: 0.45, t60: 4 },
+  { ratio: 0.75, amp: 0.2,  t60: 3.2 },
+  { ratio: 1,    amp: 1,    t60: 3.6 },
+  { ratio: 1.5,  amp: 0.3,  t60: 1.8 },
+  { ratio: 2,    amp: 0.15, t60: 1.1 },
+]
+
 // freq defaults to a slightly-detuned 440 each strike (±1.5%) rather than a
 // fixed value — a bare "bell" tone repeats the same pitch every time
 // otherwise, which reads as mechanical next to chime/gong's per-note
 // randomization. Callers that want an exact pitch (chime) pass freq explicitly.
 function triggerBell(ctx, out, vol, freq = null) {
   const f = freq ?? 440 * (0.985 + Math.random() * 0.03)
-  const now = ctx.currentTime
-  const carrier = ctx.createOscillator()
-  const mod = ctx.createOscillator()
-  const modGain = ctx.createGain()
-  const env = ctx.createGain()
-
-  carrier.type = 'sine'
-  carrier.frequency.value = f
-  mod.type = 'sine'
-  mod.frequency.value = f * 2.756
-  modGain.gain.value = f * 3
-
-  env.gain.setValueAtTime(0.001, now)
-  env.gain.linearRampToValueAtTime(vol * 0.8, now + 0.008)
-  env.gain.exponentialRampToValueAtTime(0.001, now + 4.0)
-
-  mod.connect(modGain)
-  modGain.connect(carrier.frequency)
-  carrier.connect(env)
-  env.connect(out)
-
-  mod.start(now);  mod.stop(now + 4.5)
-  carrier.start(now); carrier.stop(now + 4.5)
+  ringModes(ctx, out, f, vol * 0.8, BELL_MODES)
 }
 
 function triggerChime(ctx, out, vol) {
@@ -54,36 +79,22 @@ function triggerChime(ctx, out, vol) {
   triggerBell(ctx, out, vol * 0.7, freq * (0.98 + Math.random() * 0.04))
 }
 
+// Gong: free-edge circular-plate mode ratios (inharmonic), each doubled with
+// a tiny detune so pairs beat (the shimmer). Upper modes swell in late, the
+// way energy climbs into a gong's higher modes after the strike ("bloom").
+const GONG_PLATE = [
+  { ratio: 1,    amp: 1,    t60: 9,   rise: 0.04 },
+  { ratio: 1.73, amp: 0.6,  t60: 7.5, rise: 0.15 },
+  { ratio: 2.33, amp: 0.45, t60: 6.5, rise: 0.35 },
+  { ratio: 3.91, amp: 0.3,  t60: 5,   rise: 0.7 },
+  { ratio: 4.11, amp: 0.25, t60: 5,   rise: 0.8 },
+  { ratio: 5.93, amp: 0.15, t60: 3.5, rise: 1.2 },
+  { ratio: 6.71, amp: 0.1,  t60: 3,   rise: 1.4 },
+]
+const GONG_MODES = GONG_PLATE.flatMap(m => [m, { ...m, ratio: m.ratio * 1.0035, amp: m.amp * 0.6 }])
+
 function triggerGong(ctx, out, vol) {
-  const now = ctx.currentTime
-  const freq = 55 + Math.random() * 35
-
-  const carrier = ctx.createOscillator()
-  const m1 = ctx.createOscillator()
-  const m2 = ctx.createOscillator()
-  const mg1 = ctx.createGain()
-  const mg2 = ctx.createGain()
-  const env = ctx.createGain()
-
-  carrier.type = 'sine'
-  carrier.frequency.value = freq
-  m1.type = 'sine'; m1.frequency.value = freq * 3.5
-  m2.type = 'sine'; m2.frequency.value = freq * 7.1
-
-  mg1.gain.value = freq * 10
-  mg2.gain.value = freq * 4
-
-  env.gain.setValueAtTime(0.001, now)
-  env.gain.linearRampToValueAtTime(vol, now + 0.04)
-  env.gain.exponentialRampToValueAtTime(0.001, now + 9.0)
-
-  m1.connect(mg1); mg1.connect(carrier.frequency)
-  m2.connect(mg2); mg2.connect(carrier.frequency)
-  carrier.connect(env); env.connect(out)
-
-  m1.start(now); m1.stop(now + 9.5)
-  m2.start(now); m2.stop(now + 9.5)
-  carrier.start(now); carrier.stop(now + 9.5)
+  ringModes(ctx, out, 55 + Math.random() * 35, vol, GONG_MODES)
 }
 
 function triggerBirds(ctx, out, vol) {

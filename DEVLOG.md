@@ -1,5 +1,14 @@
 # DEVLOG — vibe
 
+## Nov 19 2026 — modal bells/gong, loudness compensation, darker reverb tail
+
+From /dump (worth-saving research items):
+- **Modal synthesis** (`tones.js` `ringModes`): bell, chime and gong are now mode tables (frequency ratio, level, T60, onset) instead of hand-tuned FM. Bell = church-bell partials (hum, prime, tierce, quint, nominal, superquint, octave). Gong = free-edge circular-plate ratios, each doubled with a 0.35% detune so pairs beat, upper modes swelling in late ("bloom"). Built as decaying sines (the same signal an impulse-excited bandpass bank gives) rather than Q≈800 biquads, whose precision varies by browser. Modes above 9 kHz dropped.
+- **Loudness compensation** (`engine.js`): master → lowshelf 110 Hz → highshelf 7 kHz. A meter before the shelves reads mix RMS every 0.5 s; from −18 dBFS (none) to −40 dBFS (full) it lifts lows up to +6 dB and air up to +2.5 dB (ISO 226: bass and treble fade first when quiet). Follows digital level only, can't see device volume. Recording now taps after the shelves.
+- **Reverb**: shared impulse is Moorer-style, lowpassed harder as it decays (one-pole, coefficient 1 → 0.04), level made up ×(1+2t).
+- **Brown noise**: already a leaky integrator (a = 1/1.02 ≈ 0.98, pole ~150 Hz), driftless; no change.
+- Checked headless: bell/chime/gong all produce output (RMS 0.034/0.014/0.039 at vol 0.6), no page errors. Not yet heard by ear.
+
 ## Nov 14 2026 — planet positions were heliocentric (circle-viz, astro wheel, aspects)
 
 - Found while building penrose's sky star and auditing it with Wolfram|Alpha: `eclipticLon` returned heliocentric mean longitudes (Venus 138° off, Mercury 121°, Mars 47°). Rewrote with JPL elements + Meeus lunar terms; Wolfram-checked to ≤0.11° (planets), ≤0.6° (Moon) on 1985/2026/2040 dates.

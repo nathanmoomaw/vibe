@@ -1,6 +1,30 @@
 let ctx = null
 let masterGain = null
 let analyser = null
+let post = null   // end of the master chain (after loudness shelves)
+
+// ── Loudness compensation (ISO 226 equal-loudness contours) ─────────────────
+// At low listening levels the ear loses bass (and some treble) faster than
+// midrange, so a quiet session collapses to a thin middle. Meter the mix
+// before the shelves and, the quieter it runs, lift lows (up to +6 dB below
+// ~110 Hz) and a touch of air (up to +2.5 dB above ~7 kHz, kept small so
+// noise never turns hissy). The page can't see the device volume, so this
+// follows the digital level only: what the knobs and fades set.
+const LOUD_DB = -18, QUIET_DB = -40   // mix RMS (dBFS): no lift ↔ full lift
+const LOW_MAX_DB = 6, HIGH_MAX_DB = 2.5
+let lowShelf = null, highShelf = null, meter = null, meterBuf = null
+
+function updateLoudness() {
+  if (!ctx || ctx.state !== 'running') return
+  meter.getFloatTimeDomainData(meterBuf)
+  let sum = 0
+  for (let i = 0; i < meterBuf.length; i++) sum += meterBuf[i] * meterBuf[i]
+  const db = 10 * Math.log10(sum / meterBuf.length + 1e-12)
+  if (db < -80) return  // silence: hold, don't swing to full lift between sounds
+  const t = Math.min(1, Math.max(0, (LOUD_DB - db) / (LOUD_DB - QUIET_DB)))
+  lowShelf.gain.setTargetAtTime(LOW_MAX_DB * t, ctx.currentTime, 1.5)
+  highShelf.gain.setTargetAtTime(HIGH_MAX_DB * t, ctx.currentTime, 1.5)
+}
 
 // ── Audio input (external URL → filtered through noise settings) ──────────────
 let inputAudio   = null
@@ -99,8 +123,25 @@ export function getContext() {
     analyser.fftSize = 512
     analyser.smoothingTimeConstant = 0.8
 
-    masterGain.connect(analyser)
+    lowShelf = ctx.createBiquadFilter()
+    lowShelf.type = 'lowshelf'
+    lowShelf.frequency.value = 110
+    lowShelf.gain.value = 0
+    highShelf = ctx.createBiquadFilter()
+    highShelf.type = 'highshelf'
+    highShelf.frequency.value = 7000
+    highShelf.gain.value = 0
+    meter = ctx.createAnalyser()
+    meter.fftSize = 2048
+    meterBuf = new Float32Array(meter.fftSize)
+
+    masterGain.connect(meter)
+    masterGain.connect(lowShelf)
+    lowShelf.connect(highShelf)
+    post = highShelf
+    post.connect(analyser)
     analyser.connect(ctx.destination)
+    setInterval(updateLoudness, 500)
 
     // Mobile browsers (iOS Safari in particular) can suspend the
     // AudioContext while the tab/app is backgrounded. Without this, it only
@@ -246,7 +287,7 @@ export function startRecording() {
   const ctx = getContext()
   if (!recordDest) {
     recordDest = ctx.createMediaStreamDestination()
-    masterGain.connect(recordDest)
+    post.connect(recordDest)
   }
   const mimeType = RECORD_MIME_CANDIDATES.find(t => MediaRecorder.isTypeSupported(t))
   recordedChunks = []

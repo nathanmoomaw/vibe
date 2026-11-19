@@ -87,6 +87,9 @@ Google Tag Manager container `GTM-M5GKBML2` installed in `index.html` (head scri
 
 Reviewed with the-switch toolchain (Nov 14 2026): jCodeMunch (callers), Wolfram (reference values, settled two review false positives), Argon wrote the test file, Jev, Haiku (`tools/review.py` by hand + `review-haiku`), `/code-review`, `/simplify`.
 
+## Audio chain + modal tones (Nov 19 2026)
+Master chain: `masterGain` → lowshelf (110 Hz) → highshelf (7 kHz) → `analyser` → destination. The shelves are **loudness compensation**: a separate meter analyser on `masterGain` (pre-shelf, so no feedback) drives them from the mix RMS, more lift the quieter it plays (`LOUD_DB`/`QUIET_DB`/`*_MAX_DB` in `engine.js`). Recording taps the post-shelf node, so `/r` captures what's heard. Bell/chime/gong are modal (`ringModes` + `BELL_MODES`/`GONG_MODES` in `tones.js`): tune them by editing mode tables, not oscillator wiring. Shared reverb impulse is Moorer-style (darkens as it decays).
+
 ## Git Workflow
 - Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)
