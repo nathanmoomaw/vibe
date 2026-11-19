@@ -27,7 +27,13 @@ function makeImpulse(sec, decay) {
   const buf = ctx.createBuffer(2, len, ctx.sampleRate)
   for (let c = 0; c < 2; c++) {
     const d = buf.getChannelData(c)
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay)
+    // Moorer-style: lowpassed harder as it decays, so the tail darkens
+    let lp = 0
+    for (let i = 0; i < len; i++) {
+      const t = i / len
+      lp += Math.pow(0.04, t) * ((Math.random() * 2 - 1) - lp)
+      d[i] = lp * Math.pow(1 - t, decay) * (1 + 2 * t)
+    }
   }
   return buf
 }

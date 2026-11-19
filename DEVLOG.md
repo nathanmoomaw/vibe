@@ -1,5 +1,12 @@
 # DEVLOG — vibe
 
+## Nov 19 2026 — OKLCH colour, darker reverb tail, inflate/dive noted
+
+From /dump (worth-saving items):
+- **OKLCH**: tile and voice-dot colours go through `moodColor()` (moods.js), so equal hue/lightness steps look equally different (HSL glares in yellow/cyan, sinks in blue). Moods' HSL numbers map across (L 0.36+0.55·light, C 0.0022·sat, hue +25°); HSL fallback if the browser lacks oklch. Screenshot-tuned once: first mapping read too dark.
+- **Reverb**: impulse now Moorer-style, lowpassed harder as it decays, so the tail darkens instead of hissing evenly (same as dev/v2's tones.js).
+- **Inflate vs dive**: logged in ROADMAP under the open spectre substitution mode (one engine, inflation = calm "expand", deflation = vertiginous "dive").
+
 ## Nov 15 2026 (2) — spectre-style curved edges
 
 Asked "what happened to the spectre tile?" (dump item 358 offered Penrose-derived *or* spectre; only the first got built, spectre was parked). Chose the hybrid: multigrid stays, every rhombus edge is drawn as an S-curve point-symmetric about its midpoint, so both tiles sharing an edge share the exact curve (no gaps) and opposite edges are translates (never cross). Bend is per line family and breathes with that family's swell. `∿`/`◇` pill toggles it, saved in localStorage, on by default. Checked by screenshot on sky and 7 stars: seamless, no page errors.

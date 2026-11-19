@@ -48,3 +48,17 @@ export function lerpMood(cur, target, a) {
   }
   return next
 }
+
+// Mood colour in OKLCH, so equal steps round the hue wheel (and in
+// lightness) look equally different: in HSL, yellows and cyans glare while
+// blues sink, so the same hue spread reads uneven. Takes the moods' HSL-style
+// numbers (hue°, sat 0-100, light 0-100) and maps them across; hue +25° lines
+// OKLCH's wheel up with HSL's so the tuned palettes keep their place. Out-of-
+// gamut colours are clipped by the browser. HSL fallback for old browsers.
+const OKLCH = typeof CSS !== 'undefined' && CSS.supports?.('color', 'oklch(0.5 0.1 100)')
+export function moodColor(hue, sat, light, alpha = 1) {
+  if (!OKLCH) return `hsla(${hue.toFixed(0)},${sat.toFixed(0)}%,${light.toFixed(0)}%,${alpha.toFixed(3)})`
+  const L = 0.36 + 0.55 * light / 100
+  const C = 0.0022 * sat
+  return `oklch(${L.toFixed(3)} ${C.toFixed(3)} ${((hue + 25) % 360).toFixed(0)} / ${alpha.toFixed(3)})`
+}

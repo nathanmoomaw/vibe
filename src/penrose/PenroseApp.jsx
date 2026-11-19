@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getAnalyser, setPlaybackActive, registerMediaSessionStop } from '../audio/engine.js'
 import { rhombi, inRhomb, starById, baseGamma, STAR_IDS } from './multigrid.js'
-import { MOODS, lerpMood } from './moods.js'
+import { MOODS, lerpMood, moodColor } from './moods.js'
 import { startVoices, stopVoices, setMood as setVoiceMood, setPads, setVolume as setVoiceVolume, setFamilies, setMuted as setVoiceMuted, setKey, strike } from './voices.js'
 import './Penrose.css'
 
@@ -235,7 +235,7 @@ export default function PenroseApp() {
           ctx.lineTo(pts[2], pts[3]); ctx.lineTo(pts[4], pts[5]); ctx.lineTo(pts[6], pts[7])
         }
         ctx.closePath()
-        ctx.fillStyle = `hsla(${hue.toFixed(0)},${Math.min(95, sat).toFixed(0)}%,${Math.min(92, light).toFixed(0)}%,${a.toFixed(3)})`
+        ctx.fillStyle = moodColor(hue, Math.min(95, sat), Math.min(92, light), a)
         ctx.fill()
         ctx.strokeStyle = `rgba(3,3,10,${(0.55 * fade + 0.2).toFixed(3)})`
         ctx.stroke()
@@ -517,7 +517,7 @@ export default function PenroseApp() {
             <button key={`${star.id}-${k}`} className={`penrose__voice${muted[k] ? ' is-muted' : ''}`}
               onClick={() => toggleMute(k)} aria-pressed={!muted[k]}
               aria-label={`${name}: ${muted[k] ? 'muted, tap to unmute' : 'on, tap to mute'}`}
-              style={{ '--c': `hsl(${hue.toFixed(0)},70%,62%)`, '--l': levels[k] ?? 0 }}>
+              style={{ '--c': moodColor(hue, 70, 62), '--l': levels[k] ?? 0 }}>
               {star.labels && <span className="penrose__glyph">{star.labels[k]}</span>}
             </button>
           )
