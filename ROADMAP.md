@@ -22,6 +22,11 @@
 - [ ] Stop button opacity, another pass — halved the rest-state alphas/waver range again on `dev/v1-stopupdate` (cut from `main`, not merged), pending local review before going live
 
 ## Backlog
+- [ ] **VIBE firmware for the M-VAVE FM-1** (pocket FM synth, JieLi AC791N, 1 MiB flash, 240×240 screen; idea from moomaw.info dump 2026-11-20, replaces the SLOOP-ribbon groovebox brew as the first FM-1 firmware).
+  - Hardware VIBE: colored noise channels (white/pink/blue + freq) and the elemental tones (bells, chimes, gongs, birds, wind, water, earth), all synthesized, no samples (fits the flash budget).
+  - Keys pick channels/elements, knobs = volume/freq/rate; the six intent presets (calming … floating) as a scene row.
+  - Screen: pixel demake of the circle viz (spectrum ring, trigram morph, planet glyphs). Optional planetary-Hz / I Ching drones.
+  - Device notes, flashing, emulator (fm1-emu) and backups live in `~/Sites/moomaw.info/misc/fm-1/FM-1.md`. Base: `zvenson/dinghy` (or SLOOP's engine, GPL-3.0). Brew code = own repo under `misc/fm-1/brew/` there; test in fm1-emu before flashing.
 - [ ] Mic input for environment-reactive soundscape
 - [ ] Re-expose party/lo mode switch (footer toggle hidden Jul 10 2026, `mode` stays hardcoded to `'party'`; `LoView`/`ModeSwitch` components untouched, just not rendered)
 - [ ] Re-expose audio input (⊃ footer button hidden Aug 17 2026, needs fine-tuning; `showInput`/`playInputUrl`/`stopInput`/`unit__input-panel` untouched, just not reachable)
