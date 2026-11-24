@@ -90,6 +90,9 @@ Reviewed with the-switch toolchain (Nov 14 2026): jCodeMunch (callers), Wolfram 
 ## Audio chain + modal tones (Nov 19 2026)
 Master chain: `masterGain` → lowshelf (110 Hz) → highshelf (7 kHz) → `analyser` → destination. The shelves are **loudness compensation**: a separate meter analyser on `masterGain` (pre-shelf, so no feedback) drives them from the mix RMS, more lift the quieter it plays (`LOUD_DB`/`QUIET_DB`/`*_MAX_DB` in `engine.js`). Recording taps the post-shelf node, so `/r` captures what's heard. Bell/chime/gong are modal (`ringModes` + `BELL_MODES`/`GONG_MODES` in `tones.js`): tune them by editing mode tables, not oscillator wiring. Shared reverb impulse is Moorer-style (darkens as it decays).
 
+## FM-1 firmware (`fm1/`, branch `dev/fm-1/v0`, Nov 24 2026)
+VIBE as firmware for the M-VAVE FM-1 pocket synth. `fm1/` is a copy of Dinghy (GPL-3.0) with the app in `fm1/firmware/src/vibe.c`; controls, sound design and build in `fm1/VIBE-FM1.md`; device/flash/emulator notes in `~/Sites/moomaw.info/misc/fm-1/FM-1.md`. Chip rules: no float, no 64-bit division, ISR 5.8 ms per 256 frames (`fm1/docs/RULES.md`). Host render (any Mac): `sh fm1/tests/run_host.sh tests/scripts/vibe.txt` from `fm1/`. The `.fwsc` builds only on Linux x86-64 / Docker, so `.github/workflows/fm1.yml` builds it on push. Web deploy: `deploy-dev` is `dev/v2`-only on this branch; a `dev/fm-1/*` name would also break the per-branch `vibe-dev-<name>` host scheme from dev/chingy, so keep fm-1 branches out of `deploy-branch` if that lands here.
+
 ## Git Workflow
 - Active dev branch: `dev/v2` (autodeploys to vibe-dev.obfusco.us) — cut from `dev/v1` Sep 1 2026, `dev/v1` retired
 - Production branch: `main` (autodeploys to vibe.obfusco.us)

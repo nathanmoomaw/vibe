@@ -1,0 +1,63 @@
+# VIBE for the M-VAVE FM-1 (fm1/): build the firmware package on GitHub (the JieLi toolchain is Linux x86-64 only,
+# so CI is the build machine) and render the host test (WAV + screen PNGs). Artifacts: vibe-fm1 (.fwsc) and
+# vibe-fm1-host (the render). Same toolchain + SDK fetch as Dinghy's own release workflow (fm1/.github, inert here).
+name: fm1
+
+on:
+  push:
+    branches: ['dev/fm-1/**']
+    paths: ['fm1/**', '.github/workflows/fm1.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: fm1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fm1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Python packages
+        run: python3 -m pip install Pillow
+
+      - name: Host render (no toolchain needed)
+        run: sh tests/run_host.sh tests/scripts/vibe.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vibe-fm1-host
+          path: |
+            fm1/build/host/vibe.wav
+            fm1/build/host/vibe-*.png
+
+      - name: JieLi toolchain (pkgman.jieliapp.com)
+        run: sh tools/get_toolchain.sh
+
+      - name: JieLi AC79 SDK (three files of it go into the package)
+        run: |
+          for i in 1 2 3; do
+            git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
+                https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git ~/fw-AC79_AIoT_SDK && break
+            sleep 20
+          done
+          test -d ~/fw-AC79_AIoT_SDK
+
+      - name: Build the FM-1 package
+        run: sh build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vibe-fm1
+          path: |
+            fm1/build/vibe.fwsc
+            fm1/build/vibe.dis
+          if-no-files-found: error

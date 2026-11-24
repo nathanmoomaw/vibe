@@ -41,7 +41,8 @@ jobs:
             --paths "/*"
 
   deploy-dev:
-    if: startsWith(github.ref, 'refs/heads/dev/')
+    # dev/v2 only: other dev/* branches (dev/fm-1/*: the FM-1 firmware) must not overwrite vibe-dev.obfusco.us
+    if: github.ref == 'refs/heads/dev/v2'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

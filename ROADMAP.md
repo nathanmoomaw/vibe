@@ -20,6 +20,13 @@
 - [ ] Astro/divination UI layer (tie into now/moveloose aesthetic)
 - [ ] Stop button opacity, another pass — halved the rest-state alphas/waver range again on `dev/v1-stopupdate` (cut from `main`, not merged), pending local review before going live
 
+## FM-1 firmware (`dev/fm-1/v0`)
+- [x] v0: Dinghy base, 11 channels on black keys, pentatonic strikes on white keys, global macro knobs, six intents, ring screen, host render, CI build
+- [ ] First CI `.fwsc` build green; run in fm1-emu; then flash hardware (backup + m-bootloader already in place)
+- [ ] Measure ISR cost on hardware; trim voices if over half the budget
+- [ ] Scenes (save/recall own mixes to blobs), solo, MIDI CC per knob
+- [ ] Ring demake extras: trigram morph, planet glyphs (no RTC: needs a set date)
+
 ## Backlog
 - [ ] Mic input for environment-reactive soundscape
 - [ ] Re-expose party/lo mode switch (footer toggle hidden Jul 10 2026, `mode` stays hardcoded to `'party'`; `LoView`/`ModeSwitch` components untouched, just not rendered)

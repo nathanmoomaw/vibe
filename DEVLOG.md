@@ -1,5 +1,14 @@
 # DEVLOG — vibe
 
+## Nov 24 2026 — FM-1 firmware v0 (`dev/fm-1/v0`, `fm1/`)
+
+From /dump: VIBE as firmware for the M-VAVE FM-1, knob- and button-first, no menus.
+- Base: Dinghy (zvenson, GPL-3.0; Felucca/SLOOP platform) copied into `fm1/`; app is `fm1/firmware/src/vibe.c`. Identity `FM-1_960`, store magic `VIBE`. `fm1/` is GPL-3.0-only; Dinghy's logo (not GPL) left out (moved to `~/.claude/.trash/20261124/vibe-fm1-dinghy-logo/`).
+- Controls (user picked: white keys = playable strikes, free knobs = global macros): 11 black keys = the 11 channels (tap on/off; hold + KNOB1-4 = level / freq-rate-body / color-register-type / drift); white keys strike Wu Yin pentatonic bells (held = rings on; hold bell/chime/gong/birds + white key = that voice); free KNOB1-4 = tilt, drift, space, pulse; PRESETS = six intents, HOME + white 1-6 jumps; PLAY pause (fade), REC shuffle, SEQ evolve, FX held = swell. Full table: `fm1/VIBE-FM1.md`.
+- Sound, integers only: xorshift white → Kellet pink, leaky brown, violet, blue, grey; 10 modal strike voices (3 partials), 4 chirp voices (birds, bubbles), fire/wind/water/earth models, Freeverb-lite reverb, tilt, ombak pulse, soft knee. Curves precomputed by `fm1/tools/gen_vibe_tables.py`.
+- Verified on host (`fm1/tests/run_host.sh tests/scripts/vibe.txt`): renders WAV + screens; solo levels balanced to ~2.5k RMS each (fire ~1k, crackle-peaky); screens show ring, held-channel bars, intents, pause. Not yet built for the chip or run in fm1-emu/hardware.
+- CI: `.github/workflows/fm1.yml` builds the `.fwsc` on GitHub (PANGOLIN has no Docker). `deploy.yml` `deploy-dev` narrowed to `dev/v2` so this branch never overwrites vibe-dev.obfusco.us.
+
 ## Nov 19 2026 — modal bells/gong, loudness compensation, darker reverb tail
 
 From /dump (worth-saving research items):
