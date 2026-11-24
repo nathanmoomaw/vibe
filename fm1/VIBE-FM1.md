@@ -23,15 +23,19 @@ The idea: no menus. Tap things, hold one thing and turn a knob, or hold one thin
 | **HOME + white key 1–6** | jump straight to an intent |
 | **SELECT** | the root, ±12 semitones |
 | **ALGORITHM** | how fast the ring spins |
-| **PLAY** | pause / resume (a ~1 s fade). The mix is kept in flash only while paused (an erase stalls the sound) |
-| **REC** | shuffle: nudge every channel that is on |
+| **PLAY** | pause / resume (a ~1 s fade). The mix and the loop are kept in flash only while paused (an erase stalls the sound) |
+| **REC** (held) | record a loop of what you play meanwhile: strikes, channel taps, knob moves (not audio). Let go = it loops (up to 60 s). REC lit = recording, blinks once a loop |
+| **REC** tap / long hold | tap = loop on/off; hold 1.5 s without playing anything = clear the loop |
+| **LFO** | shuffle: nudge every channel that is on |
 | **SEQ** | evolve on/off: every 8–20 s one channel moves a little by itself |
 | **FX** (held) | swell: the space opens and the tone brightens while held |
 | **OCT− / OCT+** | the strike octave |
 | **MIDI in** | notes strike bells (any channel) |
 
-The screen: a ring that bulges where loud channels sit, the channels as coloured dots around it (noise dots take
-their morph colour), the intent in the middle. The bottom strip shows what the four knobs move right now: the held
+The screen: a ring that bulges (with inward spokes) where loud channels sit, the channels as coloured dots around it
+(noise dots take their morph colour; fire, wind, water and earth drawn as their trigram, flipping to the paired one
+past the TYPE knob's middle, as on the web), a rosette in the middle with one petal pair per channel that is on,
+ripples out from every strike, the intent in the middle, and a dot going round while a loop records (red) or plays. The bottom strip shows what the four knobs move right now: the held
 channel's values, or the macros with the root and octave.
 
 ## Build
@@ -59,7 +63,8 @@ release). Store magic `VIBE`.
   with a slow swell, keys 1/2/3).
 - Birds and the stream's bubbles: 4 gliding-sine chirp voices.
 - Fire: sparse crackles + hiss + rumble. Wind: white through a wandering SVF band-pass. Water: trickle / drops /
-  ocean swell. Earth: two slow-beating lows + a stone partial + crystal shimmer + brown rumble.
+  ocean swell. Earth (the web's `makeEarth`): white through a resonant low-pass (90 Hz, Q 1.5 at loam → 410 Hz, Q 0.65 at
+  crystal; BODY scales it ×0.6–1.6), a 32–44 Hz sub that thins toward crystal, a 0.04 Hz swell.
 - Master: tilt, a small Freeverb-style reverb (4 combs, 2 allpasses a side), pulse, a soft knee at −4 dBFS.
 - Per-channel drift: a slow random walk on level and filter, scaled by each channel's DRIFT and the global DRIFT.
 
@@ -67,4 +72,5 @@ release). Store magic `VIBE`.
 
 - Measured ISR cost on hardware (budget 5.8 ms / 256 frames; Linux `DINGHY_PERF=1` gives instructions per sample).
 - The circle-viz's trigram morph and planet glyphs on the ring (the FM-1 has no clock, so planets need a set date).
-- Scenes (save/recall your own mixes to blobs), solo, MIDI CC for every knob.
+- Scenes (save/recall your own mixes to blobs), solo, MIDI CC for every knob, loop overdub.
+- Planet glyphs on the ring: the FM-1 has no clock, so it would need the date set by hand or over MIDI.

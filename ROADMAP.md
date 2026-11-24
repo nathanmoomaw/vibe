@@ -24,8 +24,9 @@
 - [x] v0: Dinghy base, 11 channels on black keys, pentatonic strikes on white keys, global macro knobs, six intents, ring screen, host render, CI build
 - [ ] First CI `.fwsc` build green; run in fm1-emu; then flash hardware (backup + m-bootloader already in place)
 - [ ] Measure ISR cost on hardware; trim voices if over half the budget
-- [ ] Scenes (save/recall own mixes to blobs), solo, MIDI CC per knob
-- [ ] Ring demake extras: trigram morph, planet glyphs (no RTC: needs a set date)
+- [x] Loop recorder (gestures), more visuals (ripples, rosette, spokes, trigrams), earth ported from web, audit pass
+- [ ] Scenes (save/recall own mixes to blobs), solo, MIDI CC per knob, loop overdub
+- [ ] Planet glyphs on the ring (no RTC: needs a set date)
 
 ## Backlog
 - [ ] Mic input for environment-reactive soundscape

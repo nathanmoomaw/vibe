@@ -1,6 +1,7 @@
-# VIBE host script: calming from power-on, strikes, a channel held + knobs, an intent jump, pause.
-# keys: bit k = key k (0 = F3). Black: pink = bit 3 (G#3, 0x8), wind = bit 20 (C#5), birds = bit 15 (G#4).
-# White keys: 0 2 4 6 7 9 11 12 ...  encoders: 2..5 = KNOB1..4, 6 = PRESETS. Buttons: 8 HOME, 12 PLAY, 2 FX.
+# VIBE host script: calming from power-on, strikes, a channel held + knobs, an intent jump, a loop, pause.
+# keys: bit k = key k (0 = F3). Black: pink = bit 3 (0x8), wind = bit 20 (0x100000), earth = bit 25 (0x2000000).
+# White keys: bits 0 2 4 6 7 9 11 12 ...  encoders: 2..5 = KNOB1..4, 6 = PRESETS. Buttons: 8 HOME, 12 PLAY, 13 REC,
+# 2 FX, 5 LFO (shuffle).
 3000 shot
 3500 keys 0x80
 3900 keys 0
@@ -14,15 +15,32 @@
 6000 keys 0
 7000 keys 0x100000
 7400 keys 0
+7600 keys 0x2000000
+7800 keys 0
 8000 btndown 8
 8100 keys 0x80
 8300 keys 0
 8400 btnup 8
+9000 btndown 13
+9100 keys 0x1
+9250 keys 0
+9400 keys 0x10
+9550 keys 0
+9700 keys 0x800
+9850 keys 0
+10000 keys 0x4000
+10300 keys 0
+10600 btnup 13
 11000 shot
 12000 btndown 2
+12500 shot
 14000 btnup 2
 15000 enc 6 1
+16700 shot
 19000 shot
-19500 btn 12
-22000 shot
-22500 end
+19300 btn 13
+21000 btndown 13
+22800 btnup 13
+23500 btn 12
+26000 shot
+26500 end

@@ -11,8 +11,10 @@
  *   PRESETS      the six intents: calming relaxing focussing meditating dreaming floating
  *   HOME + white key 1..6   jump to an intent
  *   SELECT       the root (semitones);  ALGORITHM  the ring's spin
- *   PLAY         pause / resume (a slow fade; the mix is kept in flash while paused)
- *   REC          shuffle the channels that are on;  SEQ  evolve on/off (slow self-drift)
+ *   PLAY         pause / resume (a slow fade; the mix and the loop are kept in flash while paused)
+ *   REC (held)   record a loop of what you play meanwhile (strikes, channel taps, knobs); let go = it loops.
+ *                tap REC = loop on/off, hold REC 1.5 s without playing = clear
+ *   LFO          shuffle the channels that are on;  SEQ  evolve on/off (slow self-drift)
  *   FX (held)    swell: the space opens and the tone brightens while held
  *   OCT- OCT+    the strike octave
  *
@@ -47,13 +49,17 @@ static const uint8_t WHITE_KEY[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 
 static const uint8_t RATE_MIN[4] = {8, 3, 20, 5}, RATE_MAX[4] = {90, 40, 120, 60};
 
 /* ---- what survives a power-off */
-#define SET_VER 1u
+#define SET_VER 2u
+#define NLOOP 384u                              /* loop events: t ms (16) | type (3) << 16 | a (5) << 19 | b (8) << 24 */
 static struct {
     uint8_t ver, intent, oct, spin;
     int8_t root;                                /* semitones from C4 */
     uint8_t macro[4];                           /* tilt, drift, space, pulse */
     uint8_t on[NCH];
     uint8_t par[NCH][NPAR];
+    uint8_t loop_on, pad;
+    uint16_t loop_len, loop_n;                  /* ms (<= 60 s), events */
+    uint32_t loop_ev[NLOOP];
 } set;
 
 /* ---- the six intents (vibe's src/utils/presets.js, the same mixes in knob units) */
@@ -93,7 +99,8 @@ static volatile int32_t c_wt[4][3];             /* fire, wind, water, earth: the
 static volatile int32_t c_wind_f, c_wind_q, c_wind_amp;    /* wind: SVF f (Q15), damping (Q15), gust level (Q15) */
 static volatile int32_t c_fire_amp, c_ocean_amp, c_ocean_k;
 static volatile uint32_t c_fire_p, c_rain_p;   /* per-frame chance (of 2^32) of a crackle / a drop */
-static volatile uint32_t c_earth_inc, c_shimmer; /* earth's base pitch step; crystal's slow shimmer level (Q15) */
+static volatile uint32_t c_earth_inc;           /* earth: the sub's pitch step */
+static volatile int32_t c_earth_f, c_earth_q, c_earth_noise, c_earth_sub, c_earth_swell;   /* SVF f, damping; levels (Q15) */
 static volatile int32_t c_tilt_a, c_tilt_b;     /* the tilt: low part times a, high part times b (Q15) */
 static volatile int32_t c_space, c_fb;          /* reverb send (Q15), comb feedback (Q15) */
 static volatile uint32_t c_pulse_inc;           /* ombak LFO step per 32 frames, 0 = off */
@@ -109,7 +116,7 @@ typedef struct {
     volatile int32_t dec[3], dech[3];           /* per-32-frame decay, free and while held */
     volatile int32_t pl, pr, att_step;          /* pan (Q15), attack ramp per 32 frames (32767 = instant) */
     volatile uint32_t trig, held;
-    volatile uint8_t meter;
+    volatile uint8_t meter, owner;              /* owner: 1 + white key (live), 17 + white key (the loop), 0 none */
     int32_t amp[3], att;
 } mvoice_t;
 static mvoice_t mv[NMV];
@@ -142,8 +149,8 @@ static void app_audio(int32_t *out, uint32_t n)
     static int32_t f_env, f_hp, f_hiss, f_rum;                  /* fire */
     static int32_t w_lp, w_bp;                                  /* wind SVF */
     static int32_t r_env, r_hp, s_lp1, s_lp2, o_lp;             /* water: rain, stream, ocean */
-    static uint32_t e_ph[5];                                    /* earth */
-    static int32_t e_lp;
+    static uint32_t e_ph;                                       /* earth */
+    static int32_t e_lp, e_bp;
     static int32_t t_lpl, t_lpr;                                /* tilt */
     static int32_t comb_lp[4];
     static uint32_t comb_i[4], ap_i[4];
@@ -151,7 +158,7 @@ static void app_audio(int32_t *out, uint32_t n)
     uint32_t peak[NMETER] = {0};
 
     for (i0 = 0; i0 < n; i0 += 32u) {                           /* control rate: every 32 frames */
-        int32_t tg, mon[NCH], ngain = 0;
+        int32_t tg, mon[NCH];
         uint32_t act = 0;
         for (c = 0; c < NCH; c++) {
             int32_t d = c_gain[c] - g[c];
@@ -163,7 +170,7 @@ static void app_audio(int32_t *out, uint32_t n)
         tg = c_master;
         if (master < tg) { master += 24; if (master > tg) master = tg; }
         else if (master > tg) { master -= 24; if (master < tg) master = tg; }
-        if (c_pulse_inc) {                                      /* ombak: a gentle 20 % dip at the pulse rate */
+        if (c_pulse_inc) {                                      /* ombak: a gentle 10 % dip at the pulse rate */
             pulse_ph += c_pulse_inc;
             pulse_g = 32767 - ((32767 - sine(pulse_ph)) * 3277 >> 16);
         } else if (pulse_g < 32767) pulse_g += 64;
@@ -184,7 +191,6 @@ static void app_audio(int32_t *out, uint32_t n)
             if (k->att < 32767) { k->att += 6000; if (k->att > 32767) k->att = 32767; }
             else k->amp = k->amp * k->dec >> 15;
         }
-        (void)ngain;
         for (i = i0; i < i0 + 32u && i < n; i++) {
             int32_t w = (int32_t)rnd_isr() >> 19, pk, vio, blu, gry, L = 0, R = 0, s, x, mono;
             /* the colours: white, pink (Kellet), brown (leaky), violet (d white), blue (d pink), grey (brown + violet) */
@@ -232,7 +238,7 @@ static void app_audio(int32_t *out, uint32_t n)
                 hp = w * 2 - w_lp - (c_wind_q * w_bp >> 15);
                 w_bp += c_wind_f * hp >> 15;
                 w_bp = clip(w_bp, 60000);
-                s = (w_bp * c_wind_amp >> 15) * mon[CH_WIND] >> 11; mono += s;
+                s = ((w_bp >> 1) * c_wind_amp >> 14) * mon[CH_WIND] >> 11; mono += s;
                 if ((uint32_t)(s < 0 ? -s : s) > peak[CH_WIND]) peak[CH_WIND] = (uint32_t)(s < 0 ? -s : s);
             }
             if (act & 1u << CH_WATER) {                         /* stream trickle, rain drops, ocean swell */
@@ -248,17 +254,16 @@ static void app_audio(int32_t *out, uint32_t n)
                 s = s * mon[CH_WATER] >> 14; mono += s;
                 if ((uint32_t)(s < 0 ? -s : s) > peak[CH_WATER]) peak[CH_WATER] = (uint32_t)(s < 0 ? -s : s);
             }
-            if (act & 1u << CH_EARTH) {                         /* two slow-beating lows, a stone partial, crystal */
-                uint32_t bi = c_earth_inc;
-                e_ph[0] += bi; e_ph[1] += bi + (bi >> 9);
-                e_ph[2] += (uint32_t)((uint64_t)bi * 11305u >> 12);   /* x 2.76 */
-                e_ph[3] += bi * 8u; e_ph[4] += bi * 12u + (bi >> 4);
-                e_lp += (brown - e_lp) * 600 >> 15;
-                s = (sine(e_ph[0]) + sine(e_ph[1])) * 5 >> 4;
-                s += sine(e_ph[2]) * c_wt[3][1] >> 17;
-                s += ((sine(e_ph[3]) + sine(e_ph[4])) >> 3) * c_wt[3][2] >> 15 >> 0;
-                s = (s * c_shimmer >> 15) + (e_lp * (c_wt[3][0] >> 1) >> 14);
-                s = s * mon[CH_EARTH] >> 15; mono += s;
+            if (act & 1u << CH_EARTH) {                         /* the web's earth: resonant low-pass rumble + a sub */
+                int32_t hp;
+                e_lp += c_earth_f * e_bp >> 15;
+                e_lp = clip(e_lp, 60000);
+                hp = w * 4 - e_lp - (c_earth_q * (e_bp >> 1) >> 14);
+                e_bp += c_earth_f * hp >> 15;
+                e_bp = clip(e_bp, 60000);
+                e_ph += c_earth_inc;
+                s = (e_lp * c_earth_noise >> 12) + (sine(e_ph) * c_earth_sub >> 15);
+                s = (s * c_earth_swell >> 15) * mon[CH_EARTH] >> 14; mono += s;
                 if ((uint32_t)(s < 0 ? -s : s) > peak[CH_EARTH]) peak[CH_EARTH] = (uint32_t)(s < 0 ? -s : s);
             }
             L = R = mono;
@@ -280,6 +285,7 @@ static void app_audio(int32_t *out, uint32_t n)
                 if ((uint32_t)(s < 0 ? -s : s) > peak[k->meter]) peak[k->meter] = (uint32_t)(s < 0 ? -s : s);
                 L += s * k->pl >> 15; R += s * k->pr >> 15;
             }
+            L = clip(L, 40000); R = clip(R, 40000);             /* (keeps the products below inside 32 bits) */
             {                                                   /* tilt: low part x a + high part x b */
                 int32_t hl, hr;
                 t_lpl += (L - t_lpl) * 3600 >> 15; t_lpr += (R - t_lpr) * 3600 >> 15;
@@ -288,7 +294,7 @@ static void app_audio(int32_t *out, uint32_t n)
                 R = (t_lpr * c_tilt_a >> 15) + (hr * c_tilt_b >> 15);
             }
             if (c_space) {                                      /* reverb */
-                int32_t in = clip((L + R) * c_space >> 16, 32000) >> 2, acc = 0, yl, yr;
+                int32_t in = clip(((L + R) >> 1) * c_space >> 15, 32000) >> 2, acc = 0, yl, yr;
                 for (c = 0; c < 4u; c++) {
                     int32_t y = comb_buf[c][comb_i[c]];
                     acc += y;
@@ -343,10 +349,10 @@ static uint32_t paused, evolve, swell, dirty, t_change;
 static int32_t drift[NCH];                      /* each channel's slow wander, Q15 -1..1 */
 static int32_t dvel[NCH];
 static uint32_t lit_white;                      /* white keys sounding (LEDs) */
-static int8_t key_voice[16];                    /* the modal voice each white key holds, -1 none */
+static int8_t key_voice[2][16];                 /* the modal voice each white key holds (live, loop), -1 none */
 
 static uint32_t vol_q15(uint32_t v) { return v * v * 2u; }    /* knob 0..127 -> Q15, square law */
-static const int32_t NORM[NCH] = {20250, 11760, 22400, 32767, 32767, 32767, 32767, 32500, 20000, 30000, 1990};   /* with the ISR's shifts: ~equal loudness at equal knobs */
+static const int32_t NORM[NCH] = {20250, 11760, 22400, 32767, 32767, 32767, 32767, 32500, 20000, 30000, 9350};   /* with the ISR's shifts: ~equal loudness at equal knobs */
 
 /* strikes */
 typedef struct { uint16_t ratio[3], amp[3]; int8_t dec[3]; uint16_t att; } timbre_t;
@@ -357,6 +363,7 @@ static const timbre_t TIMBRE[4] = {
     {{4096, 6021, 8561}, {16000, 9000, 6000}, {51, 47, 43}, 300},         /* gong: 1, 1.47, 2.09, swells in */
     {{4096, 8192, 12288}, {12000, 5000, 2200}, {40, 33, 26}, 32767},      /* the keys: 1, 2, 3 (sweeter) */
 };
+static void ripple(uint32_t col);
 static int strike(uint32_t tb, int32_t note, int32_t level, uint32_t pan, uint32_t meter_slot, uint32_t hold)
 {
     uint32_t v, pick = 0, best = 0xFFFFFFFFu, p, base = note_inc(note);
@@ -376,8 +383,10 @@ static int strike(uint32_t tb, int32_t note, int32_t level, uint32_t pan, uint32
     mv[pick].pr = (int32_t)(pan / 2u);
     mv[pick].att_step = t->att;
     mv[pick].meter = (uint8_t)meter_slot;
-    mv[pick].held = hold;
+    mv[pick].held = hold ? 1u : 0u;
+    mv[pick].owner = (uint8_t)hold;             /* (hold = the owner tag, 0 = not held) */
     mv[pick].trig = 1;
+    ripple(meter_slot);
     return (int)pick;
 }
 static void chirp(uint32_t hz0, uint32_t hz1, uint32_t ms, int32_t level, int32_t dec, uint32_t meter_slot)
@@ -472,7 +481,7 @@ static void type_weights(uint32_t knob, volatile int32_t *wt)
 }
 
 /* everything the ISR reads, from the knobs, the drift, the macros */
-static uint32_t wind_ph, ocean_ph, shimmer_ph, flick;
+static uint32_t wind_ph, ocean_ph, swell_ph, flick;
 static void update_controls(void)
 {
     uint32_t c;
@@ -525,10 +534,17 @@ static void update_controls(void)
         c_ocean_amp = 18000 + sine(ocean_ph * 1800000u) / 3 + drift[CH_WATER] / 8;
         c_ocean_k = onepole_k(250u + body * 4u + (uint32_t)(sine(ocean_ph * 1800000u) + 32767) / 160u);
     }
-    {                                           /* earth: pitch from body; crystal shimmers */
-        c_earth_inc = hz_inc(40u + set.par[CH_EARTH][P_FREQ] / 2u);
-        shimmer_ph += 2u;
-        c_shimmer = 22000 + sine(shimmer_ph << 21) / 4;
+    {                                           /* earth (web makeEarth): loam -> crystal opens the low-pass, thins the sub */
+        int32_t t = (int32_t)set.par[CH_EARTH][P_TYPE] * 258, body = set.par[CH_EARTH][P_FREQ];   /* t: Q15 0..1 */
+        uint32_t hz = (uint32_t)(90 + (320 * t >> 15)) * (uint32_t)(60 + body * 100 / 127) / 100u;
+        uint32_t qx1000 = (uint32_t)(1500 - (850 * t >> 15));
+        c_earth_f = (int32_t)(hz * 4669u / 1000u);
+        c_earth_q = (int32_t)(32768000u / qx1000);
+        c_earth_inc = hz_inc(32u + (uint32_t)body / 10u);           /* the sub: 32 .. 44 Hz (web: 38) */
+        c_earth_sub = 13000 * (32768 - (26870 * t >> 15)) >> 15;  /* x (1 - 0.82 t) */
+        c_earth_noise = 32767;
+        swell_ph += 5497558u;                                       /* 0.04 Hz at one step per 32 ms */
+        c_earth_swell = 26000 + (sine(swell_ph) * (7400 - (4440 * t >> 15)) >> 15);
     }
     {                                           /* macros: tilt, space (FX swells it), pulse */
         int32_t t = (int32_t)set.macro[0] - 64, sp = set.macro[2];
@@ -572,7 +588,7 @@ static void apply_intent(uint32_t i)
     set.macro[3] = INTENT_PULSE[i];
     memset(next_ms, 0, sizeof next_ms);
 }
-static void shuffle(void)                       /* REC: nudge every channel that is on (the web's randomize) */
+static void shuffle(void)                       /* LFO: nudge every channel that is on (the web's randomize) */
 {
     uint32_t c, k;
     for (c = 0; c < NCH; c++) {
@@ -612,15 +628,70 @@ static uint16_t rgb_of(uint32_t c, uint32_t bright)   /* the channel's colour (n
     return RGB(r * bright >> 8, gg * bright >> 8, b * bright >> 8);
 }
 static uint32_t lvl[NMETER];                    /* meters, 0..256, decayed */
-static uint32_t held_black, spin_ph;
+static uint32_t held_black, spin_ph, bars_dirty;
+
+/* the loop recorder's state (the loop itself is in set: it survives a power-off) */
+static uint32_t rec_on, rec_t0, rec_n, loop_t0, loop_pos;
+static uint32_t rec_ev[NLOOP];
+
+/* ripples: a strike sends a ring out from the centre (ribbon / puddle's ripples, in pixels) */
+#define NRIP 8u
+static struct { int16_t r; uint8_t life, slot; } rip[NRIP];
+static uint32_t rip_i;
+static void ripple(uint32_t slot) { rip[rip_i].r = 10; rip[rip_i].life = 40; rip[rip_i].slot = (uint8_t)slot; rip_i = (rip_i + 1u) % NRIP; }
+
+/* the trigrams (bit 0 = the bottom line, 1 = solid): the elements and the ones they morph into (the web's TONES) */
+enum { TG_KUN, TG_ZHEN, TG_KAN, TG_DUI, TG_GEN, TG_LI, TG_XUN, TG_QIAN };
+static const uint8_t TG_LINES[8] = {0, 1, 2, 3, 4, 5, 6, 7};   /* Kun 000 Zhen 100 Kan 010 Dui 110 Gen 001 Li 101 Xun 011 Qian 111 */
+static const uint8_t ELEM_TG[4][2] = {{TG_LI, TG_ZHEN}, {TG_XUN, TG_DUI}, {TG_KAN, TG_GEN}, {TG_KUN, TG_QIAN}};
+static void draw_trigram(int32_t cx, int32_t cy, uint32_t tg, int32_t w, uint16_t col)
+{
+    uint32_t l;
+    for (l = 0; l < 3u; l++) {                  /* the bottom line at the bottom */
+        int32_t y = cy + 4 - (int32_t)l * 4;
+        if (TG_LINES[tg] >> l & 1u) cv_rect(cx - w / 2, y, w, 2, col);
+        else { cv_rect(cx - w / 2, y, w / 2 - 1, 2, col); cv_rect(cx + 2, y, w / 2 - 1, 2, col); }
+    }
+}
+
+static uint16_t slot_rgb(uint32_t slot, uint32_t bright)
+{
+    return slot < NCH ? rgb_of(slot, bright) : RGB(220 * bright >> 8, 200 * bright >> 8, 255 * bright >> 8);
+}
 
 static void draw_ring(void)
 {
-    enum { CX = 120, CY = 88, R0 = 56, NSEG = 88 };
-    int32_t px = 0, py = 0, x0 = 0, y0 = 0;
-    uint32_t j, c;
+    enum { CX = 120, CY = 88, R0 = 56, NSEG = 88, NROSE = 72 };
+    int32_t px = 0, py = 0;
+    uint32_t j, c, non = 0, dom = NCH, domv = 0, sum = 0;
     cv_begin(240, 176, C_BLACK);
-    for (j = 0; j <= NSEG; j++) {               /* the ring: bumps where loud channels sit */
+    for (c = 0; c < NCH; c++)
+        if (set.on[c]) { non++; sum += lvl[c]; if (lvl[c] >= domv) { domv = lvl[c]; dom = c; } }
+    for (j = 0; j < NRIP; j++) {                /* the ripples, behind everything */
+        uint32_t s, life = rip[j].life;
+        if (!life) continue;
+        for (s = 0; s < 64u; s++) {
+            uint32_t ph = s << 26;
+            int32_t x = CX + (sine(ph + 0x40000000u) * rip[j].r >> 15), y = CY + (sine(ph) * rip[j].r >> 15);
+            if (y >= 0 && y < 176) cv_pset(x, y, slot_rgb(rip[j].slot, life * 5u));
+        }
+        rip[j].r = (int16_t)(rip[j].r + 3);
+        rip[j].life--;
+    }
+    if (non && !paused) {                       /* the rosette: one petal pair per channel that is on */
+        uint32_t k = non < 2u ? 2u : non, rr = 12u + sum / 40u + lvl[CH_STRIKE] / 12u;
+        uint16_t col = slot_rgb(dom, 90u + domv / 3u);
+        if (rr > 46u) rr = 46u;
+        for (j = 0; j <= NROSE; j++) {
+            uint32_t ph = (j % NROSE) * (0xFFFFFFFFu / NROSE), pp = ph * k + (spin_ph >> 1);
+            int32_t a = sine(pp), r = (int32_t)rr * (a < 0 ? -a : a) >> 15, x, y;
+            x = CX + (sine(ph + 0x40000000u) * r >> 15);
+            y = CY + (sine(ph) * r >> 15);
+            if (j) cv_line(px, py, x, y, col);
+            px = x; py = y;
+        }
+    }
+    for (j = 0; j <= NSEG; j++) {               /* the ring: bumps and spokes where loud channels sit */
         uint32_t jj = j % NSEG, ph = jj * (0xFFFFFFFFu / NSEG) + spin_ph, best = 0, bc = NCH;
         int32_t r = R0, x, y;
         for (c = 0; c < NCH; c++) {
@@ -640,17 +711,28 @@ static void draw_ring(void)
             uint16_t col = bc < NCH ? rgb_of(bc, 140u + best / 2u) : RGB(70, 70, 80);
             cv_line(px, py, x, y, col);
             cv_line(px + 1, py, x + 1, y, col);     /* two pixels wide */
-        } else { x0 = x; y0 = y; }
+            if (best > 24u && (jj & 1u)) {          /* a spoke inward: the spectrum-bar layer */
+                int32_t ri = r - 2 - (int32_t)(best / 10u);
+                cv_line(x, y, CX + (sine(ph + 0x40000000u) * ri >> 15), CY + (sine(ph) * ri >> 15), rgb_of(bc, 60u + best / 3u));
+            }
+        }
         px = x; py = y;
     }
-    (void)x0; (void)y0;
-    for (c = 0; c < NCH; c++) {                 /* the channels around it: a dot, bigger when loud */
+    for (c = 0; c < NCH; c++) {                 /* the channels around it: dots, the elements as their trigram */
         uint32_t ph = c * (0xFFFFFFFFu / NCH) + spin_ph;
         int32_t r = R0 + 22, x = CX + (sine(ph + 0x40000000u) * r >> 15), y = CY + (sine(ph) * r >> 15);
         int32_t s = set.on[c] ? 2 + (int32_t)(lvl[c] / 48u) : 1;
         uint16_t col = set.on[c] ? rgb_of(c, 256) : RGB(50, 50, 56);
-        if (held_black >> c & 1u) cv_rect(x - s - 2, y - s - 2, 2 * s + 5, 2 * s + 5, C_WHITE);
-        cv_rect(x - s, y - s, 2 * s + 1, 2 * s + 1, col);
+        if (held_black >> c & 1u) cv_rect(x - 9, y - 9, 19, 19, RGB(60, 60, 70));
+        if (c >= CH_FIRE) draw_trigram(x, y, ELEM_TG[c - CH_FIRE][set.par[c][P_TYPE] >= 64u], 10 + s, col);
+        else cv_rect(x - s, y - s, 2 * s + 1, 2 * s + 1, col);
+    }
+    if (rec_on || (set.loop_on && set.loop_n)) {   /* the loop: a dot going round, red while recording */
+        uint32_t len = rec_on ? 60000u : set.loop_len, pos = rec_on ? fm1_ms - rec_t0 : loop_pos;
+        uint32_t ph = ((pos << 16) / (len ? len : 1u) << 16) - 0x40000000u;   /* (32-bit: pos <= 60 s) */
+        int32_t r = R0 + 34, x = CX + (sine(ph + 0x40000000u) * r >> 15), y = CY + (sine(ph) * r >> 15);
+        cv_rect(x - 2, y - 2, 5, 5, rec_on ? RGB(255, 60, 60) : RGB(230, 230, 240));
+        cv_text(4, 2, &FONT_S, rec_on ? "rec" : "loop", rec_on ? RGB(255, 60, 60) : RGB(150, 150, 160));
     }
     {                                           /* centre: the intent */
         const char *s = paused ? "paused" : INTENT_NAME[set.intent % 6u];
@@ -687,9 +769,17 @@ static void draw_bars(void)                     /* the bottom strip: what the fo
         for (k = 0; k < 4u; k++) { val[k] = set.macro[k]; lab[k] = MLAB[k]; }
         { const char *p = "root "; while (*p) head[n++] = *p++; }
         while (*nm) head[n++] = *nm++;
-        { const char *p = "   oct "; while (*p) head[n++] = *p++; }
+        { const char *p = "  oct "; while (*p) head[n++] = *p++; }
         head[n++] = o < 0 ? '-' : '+'; head[n++] = (char)('0' + (o < 0 ? -o : o));
-        if (evolve) { const char *p = "   evolve"; while (*p) head[n++] = *p++; }
+        if (evolve) { const char *p = "  evolve"; while (*p) head[n++] = *p++; }
+        if (set.loop_n) {                       /* the loop's length, x.y s */
+            uint32_t ds = set.loop_len / 100u;
+            const char *p = set.loop_on ? "  loop " : "  (loop ";
+            while (*p) head[n++] = *p++;
+            if (ds >= 100u) head[n++] = (char)('0' + ds / 100u);
+            head[n++] = (char)('0' + ds / 10u % 10u); head[n++] = '.'; head[n++] = (char)('0' + ds % 10u); head[n++] = 's';
+            if (!set.loop_on) head[n++] = ')';
+        }
         head[n] = 0;
     }
     cv_text(6, 2, &FONT_S, head, col);
@@ -700,6 +790,121 @@ static void draw_bars(void)                     /* the bottom strip: what the fo
         cv_rect(x, 44, w, 10, col);
     }
     cv_blit(0, 176);
+}
+
+/* ================================================================== the actions: played live or by the loop */
+enum { EV_DOWN, EV_UP, EV_ON, EV_VOL, EV_FREQ, EV_TYPE, EV_DRIFT, EV_MACRO };
+enum { TB_BIRDS = 4 };
+
+static void rec_put(uint32_t ty, uint32_t a, uint32_t b)
+{
+    uint32_t t = fm1_ms - rec_t0, ev;
+    if (!rec_on || t > 60000u) return;
+    ev = t | ty << 16 | (a & 31u) << 19 | (b & 255u) << 24;
+    if (ty >= EV_VOL && rec_n) {                /* a knob turning: keep one event per 40 ms */
+        uint32_t last = rec_ev[rec_n - 1u];
+        if ((last >> 16 & 0xFFu) == (ev >> 16 & 0xFFu) && t - (last & 0xFFFFu) < 40u) { rec_ev[rec_n - 1u] = ev; return; }
+    }
+    if (rec_n < NLOOP) rec_ev[rec_n++] = ev;
+}
+
+static void act_down(uint32_t k, uint32_t tb, uint32_t from_loop)   /* a white key: strike */
+{
+    int32_t note = penta_note(root_note() - 12 + 12 * (int8_t)set.oct, (int32_t)k), lev = 18000;
+    uint32_t slot = CH_STRIKE;
+    if (!from_loop) rec_put(EV_DOWN, k, tb);
+    if (tb == TB_BIRDS) {
+        uint32_t hz = FREQ_HZ[60 + k * 3u] * 2u;
+        chirp(hz, hz * (70u + rnd_n(80)) / 100u, 60u + rnd_n(60), 12000, DEC32[8], CH_BIRDS);
+        ripple(CH_BIRDS);
+        return;
+    }
+    if (tb == TB_GONG) { note -= 24; slot = CH_GONG; }
+    else if (tb == TB_CHIME) { note += 12; slot = CH_CHIME; lev = 14000; }
+    else if (tb == TB_BELL) slot = CH_BELL;
+    key_voice[from_loop][k] = (int8_t)strike(tb, note, lev, 8192u + k * 3200u, slot, 1u + k + 16u * from_loop);
+    if (!from_loop) lit_white |= 1u << k;
+}
+static void act_up(uint32_t k, uint32_t from_loop)
+{
+    int32_t v = key_voice[from_loop][k];
+    if (!from_loop) { rec_put(EV_UP, k, 0); lit_white &= ~(1u << k); }
+    if (v >= 0 && mv[v].owner == 1u + k + 16u * from_loop) mv[v].held = 0;   /* (unless another strike took the voice) */
+    key_voice[from_loop][k] = -1;
+}
+static void act_on(uint32_t c, uint32_t on, uint32_t from_loop)
+{
+    if (!from_loop) rec_put(EV_ON, c, on);
+    set.on[c] = (uint8_t)on;
+    if (c >= CH_BELL && c <= CH_BIRDS) next_ms[c - CH_BELL] = on ? fm1_ms : 0;
+    bars_dirty = 1;
+}
+static void act_par(uint32_t c, uint32_t k, uint32_t v, uint32_t from_loop)
+{
+    if (!from_loop) rec_put(EV_VOL + k, c, v);
+    set.par[c][k] = (uint8_t)v;
+    bars_dirty = 1;
+}
+static void act_macro(uint32_t k, uint32_t v, uint32_t from_loop)
+{
+    if (!from_loop) rec_put(EV_MACRO, k, v);
+    set.macro[k] = (uint8_t)v;
+    bars_dirty = 1;
+}
+
+static void loop_release_all(void)
+{
+    uint32_t k;
+    for (k = 0; k < 16u; k++) if (key_voice[1][k] >= 0) act_up(k, 1);
+}
+static void rec_start(void) { rec_on = 1; rec_t0 = fm1_ms; rec_n = 0; }
+static void rec_stop(uint32_t held_ms)          /* REC let go: a new loop, or tap = loop on/off, long hold = clear */
+{
+    uint32_t len = fm1_ms - rec_t0, k;
+    rec_on = 0;
+    if (!rec_n) {
+        if (held_ms >= 1500u) { loop_release_all(); set.loop_n = 0; set.loop_on = 0; }
+        else if (held_ms < 600u && set.loop_n) { set.loop_on = !set.loop_on; loop_t0 = fm1_ms; loop_pos = 0; if (!set.loop_on) loop_release_all(); }
+        bars_dirty = dirty = 1;
+        return;
+    }
+    if (len > 60000u) len = 60000u;
+    if (len < 250u) len = 250u;
+    for (k = 0; k < 16u && rec_n < NLOOP; k++)  /* keys still down when REC went up: let go at the loop's end */
+        if (key_voice[0][k] >= 0 && fm1_in.notes >> WHITE_KEY[k] & 1u)
+            rec_ev[rec_n++] = (len - 1u) | (uint32_t)EV_UP << 16 | k << 19;
+    loop_release_all();
+    memcpy(set.loop_ev, rec_ev, rec_n * 4u);
+    set.loop_n = (uint16_t)rec_n;
+    set.loop_len = (uint16_t)len;
+    set.loop_on = 1;
+    loop_t0 = fm1_ms;
+    loop_pos = 0;
+    bars_dirty = dirty = 1; t_change = fm1_ms;
+}
+static void loop_play(uint32_t from, uint32_t to)   /* the events in (from, to], to < loop_len; from = ~0: from the start */
+{
+    uint32_t i;
+    for (i = 0; i < set.loop_n; i++) {
+        uint32_t ev = set.loop_ev[i], t = ev & 0xFFFFu, ty = ev >> 16 & 7u, a = ev >> 19 & 31u, b = ev >> 24;
+        if (!((from == ~0u ? 1 : t > from) && t <= to)) continue;
+        switch (ty) {
+        case EV_DOWN: if (a < 16u) act_down(a, b, 1); break;
+        case EV_UP: if (a < 16u) act_up(a, 1); break;
+        case EV_ON: if (a < NCH) act_on(a, b & 1u, 1); break;
+        case EV_MACRO: if (a < 4u) act_macro(a, b & 127u, 1); break;
+        default: if (a < NCH) act_par(a, ty - EV_VOL, b & 127u, 1); break;
+        }
+    }
+}
+static void loop_tick(void)
+{
+    uint32_t pos;
+    if (!set.loop_on || !set.loop_n || !set.loop_len || paused) return;
+    pos = (fm1_ms - loop_t0) % set.loop_len;
+    if (pos < loop_pos) { loop_play(loop_pos, set.loop_len); loop_play(~0u, pos); }   /* wrapped round */
+    else if (pos != loop_pos) loop_play(loop_pos, pos);
+    loop_pos = pos;
 }
 
 /* ================================================================== MIDI in: notes strike */
@@ -720,12 +925,14 @@ static int quiet(void)                          /* paused and the fade is done: 
     return paused && meter[CH_PINK] < 8u && meter[CH_STRIKE] < 8u && meter[CH_WATER] < 8u && meter[CH_EARTH] < 8u;
 }
 
+static uint32_t clamp127(int32_t v) { return (uint32_t)(v < 0 ? 0 : v > 127 ? 127 : v); }
+
 static void app_main(void)
 {
-    uint32_t prev = 0, k, c, t_drift = 0, t_draw = 0, t_evolve = 0, touched = 0, t_down[NCH] = {0};
+    uint32_t prev = 0, k, c, t_drift = 0, t_draw = 0, t_evolve = 0, touched = 0, rec_down_ms = 0;
     uint32_t bars_key = ~0u;
     memset(key_voice, -1, sizeof key_voice);
-    if (settings_load(&set, sizeof set) || set.ver != SET_VER || set.intent > 5u) {
+    if (settings_load(&set, sizeof set) || set.ver != SET_VER || set.intent > 5u || set.loop_n > NLOOP) {
         memset(&set, 0, sizeof set);
         set.ver = SET_VER;
         set.macro[0] = 64; set.macro[1] = 64; set.macro[2] = 48;
@@ -734,6 +941,7 @@ static void app_main(void)
     if ((int8_t)set.oct < -2 || (int8_t)set.oct > 2) set.oct = 0;
     if (set.root < -12 || set.root > 12) set.root = 0;
     rnd_s ^= fm1_ms | 1u;
+    loop_t0 = fm1_ms;
 
     lcd_fill(0, 0, 240, 240, C_BLACK);
     update_controls();
@@ -752,47 +960,37 @@ static void app_main(void)
         btn = fm1_in.buttons;
         for (c = 0; c < NCH; c++) {
             uint32_t bit = 1u << BLACK_KEY[c];
-            if (down & bit) { held_black |= 1u << c; touched &= ~(1u << c); t_down[c] = fm1_ms; }
+            if (down & bit) { held_black |= 1u << c; touched &= ~(1u << c); }
             if (up & bit) {
                 held_black &= ~(1u << c);
-                if (!(touched >> c & 1u)) { set.on[c] = !set.on[c]; dirty = 1; t_change = fm1_ms; if (c >= CH_BELL && c <= CH_BIRDS) next_ms[c - CH_BELL] = set.on[c] ? fm1_ms : 0; }
+                if (!(touched >> c & 1u)) { act_on(c, !set.on[c], 0); dirty = 1; t_change = fm1_ms; }
             }
         }
         for (k = 0; k < 16u; k++) {
             uint32_t bit = 1u << WHITE_KEY[k];
             if (down & bit) {
+                uint32_t tb = TB_KEY;
                 if (btn & (1u << BTN_HOME)) {
-                    if (k < 6u) { apply_intent(k); dirty = 1; t_change = fm1_ms; }
+                    if (k < 6u) { apply_intent(k); bars_dirty = dirty = 1; t_change = fm1_ms; }
                     continue;
                 }
-                {
-                    uint32_t tb = TB_KEY, slot = CH_STRIKE;
-                    int32_t note = penta_note(root_note() - 12 + 12 * (int8_t)set.oct, (int32_t)k), lev = 26000;
-                    if (held_black & (1u << CH_BIRDS)) {
-                        uint32_t hz = FREQ_HZ[60 + k * 3u] * 2u;
-                        chirp(hz, hz * (70u + rnd_n(80)) / 100u, 60u + rnd_n(60), 12000, DEC32[8], CH_BIRDS);
-                        touched |= 1u << CH_BIRDS;
-                        continue;
-                    }
-                    if (held_black & (1u << CH_GONG)) { tb = TB_GONG; note -= 24; slot = CH_GONG; touched |= 1u << CH_GONG; }
-                    else if (held_black & (1u << CH_CHIME)) { tb = TB_CHIME; note += 12; slot = CH_CHIME; lev = 20000; touched |= 1u << CH_CHIME; }
-                    else if (held_black & (1u << CH_BELL)) { tb = TB_BELL; slot = CH_BELL; touched |= 1u << CH_BELL; }
-                    key_voice[k] = (int8_t)strike(tb, note, lev, 8192u + k * 3200u, slot, 1);
-                    lit_white |= 1u << k;
-                }
+                if (held_black & (1u << CH_BIRDS)) tb = TB_BIRDS;
+                else if (held_black & (1u << CH_GONG)) tb = TB_GONG;
+                else if (held_black & (1u << CH_CHIME)) tb = TB_CHIME;
+                else if (held_black & (1u << CH_BELL)) tb = TB_BELL;
+                touched |= held_black;          /* a key held for a strike is not a tap */
+                act_down(k, tb, 0);
             }
-            if (up & bit) {
-                if (key_voice[k] >= 0) mv[key_voice[k]].held = 0;
-                key_voice[k] = -1;
-                lit_white &= ~(1u << k);
-            }
+            if (up & bit) act_up(k, 0);
         }
 
         /* ---- the buttons */
         b = fm1_input_edges(&rel);
-        if (b & (1u << BTN_PLAY)) { paused = !paused; t_change = fm1_ms; }
-        if (b & (1u << BTN_REC)) { shuffle(); dirty = 1; t_change = fm1_ms; }
-        if (b & (1u << BTN_SEQ)) { evolve = !evolve; t_evolve = fm1_ms; }
+        if (b & (1u << BTN_PLAY)) { paused = !paused; t_change = fm1_ms; if (!paused) { loop_t0 = fm1_ms - loop_pos; } }
+        if (b & (1u << BTN_REC)) { rec_down_ms = fm1_ms; rec_start(); }
+        if (rel & (1u << BTN_REC) && rec_on) rec_stop(fm1_ms - rec_down_ms);
+        if (b & (1u << BTN_LFO)) { shuffle(); bars_dirty = dirty = 1; t_change = fm1_ms; }
+        if (b & (1u << BTN_SEQ)) { evolve = !evolve; t_evolve = fm1_ms + 8000u + rnd_n(12000); bars_dirty = 1; }
         if (b & (1u << BTN_OCT_DOWN) && (int8_t)set.oct > -2) { set.oct = (uint8_t)((int8_t)set.oct - 1); dirty = 1; t_change = fm1_ms; }
         if (b & (1u << BTN_OCT_UP) && (int8_t)set.oct < 2) { set.oct = (uint8_t)((int8_t)set.oct + 1); dirty = 1; t_change = fm1_ms; }
         swell = (btn >> BTN_FX) & 1u;
@@ -803,26 +1001,21 @@ static void app_main(void)
             if (e > 1 || e < -1) e *= 2;        /* fast turns go further */
             if (held_black) {
                 for (c = 0; c < NCH; c++) {
-                    int32_t v;
                     if (!(held_black >> c & 1u)) continue;
-                    v = (int32_t)set.par[c][k] + e;
-                    set.par[c][k] = (uint8_t)(v < 0 ? 0 : v > 127 ? 127 : v);
-                    if (!set.on[c]) { set.on[c] = 1; if (c >= CH_BELL && c <= CH_BIRDS) next_ms[c - CH_BELL] = fm1_ms; }
+                    act_par(c, k, clamp127((int32_t)set.par[c][k] + e), 0);
+                    if (!set.on[c]) act_on(c, 1, 0);
                     touched |= 1u << c;
                 }
-            } else {
-                int32_t v = (int32_t)set.macro[k] + e;
-                set.macro[k] = (uint8_t)(v < 0 ? 0 : v > 127 ? 127 : v);
-            }
+            } else act_macro(k, clamp127((int32_t)set.macro[k] + e), 0);
             dirty = 1; t_change = fm1_ms;
         }
         if ((e = fm1_enc_take(ENC_PRESETS)) != 0) {
             int32_t i = ((int32_t)set.intent + (e > 0 ? 1 : -1) + 6) % 6;
-            apply_intent((uint32_t)i); dirty = 1; t_change = fm1_ms;
+            apply_intent((uint32_t)i); bars_dirty = dirty = 1; t_change = fm1_ms;
         }
         if ((e = fm1_enc_take(ENC_SELECT)) != 0) {
             int32_t r = set.root + e;
-            set.root = (int8_t)(r < -12 ? -12 : r > 12 ? 12 : r); dirty = 1; t_change = fm1_ms;
+            set.root = (int8_t)(r < -12 ? -12 : r > 12 ? 12 : r); bars_dirty = dirty = 1; t_change = fm1_ms;
         }
         if ((e = fm1_enc_take(ENC_ALGORITHM)) != 0) {
             int32_t s = (int32_t)set.spin + e;
@@ -830,6 +1023,7 @@ static void app_main(void)
         }
 
         midi_in();
+        loop_tick();
         schedule();
         if (fm1_ms - t_drift >= 32u) {
             t_drift = fm1_ms;
@@ -841,7 +1035,7 @@ static void app_main(void)
                 lvl[c] = l > lvl[c] ? l : lvl[c] - (lvl[c] >> 3);
             }
         }
-        if (evolve && !paused && fm1_ms - t_evolve > 8000u + rnd_n(12000)) { t_evolve = fm1_ms; evolve_step(); }
+        if (evolve && !paused && (int32_t)(fm1_ms - t_evolve) >= 0) { t_evolve = fm1_ms + 8000u + rnd_n(12000); evolve_step(); bars_dirty = 1; }
 
         /* ---- the lights */
         for (c = 0; c < NCH; c++) fm1_led_key(KEY_LED(BLACK_KEY[c]), set.on[c]);
@@ -849,21 +1043,23 @@ static void app_main(void)
         fm1_led_key(BTN_PLAY, !paused);
         fm1_led_key(BTN_SEQ, evolve);
         fm1_led_key(BTN_FX, swell);
+        fm1_led_key(BTN_REC, rec_on ? 1 : (set.loop_on && set.loop_n && loop_pos < 120u));   /* lit: recording; a blink a loop */
+        fm1_led_key_glow(BTN_REC, set.loop_n != 0);
         fm1_led_key(BTN_OCT_DOWN, (int8_t)set.oct < 0);
         fm1_led_key(BTN_OCT_UP, (int8_t)set.oct > 0);
 
         /* ---- the screen, ~20 frames a second */
         if (fm1_ms - t_draw >= 50u) {
-            uint32_t bk = held_black | (uint32_t)set.oct << 12 | (uint32_t)(uint8_t)set.root << 16 | evolve << 24;
+            uint32_t bk = held_black | (uint32_t)set.oct << 12 | (uint32_t)(uint8_t)set.root << 16 | evolve << 24 | rec_on << 25;
             t_draw = fm1_ms;
             spin_ph += (2u + set.spin) * 600000u;
             idle_ok = 1;
             draw_ring();
-            if (bk != bars_key || dirty) { bars_key = bk; draw_bars(); }
+            if (bk != bars_key || bars_dirty) { bars_key = bk; bars_dirty = 0; draw_bars(); }
             idle_ok = 0;
         }
 
-        if (dirty && quiet() && fm1_ms - t_change > 2000u) {   /* save only when paused and faded (an erase stalls the sound) */
+        if (dirty && quiet() && !rec_on && fm1_ms - t_change > 2000u) {   /* save only when paused and faded (an erase stalls the sound) */
             settings_save(&set, sizeof set);
             dirty = 0;
         }

@@ -1,5 +1,13 @@
 # DEVLOG — vibe
 
+## Nov 24 2026 (2) — FM-1: loop recorder, more visuals, earth fixed, audit
+
+From /dump, on `dev/fm-1/v0`:
+- **Loop recorder** (user picked gestures, not audio: 1 MB flash): hold REC + play → let go loops it (≤60 s, 384 events: strikes, channel taps, knob values, coalesced to one per 40 ms per knob). Tap REC = loop on/off, hold 1.5 s idle = clear. Loop lives in settings (saved while paused). Shuffle moved REC → LFO. Live and loop strikes own separate held voices.
+- **Visuals**: strike ripples, center rosette (petal pairs = active channels), inward spokes on the ring, element dots drawn as trigrams (Li/Zhen, Xun/Dui, Kan/Gen, Kun/Qian, flip past TYPE midpoint), loop progress dot + "rec"/"loop", loop length in the bottom strip. No planets: FM-1 has no RTC.
+- **Earth was wrong**: v0 used 60 Hz beating sines (mains hum) + 480/720 Hz partials. Now ports web `makeEarth`: resonant SVF low-pass on white (90 Hz Q1.5 → 410 Hz Q0.65 over TYPE), 32–44 Hz sub thinning toward crystal, 0.04 Hz swell; renormalized (loam ~2.5k RMS, crystal ~1.4k).
+- **Audit fixes**: int32 overflow risks in wind (`w_bp * amp`), tilt and reverb send (bus now clipped to ±40k first); a white key pressed while a noise key was held toggled that noise on release; key-up could un-hold a voice another strike had stolen (owner tag); SEQ evolve fired ~every 8 s instead of 8–20 s (re-rolled each pass); bottom strip redrew every frame while dirty; strike levels lowered (keys 26k→18k) so loops stay under the soft knee; dead vars, pulse comment (10 %, not 20 %). One 64-bit division avoided in the loop dot math (chip has no `__udivdi3`).
+
 ## Nov 24 2026 — FM-1 firmware v0 (`dev/fm-1/v0`, `fm1/`)
 
 From /dump: VIBE as firmware for the M-VAVE FM-1, knob- and button-first, no menus.
